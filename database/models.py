@@ -34,7 +34,6 @@ class UserRole(models.Model):
 class Permission(models.Model):
     name = models.CharField(max_length=30)
     description = models.CharField(max_length=100)
-    role = models.ForeignKey(Role, on_delete=models.CASCADE)
 
 
 class RolePermission(models.Model):
@@ -42,24 +41,29 @@ class RolePermission(models.Model):
     permission = models.ForeignKey(Permission, on_delete=models.CASCADE)
 
 
-class Semester(models.Model):
-    year = models.IntegerField()
-    winter = models.BooleanField(default=True)
-
-
 class Course(models.Model):
     name = models.CharField(max_length=30)
     description = models.CharField(max_length=100)
 
 
+class Semester(models.Model):
+    year = models.IntegerField()
+    winter = models.BooleanField(default=True)
+
+
 class Edition(models.Model):
     name = models.CharField(max_length=30)
     description = models.CharField(max_length=100)
-    semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
     date_opened = models.DateField()
     date_closed = models.DateField()
     active = models.BooleanField(default=True)
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+
+
+class TeacherEdition(models.Model):
+    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
+    edition = models.ForeignKey(Edition, on_delete=models.CASCADE)
 
 
 class Group(models.Model):
@@ -67,8 +71,8 @@ class Group(models.Model):
     day = models.CharField(max_length=30)
     hour = models.CharField(max_length=30)
     room = models.CharField(max_length=30, blank=True, default='')
-    edition = models.ForeignKey(Edition, on_delete=models.CASCADE)
-    semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
+    teacherEdition = models.ForeignKey(
+        TeacherEdition, on_delete=models.CASCADE)
 
 
 class Server(models.Model):
@@ -90,13 +94,9 @@ class StudentGroup(models.Model):
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
 
 
-class TeacherEdition(models.Model):
-    teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
-    edition = models.ForeignKey(Edition, on_delete=models.CASCADE)
-    group = models.ForeignKey(Group, on_delete=models.CASCADE)
-
-
 class DBAccount(models.Model):
     username = models.CharField(max_length=30)
     password = models.CharField(max_length=30)
     additional_info = models.CharField(max_length=100)
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    editionServer = models.ForeignKey(EditionServer, on_delete=models.CASCADE)

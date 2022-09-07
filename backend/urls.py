@@ -20,5 +20,5 @@ import database.urls
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('user/', include(database.urls)),
+    path('', include(database.urls)),
 ]
