@@ -3,9 +3,9 @@ from django.db import models
 
 
 class User(PolymorphicModel):
-    first_name = models.CharField(max_length=30)
-    last_name = models.CharField(max_length=30)
-    email = models.EmailField(max_length=50)
+    first_name = models.CharField(max_length=30, blank=False)
+    last_name = models.CharField(max_length=30, blank=False)
+    email = models.EmailField(max_length=50, unique=True)
     password = models.CharField(max_length=30)
 
 
@@ -18,7 +18,7 @@ class Teacher(User):
 
 
 class Student(User):
-    student_id = models.CharField(max_length=6)
+    student_id = models.CharField(max_length=6, unique=True)
 
 
 class Role(models.Model):
@@ -32,7 +32,7 @@ class UserRole(models.Model):
 
 
 class Permission(models.Model):
-    name = models.CharField(max_length=30)
+    name = models.CharField(max_length=30, unique=True)
     description = models.CharField(max_length=100)
 
 
@@ -79,7 +79,7 @@ class Server(models.Model):
     name = models.CharField(max_length=30)
     ip = models.CharField(max_length=30)
     port = models.IntegerField()
-    date_created = models.DateField()
+    date_created = models.DateField(auto_now_add=True)
     active = models.BooleanField(default=True)
 
 
@@ -98,5 +98,5 @@ class DBAccount(models.Model):
     username = models.CharField(max_length=30)
     password = models.CharField(max_length=30)
     additional_info = models.CharField(max_length=100)
-    student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    editionServer = models.ForeignKey(EditionServer, on_delete=models.CASCADE)
+    student = models.ForeignKey(Student, on_delete=models.SET_NULL, null=True)
+    editionServer = models.ForeignKey(EditionServer, on_delete=models.SET_NULL, null=True)
