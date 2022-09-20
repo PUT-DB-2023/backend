@@ -98,5 +98,5 @@ class DBAccount(models.Model):
     username = models.CharField(max_length=30)
     password = models.CharField(max_length=30)
     additional_info = models.CharField(max_length=100)
-    student = models.ForeignKey(Student, on_delete=models.SET_NULL, null=True)
-    editionServer = models.ForeignKey(EditionServer, on_delete=models.SET_NULL, null=True)
+    student = models.ForeignKey(Student, on_delete=models.SET_NULL, null=True, blank=True)
+    editionServer = models.ForeignKey(EditionServer, on_delete=models.SET_NULL, null=True, blank=True)

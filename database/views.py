@@ -1,10 +1,13 @@
 from rest_framework import viewsets
-from rest_framework.response import Response
+# from rest_framework.response import Response
 
 from .serializers import UserSerializer, AdminSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, UserRoleSerializer, PermissionSerializer, RolePermissionSerializer, CourseSerializer, SemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, StudentGroupSerializer, DBAccountSerializer
 from .models import User, Admin, Teacher, Student, Role, UserRole, Permission, RolePermission, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, StudentGroup, DBAccount
-from django.shortcuts import get_object_or_404
+# from django.shortcuts import get_object_or_404
+from rest_framework_swagger.views import get_swagger_view
 
+
+schema_view = get_swagger_view(title='Backend API')
 
 class UserViewSet(viewsets.ModelViewSet):
     """
@@ -12,17 +15,6 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     serializer_class = UserSerializer
     queryset = User.objects.all()
-
-    # def list(self, request):
-    #     queryset = User.objects.all()
-    #     serializer = UserSerializer(queryset, many=True)
-    #     return Response(serializer.data)
-
-    # def retrieve(self, request, pk=None):
-    #     queryset = User.objects.all()
-    #     user = get_object_or_404(queryset, pk=pk)
-    #     serializer = UserSerializer(user)
-    #     return Response(serializer.data)
 
 class AdminViewSet(viewsets.ModelViewSet):
     """
@@ -135,3 +127,10 @@ class DBAccountViewSet(viewsets.ModelViewSet):
     """
     serializer_class = DBAccountSerializer
     queryset = DBAccount.objects.all()
+
+# class DocsViewSet(viewsets.ViewSet):
+#     """
+#     A simple ViewSet for displaying API documentation.
+#     """
+#     def list(self, request):
+#         return schema_view(request)

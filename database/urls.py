@@ -13,11 +13,21 @@ router.register('permissions', views.PermissionViewSet)
 router.register('role_permissions', views.RolePermissionViewSet)
 router.register('courses', views.CourseViewSet)
 router.register('semesters', views.SemesterViewSet)
-router.register('edition', views.EditionViewSet)
+router.register('editions', views.EditionViewSet)
 router.register('teacher_editions', views.TeacherEditionViewSet)
+router.register('groups', views.GroupViewSet)
+router.register('servers', views.ServerViewSet)
+router.register('edition_servers', views.EditionServerViewSet)
+router.register('student_groups', views.StudentGroupViewSet)
+router.register('db_accounts', views.DBAccountViewSet)
+# router.register('docs', views.DocsViewSet)
 
 
-urlpatterns = [
-    path('', include(router.urls)),
-    # views.UserViewSet.as_view({'get': 'list'})
-]
+try:
+    urlpatterns = [
+        path('api/', include(router.urls)),
+        # path('docs', views.schema_view)
+        # views.UserViewSet.as_view({'get': 'list'})
+    ]
+except:
+    urlpatterns = []
