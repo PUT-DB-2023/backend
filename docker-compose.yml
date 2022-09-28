@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   postgres:
-    image: postgres
+    image: postgres:latest
     volumes:
       - ./data/db:/var/lib/postgresql/data
     environment:
@@ -10,7 +10,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
   mysql:
-    image: mysql
+    image: mysql:latest
     environment:
       - MYSQL_ROOT_PASSWORD=root
       - MYSQL_DATABASE=mysql
