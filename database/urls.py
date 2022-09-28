@@ -20,14 +20,10 @@ router.register('servers', views.ServerViewSet)
 router.register('edition_servers', views.EditionServerViewSet)
 router.register('student_groups', views.StudentGroupViewSet)
 router.register('db_accounts', views.DBAccountViewSet)
-# router.register('docs', views.DocsViewSet)
+# router.register('add_db_account', views.AddUserAccountToExternalDB)
 
 
-try:
-    urlpatterns = [
-        path('api/', include(router.urls)),
-        # path('docs', views.schema_view)
-        # views.UserViewSet.as_view({'get': 'list'})
-    ]
-except:
-    urlpatterns = []
+urlpatterns = [
+    path('api/', include(router.urls)),
+    path('api/add_db_account', views.AddUserAccountToExternalDB.as_view({'post': 'add_db_account'})),
+]

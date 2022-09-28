@@ -2,48 +2,48 @@ from rest_framework import serializers
 from .models import User, Admin, Teacher, Student, Role, UserRole, Permission, RolePermission, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, StudentGroup, DBAccount
 
 
-class UserSerializer(serializers.HyperlinkedModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
             'id',
-            'url',
+            # 'url',
             'first_name',
             'last_name',
             'email',
             'password',
         ]
 
-class AdminSerializer(serializers.HyperlinkedModelSerializer):
+class AdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = Admin
         fields = [
             'id',
-            'url',
+            # 'url',
             'first_name',
             'last_name',
             'email',
             'password',
         ]
 
-class TeacherSerializer(serializers.HyperlinkedModelSerializer):
+class TeacherSerializer(serializers.ModelSerializer):
     class Meta:
         model = Teacher
         fields = [
             'id',
-            'url',
+            # 'url',
             'first_name',
             'last_name',
             'email',
             'password',
         ]
 
-class StudentSerializer(serializers.HyperlinkedModelSerializer):
+class StudentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Student
         fields = [
             'id',
-            'url',
+            # 'url',
             'first_name',
             'last_name',
             'email',
@@ -51,72 +51,72 @@ class StudentSerializer(serializers.HyperlinkedModelSerializer):
             'student_id',
         ]
 
-class RoleSerializer(serializers.HyperlinkedModelSerializer):
+class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
         fields = [
             'id',
-            'url',
+            # 'url',
             'name',
             'description',
         ]
 
-class UserRoleSerializer(serializers.HyperlinkedModelSerializer):
+class UserRoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserRole
         fields = [
             'id',
-            'url',
+            # 'url',
             'user',
             'role',
         ]
 
-class PermissionSerializer(serializers.HyperlinkedModelSerializer):
+class PermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Permission
         fields = [
             'id',
-            'url',
+            # 'url',
             'name',
             'description',
         ]
 
-class RolePermissionSerializer(serializers.HyperlinkedModelSerializer):
+class RolePermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = RolePermission
         fields = [
             'id',
-            'url',
+            # 'url',
             'role',
             'permission',
         ]
 
-class CourseSerializer(serializers.HyperlinkedModelSerializer):
+class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = [
             'id',
-            'url',
+            # 'url',
             'name',
             'description',
         ]
 
-class SemesterSerializer(serializers.HyperlinkedModelSerializer):
+class SemesterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Semester
         fields = [
             'id',
-            'url',
+            # 'url',
             'year',
             'winter',
         ]
 
-class EditionSerializer(serializers.HyperlinkedModelSerializer):
+class EditionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Edition
         fields = [
             'id',
-            'url',
+            # 'url',
             'name',
             'description',
             'date_opened',
@@ -126,22 +126,22 @@ class EditionSerializer(serializers.HyperlinkedModelSerializer):
             'course',
         ]
 
-class TeacherEditionSerializer(serializers.HyperlinkedModelSerializer):
+class TeacherEditionSerializer(serializers.ModelSerializer):
     class Meta:
         model = TeacherEdition
         fields = [
             'id',
-            'url',
+            # 'url',
             'teacher',
             'edition',
         ]
 
-class GroupSerializer(serializers.HyperlinkedModelSerializer):
+class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
         fields = [
             'id',
-            'url',
+            # 'url',
             'name',
             'day',
             'hour',
@@ -149,12 +149,12 @@ class GroupSerializer(serializers.HyperlinkedModelSerializer):
             'teacherEdition',
         ]
 
-class ServerSerializer(serializers.HyperlinkedModelSerializer):
+class ServerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Server
         fields = [
             'id',
-            'url',
+            # 'url',
             'name',
             'ip',
             'port',
@@ -162,33 +162,33 @@ class ServerSerializer(serializers.HyperlinkedModelSerializer):
             'active',
         ]
 
-class EditionServerSerializer(serializers.HyperlinkedModelSerializer):
+class EditionServerSerializer(serializers.ModelSerializer):
     class Meta:
         model = EditionServer
         fields = [
             'id',
-            'url',
+            # 'url',
             'edition',
             'server',
             'additional_info',
         ]
 
-class StudentGroupSerializer(serializers.HyperlinkedModelSerializer):
+class StudentGroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentGroup
         fields = [
             'id',
-            'url',
+            # 'url',
             'student',
             'group',
         ]
 
-class DBAccountSerializer(serializers.HyperlinkedModelSerializer):
+class DBAccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = DBAccount
         fields = [
             'id',
-            'url',
+            # 'url',
             'username',
             'password',
             'additional_info',

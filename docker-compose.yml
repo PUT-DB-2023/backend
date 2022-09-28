@@ -1,7 +1,7 @@
 version: "3.9"
 
 services:
-  db:
+  postgres:
     image: postgres
     volumes:
       - ./data/db:/var/lib/postgresql/data
@@ -9,11 +9,24 @@ services:
       - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+  mysql:
+    image: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=mysql
+      - MYSQL_USER=mysql
+      - MYSQL_PASSWORD=mysql
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+      - ./tmp/mysqld:/var/run/mysqld
+    ports:
+     - "3306:3306"
   web:
     build: .
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/code
+      - ./tmp/mysqld:/run/mysqld
     ports:
       - "8000:8000"
     environment:
@@ -21,4 +34,5 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     depends_on:
-      - db
+      - postgres
+      - mysql

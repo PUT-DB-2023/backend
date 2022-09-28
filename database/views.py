@@ -1,13 +1,12 @@
 from rest_framework import viewsets
-# from rest_framework.response import Response
+from rest_framework.response import Response
+from rest_framework.decorators import action
+# from django.db import connection
+import MySQLdb as mdb
 
 from .serializers import UserSerializer, AdminSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, UserRoleSerializer, PermissionSerializer, RolePermissionSerializer, CourseSerializer, SemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, StudentGroupSerializer, DBAccountSerializer
 from .models import User, Admin, Teacher, Student, Role, UserRole, Permission, RolePermission, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, StudentGroup, DBAccount
-# from django.shortcuts import get_object_or_404
-from rest_framework_swagger.views import get_swagger_view
 
-
-schema_view = get_swagger_view(title='Backend API')
 
 class UserViewSet(viewsets.ModelViewSet):
     """
@@ -127,6 +126,24 @@ class DBAccountViewSet(viewsets.ModelViewSet):
     """
     serializer_class = DBAccountSerializer
     queryset = DBAccount.objects.all()
+
+class AddUserAccountToExternalDB(viewsets.ViewSet):
+    @action (methods=['post'], detail=False)
+
+    def add_db_account(self, request, format=None):
+        user_data = request.data
+        conn = mdb.connect(host='localhost', port=3306, user='root', passwd='root', db='lab')
+        try:
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO users (first_name, last_name) VALUES (%s, %s)", (user_data['first_name'], user_data['last_name']))
+            conn.commit()
+            return Response({'status': 'ok'})
+        except:
+            conn.rollback()
+            print("Error")
+        finally:
+            conn.close()
+        return Response({'status': 'bad'})
 
 # class DocsViewSet(viewsets.ViewSet):
 #     """
