@@ -135,7 +135,7 @@ class AddUserAccountToExternalDB(viewsets.ViewSet):
         conn = mdb.connect(host='localhost', port=3306, user='root', passwd='root', db='lab')
         try:
             cursor = conn.cursor()
-            cursor.execute("INSERT INTO users (first_name, last_name) VALUES (%s, %s)", (user_data['first_name'], user_data['last_name']))
+            cursor.execute("INSERT INTO students (first_name, last_name, email, password, student_id) VALUES (%s, %s, %s, %s, %s)", (user_data['first_name'], user_data['last_name'], user_data['email'], user_data['password'], user_data['student_id']))
             conn.commit()
             return Response({'status': 'ok'})
         except:
@@ -143,6 +143,7 @@ class AddUserAccountToExternalDB(viewsets.ViewSet):
             print("Error")
         finally:
             conn.close()
+            print("Successfully added a new user to an external DB")
         return Response({'status': 'bad'})
 
 # class DocsViewSet(viewsets.ViewSet):
