@@ -22,8 +22,9 @@ services:
     ports:
      - "3306:3306"
   web:
+    restart: always
     build: .
-    command: python manage.py runserver 0.0.0.0:8000
+    command: bash -c "python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/code
       - ./tmp/mysqld:/run/mysqld
