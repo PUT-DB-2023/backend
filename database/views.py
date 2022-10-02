@@ -132,7 +132,7 @@ class ServerViewSet(viewsets.ModelViewSet):
     serializer_class = ServerSerializer
     queryset = Server.objects.all()
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'name', 'ip', 'port', 'date_created', 'additional_info']
+    filterset_fields = ['id', 'name', 'ip', 'port', 'date_created', 'active']
 
 class EditionServerViewSet(viewsets.ModelViewSet):
     """
