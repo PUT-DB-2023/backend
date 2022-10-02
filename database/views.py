@@ -23,6 +23,8 @@ class AdminViewSet(viewsets.ModelViewSet):
     """
     serializer_class = AdminSerializer
     queryset = Admin.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name']
 
 class TeacherViewSet(viewsets.ModelViewSet):
     """
@@ -30,6 +32,8 @@ class TeacherViewSet(viewsets.ModelViewSet):
     """
     serializer_class = TeacherSerializer
     queryset = Teacher.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name']
 
 class StudentViewSet(viewsets.ModelViewSet):
     """
@@ -37,6 +41,8 @@ class StudentViewSet(viewsets.ModelViewSet):
     """
     serializer_class = StudentSerializer
     queryset = Student.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'student_id']
 
 class RoleViewSet(viewsets.ModelViewSet):
     """
@@ -44,6 +50,8 @@ class RoleViewSet(viewsets.ModelViewSet):
     """
     serializer_class = RoleSerializer
     queryset = Role.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['id', 'name', 'description']
 
 class UserRoleViewSet(viewsets.ModelViewSet):
     """
@@ -51,6 +59,8 @@ class UserRoleViewSet(viewsets.ModelViewSet):
     """
     serializer_class = UserRoleSerializer
     queryset = UserRole.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['id', 'user', 'role']
 
 class PermissionViewSet(viewsets.ModelViewSet):
     """
@@ -58,6 +68,8 @@ class PermissionViewSet(viewsets.ModelViewSet):
     """
     serializer_class = PermissionSerializer
     queryset = Permission.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['id', 'name', 'description']
 
 class RolePermissionViewSet(viewsets.ModelViewSet):
     """
@@ -65,6 +77,8 @@ class RolePermissionViewSet(viewsets.ModelViewSet):
     """
     serializer_class = RolePermissionSerializer
     queryset = RolePermission.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['id', 'role', 'permission']
 
 class CourseViewSet(viewsets.ModelViewSet):
     """
@@ -72,6 +86,8 @@ class CourseViewSet(viewsets.ModelViewSet):
     """
     serializer_class = CourseSerializer
     queryset = Course.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['id', 'name', 'description']
 
 class SemesterViewSet(viewsets.ModelViewSet):
     """
@@ -79,6 +95,8 @@ class SemesterViewSet(viewsets.ModelViewSet):
     """
     serializer_class = SemesterSerializer
     queryset = Semester.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['id', 'year', 'winter']
 
 class EditionViewSet(viewsets.ModelViewSet):
     """
@@ -86,6 +104,8 @@ class EditionViewSet(viewsets.ModelViewSet):
     """
     serializer_class = EditionSerializer
     queryset = Edition.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['id', 'name', 'description', 'date_opened', 'date_closed', 'active', 'course', 'semester']
 
 class TeacherEditionViewSet(viewsets.ModelViewSet):
     """
@@ -93,6 +113,8 @@ class TeacherEditionViewSet(viewsets.ModelViewSet):
     """
     serializer_class = TeacherEditionSerializer
     queryset = TeacherEdition.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['id', 'teacher', 'edition']
 
 class GroupViewSet(viewsets.ModelViewSet):
     """
@@ -100,6 +122,8 @@ class GroupViewSet(viewsets.ModelViewSet):
     """
     serializer_class = GroupSerializer
     queryset = Group.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['id', 'name', 'day', 'hour', 'room', 'teacherEdition']
 
 class ServerViewSet(viewsets.ModelViewSet):
     """
@@ -107,6 +131,8 @@ class ServerViewSet(viewsets.ModelViewSet):
     """
     serializer_class = ServerSerializer
     queryset = Server.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['id', 'name', 'ip', 'port', 'date_created', 'additional_info']
 
 class EditionServerViewSet(viewsets.ModelViewSet):
     """
@@ -114,6 +140,8 @@ class EditionServerViewSet(viewsets.ModelViewSet):
     """
     serializer_class = EditionServerSerializer
     queryset = EditionServer.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['id', 'edition', 'server', 'additional_info']
 
 class StudentGroupViewSet(viewsets.ModelViewSet):
     """
@@ -121,6 +149,8 @@ class StudentGroupViewSet(viewsets.ModelViewSet):
     """
     serializer_class = StudentGroupSerializer
     queryset = StudentGroup.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['id', 'student', 'group']
 
 class DBAccountViewSet(viewsets.ModelViewSet):
     """
@@ -128,6 +158,8 @@ class DBAccountViewSet(viewsets.ModelViewSet):
     """
     serializer_class = DBAccountSerializer
     queryset = DBAccount.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['id', 'username', 'password', 'editionServer', 'additional_info', 'student']
 
 class AddUserAccountToExternalDB(viewsets.ViewSet):
     @action (methods=['post'], detail=False)
