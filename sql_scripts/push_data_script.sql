@@ -150,6 +150,12 @@ VALUES(1, '-', '2019-01-09', '2020-01-03', false, 1, 2);
 INSERT INTO public.database_edition
 (id, description, date_opened, date_closed, active, course_id, semester_id)
 VALUES(2, '-', '2022-01-10', '2023-01-03', true, 2, 3);
+INSERT INTO public.database_edition
+(id, description, date_opened, date_closed, active, course_id, semester_id)
+VALUES(3, '-', '2023-01-08', '2023-01-01', true, 3, 3);
+INSERT INTO public.database_edition
+(id, description, date_opened, date_closed, active, course_id, semester_id)
+VALUES(4, '-', '2012-01-01', '2016-01-01', false, 4, 4);
 
 
 
@@ -159,6 +165,13 @@ VALUES(1, 'Additional info about server 1', 1, 1);
 INSERT INTO public.database_editionserver
 (id, additional_info, edition_id, server_id)
 VALUES(2, 'Additional info about server 2', 2, 2);
+INSERT INTO public.database_editionserver
+(id, additional_info, edition_id, server_id)
+VALUES(3, 'Additional info about server 3', 4, 1);
+INSERT INTO public.database_editionserver
+(id, additional_info, edition_id, server_id)
+VALUES(4, 'Additional info about server 4', 3, 2);
+
 
 
 INSERT INTO public.database_teacheredition
@@ -167,6 +180,19 @@ VALUES(1, 1, 6);
 INSERT INTO public.database_teacheredition
 (id, edition_id, teacher_id)
 VALUES(2, 2, 6);
+INSERT INTO public.database_teacheredition
+(id, edition_id, teacher_id)
+VALUES(3, 2, 10);
+INSERT INTO public.database_teacheredition
+(id, edition_id, teacher_id)
+VALUES(4, 3, 10);
+INSERT INTO public.database_teacheredition
+(id, edition_id, teacher_id)
+VALUES(5, 3, 11);
+INSERT INTO public.database_teacheredition
+(id, edition_id, teacher_id)
+VALUES(6, 4, 12);
+
 
 
 INSERT INTO public.database_group
@@ -175,6 +201,19 @@ VALUES(1, 'L10', 'Monday', '11:45', '3a', 1);
 INSERT INTO public.database_group
 (id, "name", "day", "hour", room, "teacherEdition_id")
 VALUES(2, 'L5', 'Tuesday', '13:30', '11b', 2);
+INSERT INTO public.database_group
+(id, "name", "day", "hour", room, "teacherEdition_id")
+VALUES(3, 'L1', 'Friday', '10:00', '1', 3);
+INSERT INTO public.database_group
+(id, "name", "day", "hour", room, "teacherEdition_id")
+VALUES(4, 'L2', 'Thursday', '12:00', '2', 4);
+INSERT INTO public.database_group
+(id, "name", "day", "hour", room, "teacherEdition_id")
+VALUES(5, 'L3', 'Wednesday', '11:00', '3', 5);
+INSERT INTO public.database_group
+(id, "name", "day", "hour", room, "teacherEdition_id")
+VALUES(6, 'L4', 'Monday', '10:00', '4', 6);
+
 
 
 INSERT INTO public.database_studentgroup
@@ -186,6 +225,13 @@ VALUES(2, 2, 4);
 INSERT INTO public.database_studentgroup
 (id, group_id, student_id)
 VALUES(3, 1, 2);
+INSERT INTO public.database_studentgroup
+(id, group_id, student_id)
+VALUES(4, 3, 7);
+INSERT INTO public.database_studentgroup
+(id, group_id, student_id)
+VALUES(5, 4, 8);
+
 
 
 INSERT INTO public.database_dbaccount
@@ -197,6 +243,14 @@ VALUES(2, 'pwozniak', 'inf145423', 'Additional info about user id 2', 2, 3);
 INSERT INTO public.database_dbaccount
 (id, username, "password", additional_info, "editionServer_id", student_id)
 VALUES(3, 'kjakusik', 'inf145318', 'Additional info about user id 3', 1, 4);
+INSERT INTO public.database_dbaccount
+(id, username, "password", additional_info, "editionServer_id", student_id)
+VALUES(4, 'jkowal', 'inf145111', 'Additional info about user id 4', 3, 7);
+INSERT INTO public.database_dbaccount
+(id, username, "password", additional_info, "editionServer_id", student_id)
+VALUES(5, 'mnowak', 'inf145222', 'Additional info about user id 5', 4, 8);
+
+
 
 
 
