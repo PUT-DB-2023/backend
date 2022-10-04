@@ -1,5 +1,6 @@
 # Database files
 data/
+tmp/
 
 # Environment variables
 *.env

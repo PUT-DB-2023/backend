@@ -71,8 +71,7 @@ class Group(models.Model):
     day = models.CharField(max_length=30)
     hour = models.CharField(max_length=30)
     room = models.CharField(max_length=30, blank=True, default='')
-    teacherEdition = models.ForeignKey(
-        TeacherEdition, on_delete=models.CASCADE)
+    teacherEdition = models.ForeignKey(TeacherEdition, on_delete=models.CASCADE)
 
 
 class Server(models.Model):
