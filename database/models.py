@@ -47,7 +47,7 @@ class Course(models.Model):
 
 
 class Semester(models.Model):
-    year = models.IntegerField()
+    year = models.CharField(max_length=9)
     winter = models.BooleanField(default=True)
 
 
