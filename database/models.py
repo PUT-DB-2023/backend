@@ -52,7 +52,6 @@ class Semester(models.Model):
 
 
 class Edition(models.Model):
-    name = models.CharField(max_length=30)
     description = models.CharField(max_length=100)
     date_opened = models.DateField()
     date_closed = models.DateField()
