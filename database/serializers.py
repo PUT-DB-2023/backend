@@ -7,7 +7,6 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id',
-            # 'url',
             'first_name',
             'last_name',
             'email',
@@ -19,7 +18,6 @@ class AdminSerializer(serializers.ModelSerializer):
         model = Admin
         fields = [
             'id',
-            # 'url',
             'first_name',
             'last_name',
             'email',
@@ -31,7 +29,6 @@ class TeacherSerializer(serializers.ModelSerializer):
         model = Teacher
         fields = [
             'id',
-            # 'url',
             'first_name',
             'last_name',
             'email',
@@ -43,7 +40,6 @@ class StudentSerializer(serializers.ModelSerializer):
         model = Student
         fields = [
             'id',
-            # 'url',
             'first_name',
             'last_name',
             'email',
@@ -56,7 +52,6 @@ class RoleSerializer(serializers.ModelSerializer):
         model = Role
         fields = [
             'id',
-            # 'url',
             'name',
             'description',
         ]
@@ -66,7 +61,6 @@ class UserRoleSerializer(serializers.ModelSerializer):
         model = UserRole
         fields = [
             'id',
-            # 'url',
             'user',
             'role',
         ]
@@ -76,7 +70,6 @@ class PermissionSerializer(serializers.ModelSerializer):
         model = Permission
         fields = [
             'id',
-            # 'url',
             'name',
             'description',
         ]
@@ -86,7 +79,6 @@ class RolePermissionSerializer(serializers.ModelSerializer):
         model = RolePermission
         fields = [
             'id',
-            # 'url',
             'role',
             'permission',
         ]
@@ -96,7 +88,6 @@ class CourseSerializer(serializers.ModelSerializer):
         model = Course
         fields = [
             'id',
-            # 'url',
             'name',
             'description',
         ]
@@ -106,7 +97,6 @@ class SemesterSerializer(serializers.ModelSerializer):
         model = Semester
         fields = [
             'id',
-            # 'url',
             'year',
             'winter',
         ]
@@ -116,8 +106,6 @@ class EditionSerializer(serializers.ModelSerializer):
         model = Edition
         fields = [
             'id',
-            # 'url',
-            'name',
             'description',
             'date_opened',
             'date_closed',
@@ -131,7 +119,6 @@ class TeacherEditionSerializer(serializers.ModelSerializer):
         model = TeacherEdition
         fields = [
             'id',
-            # 'url',
             'teacher',
             'edition',
         ]
@@ -141,7 +128,6 @@ class GroupSerializer(serializers.ModelSerializer):
         model = Group
         fields = [
             'id',
-            # 'url',
             'name',
             'day',
             'hour',
@@ -154,7 +140,6 @@ class ServerSerializer(serializers.ModelSerializer):
         model = Server
         fields = [
             'id',
-            # 'url',
             'name',
             'ip',
             'port',
@@ -167,7 +152,6 @@ class EditionServerSerializer(serializers.ModelSerializer):
         model = EditionServer
         fields = [
             'id',
-            # 'url',
             'edition',
             'server',
             'additional_info',
@@ -178,7 +162,6 @@ class StudentGroupSerializer(serializers.ModelSerializer):
         model = StudentGroup
         fields = [
             'id',
-            # 'url',
             'student',
             'group',
         ]
@@ -188,7 +171,6 @@ class DBAccountSerializer(serializers.ModelSerializer):
         model = DBAccount
         fields = [
             'id',
-            # 'url',
             'username',
             'password',
             'additional_info',

@@ -126,7 +126,6 @@ class EditionViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id', 
-        'name', 
         'description', 
         'date_opened', 
         'date_closed', 
@@ -150,7 +149,6 @@ class TeacherEditionViewSet(viewsets.ModelViewSet):
         'id',
         'teacher',
         'edition',
-        'edition__name',
         'edition__description',
         'edition__date_opened',
         'edition__date_closed',
@@ -213,7 +211,6 @@ class EditionServerViewSet(viewsets.ModelViewSet):
         'edition', 
         'server', 
         'additional_info', 
-        'edition__name', 
         'edition__description', 
         'edition__date_opened', 
         'edition__date_closed', 
@@ -276,7 +273,6 @@ class DBAccountViewSet(viewsets.ModelViewSet):
         'editionServer__edition',
         'editionServer__server',
         'editionServer__additional_info',
-        'editionServer__edition__name',
         'editionServer__edition__description',
         'editionServer__edition__date_opened',
         'editionServer__edition__date_closed',
