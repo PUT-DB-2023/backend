@@ -53,8 +53,8 @@ class Semester(models.Model):
 
 class Edition(models.Model):
     description = models.CharField(max_length=100)
-    date_opened = models.DateField()
-    date_closed = models.DateField()
+    date_opened = models.DateField(blank=True, null=True)
+    date_closed = models.DateField(blank=True, null=True)
     active = models.BooleanField(default=True)
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
