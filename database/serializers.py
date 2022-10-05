@@ -176,4 +176,5 @@ class DBAccountSerializer(serializers.ModelSerializer):
             'additional_info',
             'student',
             'editionServer',
+            'isMovedToExtDB'
         ]
