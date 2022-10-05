@@ -2,7 +2,6 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters
 import MySQLdb as mdb
 
 from .serializers import UserSerializer, AdminSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, UserRoleSerializer, PermissionSerializer, RolePermissionSerializer, CourseSerializer, SemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, StudentGroupSerializer, DBAccountSerializer
