@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
 import MySQLdb as mdb
+import psycopg2
 
 from .serializers import UserSerializer, AdminSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, PermissionSerializer, CourseSerializer, SemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, DBAccountSerializer
 from .models import User, Admin, Teacher, Student, Role, Permission, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
@@ -252,17 +253,39 @@ class AddUserAccountToExternalDB(viewsets.ViewSet):
     @action (methods=['post'], detail=False)
 
     def add_db_account(self, request, format=None):
+        print('Request log:', request.data)
         user_data = request.data
-        conn = mdb.connect(host='localhost', port=3306, user='root', passwd='root', db='lab')
+
+        conn_postgres = psycopg2.connect(
+            host="postgres",
+            database="postgres",
+            user="postgres",
+            password="postgres",
+            port=5432)
+        
         try:
-            cursor = conn.cursor()
-            cursor.execute("INSERT INTO students (first_name, last_name, email, password, student_id) VALUES (%s, %s, %s, %s, %s)", (user_data['first_name'], user_data['last_name'], user_data['email'], user_data['password'], user_data['student_id']))
-            conn.commit()
-            return Response({'status': 'ok'})
-        except:
-            conn.rollback()
-            print("Error")
+            cur = conn_postgres.cursor()
+            cur.execute('select dd.username, dd.password from database_server dser inner join (database_editionserver de inner join (database_dbaccount dd inner join (database_group_students ds inner join database_group dg on ds.group_id = dg.id) on dd.student_id = ds.student_id) on de.id = dd."editionServer_id") on dser.id = de.server_id where dser.id=%s and dg.id=%s;', (user_data['serverID'], user_data['groupID']))
+            userIDS = cur.fetchall()
+            cur.close()
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
         finally:
-            conn.close()
-            print("Successfully added a new user to an external DB")
+            if conn_postgres is not None:
+                conn_postgres.close()
+                print('Database connection closed.')
+            
+
+        conn_mysql = mdb.connect(host='localhost', port=3306, user='root', passwd='root', db='mysql')
+        try:
+            cursor = conn_mysql.cursor()
+            for user in userIDS:
+                cursor.execute("CREATE USER IF NOT EXISTS %s@'localhost' IDENTIFIED BY %s;", (user[0], user[1]))
+            conn_mysql.commit()
+            return Response({'status': 'ok'})
+        except (Exception, mdb.DatabaseError) as error:
+            print(error)
+            conn_mysql.rollback()
+        finally:
+            conn_mysql.close()
         return Response({'status': 'bad'})
