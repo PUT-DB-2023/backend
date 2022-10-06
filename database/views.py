@@ -265,8 +265,9 @@ class AddUserAccountToExternalDB(viewsets.ViewSet):
         
         try:
             cur = conn_postgres.cursor()
-            cur.execute('select dd.username, dd.password from database_server dser inner join (database_editionserver de inner join (database_dbaccount dd inner join (database_group_students ds inner join database_group dg on ds.group_id = dg.id) on dd.student_id = ds.student_id) on de.id = dd."editionServer_id") on dser.id = de.server_id where dser.id=%s and dg.id=%s;', (user_data['serverID'], user_data['groupID']))
+            cur.execute('select dd.username, dd.password, dd.id from database_server dser inner join (database_editionserver de inner join (database_dbaccount dd inner join (database_group_students ds inner join database_group dg on ds.group_id = dg.id) on dd.student_id = ds.student_id) on de.id = dd."editionServer_id") on dser.id = de.server_id where dser.id=%s and dg.id=%s and dd."isMovedToExtDB" = false;', (user_data['serverID'], user_data['groupID']))
             userIDS = cur.fetchall()
+            DB_IDS = [el[2] for el in userIDS]
             cur.close()
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
@@ -279,11 +280,15 @@ class AddUserAccountToExternalDB(viewsets.ViewSet):
         conn_mysql = mdb.connect(host='localhost', port=3306, user='root', passwd='root', db='mysql')
         try:
             cursor = conn_mysql.cursor()
+            print(userIDS)
             if len(userIDS) == 0:
                 return Response({'status': 'empty'})
             for user in userIDS:
                 cursor.execute("CREATE USER IF NOT EXISTS %s@'localhost' IDENTIFIED BY %s;", (user[0], user[1]))
+                
             conn_mysql.commit()
+            print(DB_IDS)
+            DBAccount.objects.filter(id__in=DB_IDS).update(isMovedToExtDB=True)
             return Response({'status': 'ok'})
         except (Exception, mdb.DatabaseError) as error:
             print(error)
