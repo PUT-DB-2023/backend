@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Admin, Teacher, Student, Role, UserRole, Permission, RolePermission, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, StudentGroup, DBAccount
+from .models import User, Admin, Teacher, Student, Role, Permission, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -35,18 +35,6 @@ class TeacherSerializer(serializers.ModelSerializer):
             'password',
         ]
 
-class StudentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Student
-        fields = [
-            'id',
-            'first_name',
-            'last_name',
-            'email',
-            'password',
-            'student_id',
-        ]
-
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
@@ -56,15 +44,6 @@ class RoleSerializer(serializers.ModelSerializer):
             'description',
         ]
 
-class UserRoleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserRole
-        fields = [
-            'id',
-            'user',
-            'role',
-        ]
-
 class PermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Permission
@@ -72,15 +51,6 @@ class PermissionSerializer(serializers.ModelSerializer):
             'id',
             'name',
             'description',
-        ]
-
-class RolePermissionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RolePermission
-        fields = [
-            'id',
-            'role',
-            'permission',
         ]
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -102,6 +72,10 @@ class SemesterSerializer(serializers.ModelSerializer):
         ]
 
 class EditionSerializer(serializers.ModelSerializer):
+    teachers = TeacherSerializer(many=True, read_only=True)
+    semester = SemesterSerializer(many=False, read_only=True)
+    course = CourseSerializer(many=False, read_only=True)
+    
     class Meta:
         model = Edition
         fields = [
@@ -112,9 +86,13 @@ class EditionSerializer(serializers.ModelSerializer):
             'active',
             'semester',
             'course',
+            'teachers',
         ]
 
 class TeacherEditionSerializer(serializers.ModelSerializer):
+    teacher = TeacherSerializer(many=False, read_only=True)
+    edition = EditionSerializer(many=False, read_only=True)
+
     class Meta:
         model = TeacherEdition
         fields = [
@@ -123,7 +101,41 @@ class TeacherEditionSerializer(serializers.ModelSerializer):
             'edition',
         ]
 
+
+class StudentSerializer(serializers.ModelSerializer):
+    # groups = GroupSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Student
+        fields = [
+            'id',
+            'first_name',
+            'last_name',
+            'email',
+            'password',
+            'student_id',
+            # 'groups',
+        ]
+
+
+class TeacherEditionSerializerForGroup(serializers.ModelSerializer):
+    teacher = TeacherSerializer(many=False, read_only=True)
+
+    class Meta:
+        model = TeacherEdition
+        fields = [
+            'id',
+            'teacher',
+            'edition',
+        ]
+
+
 class GroupSerializer(serializers.ModelSerializer):
+    students = StudentSerializer(many=True, read_only=True)
+    # edition = EditionSerializer(many=False, read_only=True)
+    # teacherEdition = TeacherEditionSerializer(many=False, read_only=True)
+    teacherEdition = TeacherEditionSerializerForGroup(many=False, read_only=True)
+
     class Meta:
         model = Group
         fields = [
@@ -133,7 +145,14 @@ class GroupSerializer(serializers.ModelSerializer):
             'hour',
             'room',
             'teacherEdition',
+            # 'teacher',
+            # 'edition',
+            'students',
         ]
+
+
+
+
 
 class ServerSerializer(serializers.ModelSerializer):
     class Meta:
@@ -155,15 +174,6 @@ class EditionServerSerializer(serializers.ModelSerializer):
             'edition',
             'server',
             'additional_info',
-        ]
-
-class StudentGroupSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = StudentGroup
-        fields = [
-            'id',
-            'student',
-            'group',
         ]
 
 class DBAccountSerializer(serializers.ModelSerializer):

@@ -19,16 +19,7 @@ class Teacher(User):
 
 class Student(User):
     student_id = models.CharField(max_length=6, unique=True)
-
-
-class Role(models.Model):
-    name = models.CharField(max_length=30)
-    description = models.CharField(max_length=100)
-
-
-class UserRole(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    role = models.ForeignKey(Role, on_delete=models.CASCADE)
+    # groups = models.ManyToManyField('Group', related_name='groups', blank=True, null=True)
 
 
 class Permission(models.Model):
@@ -36,9 +27,11 @@ class Permission(models.Model):
     description = models.CharField(max_length=100)
 
 
-class RolePermission(models.Model):
-    role = models.ForeignKey(Role, on_delete=models.CASCADE)
-    permission = models.ForeignKey(Permission, on_delete=models.CASCADE)
+class Role(models.Model):
+    name = models.CharField(max_length=30)
+    description = models.CharField(max_length=100)
+    permisssions = models.ManyToManyField('Permission')
+    users = models.ManyToManyField('User')
 
 
 class Course(models.Model):
@@ -58,6 +51,7 @@ class Edition(models.Model):
     active = models.BooleanField(default=True)
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    teachers = models.ManyToManyField(Teacher, through='TeacherEdition')
 
 
 class TeacherEdition(models.Model):
@@ -70,32 +64,29 @@ class Group(models.Model):
     day = models.CharField(max_length=30)
     hour = models.CharField(max_length=30)
     room = models.CharField(max_length=30, blank=True, default='')
-    teacherEdition = models.ForeignKey(TeacherEdition, on_delete=models.CASCADE)
+    teacherEdition = models.ForeignKey(TeacherEdition, on_delete=models.CASCADE, default=None, null=True)
+    students = models.ManyToManyField(Student, related_name='students')
 
 
 class Server(models.Model):
     name = models.CharField(max_length=30)
     ip = models.CharField(max_length=30)
-    port = models.IntegerField()
+    port = models.CharField(max_length=10)
     date_created = models.DateField(auto_now_add=True)
     active = models.BooleanField(default=True)
+    edition = models.ManyToManyField(Edition, through='EditionServer')
 
 
 class EditionServer(models.Model):
     edition = models.ForeignKey(Edition, on_delete=models.CASCADE)
     server = models.ForeignKey(Server, on_delete=models.CASCADE)
-    additional_info = models.CharField(max_length=100)
-
-
-class StudentGroup(models.Model):
-    student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    group = models.ForeignKey(Group, on_delete=models.CASCADE)
+    additional_info = models.CharField(max_length=255, blank=True, default='')
 
 
 class DBAccount(models.Model):
     username = models.CharField(max_length=30)
     password = models.CharField(max_length=30)
-    additional_info = models.CharField(max_length=100)
+    additional_info = models.CharField(max_length=255)
     isMovedToExtDB = models.BooleanField(default=False)
     student = models.ForeignKey(Student, on_delete=models.SET_NULL, null=True, blank=True)
     editionServer = models.ForeignKey(EditionServer, on_delete=models.SET_NULL, null=True, blank=True)

@@ -4,8 +4,8 @@ from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
 import MySQLdb as mdb
 
-from .serializers import UserSerializer, AdminSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, UserRoleSerializer, PermissionSerializer, RolePermissionSerializer, CourseSerializer, SemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, StudentGroupSerializer, DBAccountSerializer
-from .models import User, Admin, Teacher, Student, Role, UserRole, Permission, RolePermission, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, StudentGroup, DBAccount
+from .serializers import UserSerializer, AdminSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, PermissionSerializer, CourseSerializer, SemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, DBAccountSerializer
+from .models import User, Admin, Teacher, Student, Role, Permission, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -53,25 +53,6 @@ class RoleViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'description']
 
-class UserRoleViewSet(viewsets.ModelViewSet):
-    """
-    A simple ViewSet for listing, retrieving and posting user roles.
-    """
-    serializer_class = UserRoleSerializer
-    queryset = UserRole.objects.all()
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = [
-        'id',
-        'user',
-        'role',
-        'user__first_name',
-        'user__last_name',
-        'user__email',
-        'user__password',
-        'role__name',
-        'role__description',
-    ]
-
 class PermissionViewSet(viewsets.ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting permissions.
@@ -80,23 +61,6 @@ class PermissionViewSet(viewsets.ModelViewSet):
     queryset = Permission.objects.all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'description']
-
-class RolePermissionViewSet(viewsets.ModelViewSet):
-    """
-    A simple ViewSet for listing, retrieving and posting role permissions.
-    """
-    serializer_class = RolePermissionSerializer
-    queryset = RolePermission.objects.all()
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = [
-        'id', 
-        'role', 
-        'permission',
-        'role',
-        'permission',
-        'role__name',
-        'permission__name',
-    ]
 
 class CourseViewSet(viewsets.ModelViewSet):
     """
@@ -121,7 +85,7 @@ class EditionViewSet(viewsets.ModelViewSet):
     A simple ViewSet for listing, retrieving and posting editions.
     """
     serializer_class = EditionSerializer
-    queryset = Edition.objects.all()
+    queryset = Edition.objects.prefetch_related('teachers').select_related('course', 'semester')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id', 
@@ -135,6 +99,9 @@ class EditionViewSet(viewsets.ModelViewSet):
         'semester__winter', 
         'course__name',
         'course__description',
+        'teachers',
+        'teachers__first_name',
+        'teachers__last_name',
     ]
 
 class TeacherEditionViewSet(viewsets.ModelViewSet):
@@ -142,7 +109,7 @@ class TeacherEditionViewSet(viewsets.ModelViewSet):
     A simple ViewSet for listing, retrieving and posting teachers in editions.
     """
     serializer_class = TeacherEditionSerializer
-    queryset = TeacherEdition.objects.all()
+    queryset = TeacherEdition.objects.select_related('teacher', 'edition')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id',
@@ -169,7 +136,7 @@ class GroupViewSet(viewsets.ModelViewSet):
     A simple ViewSet for listing, retrieving and posting groups.
     """
     serializer_class = GroupSerializer
-    queryset = Group.objects.all()
+    queryset = Group.objects.prefetch_related('students').select_related('teacherEdition')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id', 
@@ -189,6 +156,7 @@ class GroupViewSet(viewsets.ModelViewSet):
         'teacherEdition__teacher__last_name'
     ]
 
+
 class ServerViewSet(viewsets.ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting servers.
@@ -196,7 +164,25 @@ class ServerViewSet(viewsets.ModelViewSet):
     serializer_class = ServerSerializer
     queryset = Server.objects.all()
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'name', 'ip', 'port', 'date_created', 'active']
+    filterset_fields = [
+        'id', 
+        'name',
+        'ip', 
+        'port', 
+        'date_created', 
+        'active',
+        'edition', 
+        'edition__description', 
+        'edition__date_opened', 
+        'edition__date_closed', 
+        'edition__active', 
+        'edition__course', 
+        'edition__semester', 
+        'edition__semester__year', 
+        'edition__semester__winter', 
+        'edition__course__name', 
+        'edition__course__description',
+    ]
 
 class EditionServerViewSet(viewsets.ModelViewSet):
     """
@@ -224,35 +210,6 @@ class EditionServerViewSet(viewsets.ModelViewSet):
         'server__port', 
         'server__date_created', 
         'server__active'
-    ]
-
-class StudentGroupViewSet(viewsets.ModelViewSet):
-    """
-    A simple ViewSet for listing, retrieving and posting student groups.
-    """
-    serializer_class = StudentGroupSerializer
-    queryset = StudentGroup.objects.all()
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = [
-        'id', 
-        'student', 
-        'group',
-        'student__first_name',
-        'student__last_name',
-        'group__name',
-        'group__day',
-        'group__hour',
-        'group__room',
-        'group__teacherEdition',
-        'group__teacherEdition__edition',
-        'group__teacherEdition__edition__course',
-        'group__teacherEdition__edition__semester',
-        'group__teacherEdition__edition__semester__year',
-        'group__teacherEdition__edition__semester__winter',
-        'group__teacherEdition__edition__course__name',
-        'group__teacherEdition__teacher',
-        'group__teacherEdition__teacher__first_name',
-        'group__teacherEdition__teacher__last_name'
     ]
 
 class DBAccountViewSet(viewsets.ModelViewSet):
