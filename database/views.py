@@ -279,6 +279,8 @@ class AddUserAccountToExternalDB(viewsets.ViewSet):
         conn_mysql = mdb.connect(host='localhost', port=3306, user='root', passwd='root', db='mysql')
         try:
             cursor = conn_mysql.cursor()
+            if len(userIDS) == 0:
+                return Response({'status': 'empty'})
             for user in userIDS:
                 cursor.execute("CREATE USER IF NOT EXISTS %s@'localhost' IDENTIFIED BY %s;", (user[0], user[1]))
             conn_mysql.commit()
