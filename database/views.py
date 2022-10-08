@@ -1,6 +1,7 @@
-from rest_framework import viewsets
+from rest_framework.viewsets import ModelViewSet, ViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
+# from rest_framework_serializer_extensions.views import SerializerExtensionsAPIViewMixin
 from django_filters.rest_framework import DjangoFilterBackend
 import MySQLdb as mdb
 import psycopg2
@@ -9,7 +10,7 @@ from .serializers import UserSerializer, AdminSerializer, TeacherSerializer, Stu
 from .models import User, Admin, Teacher, Student, Role, Permission, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting users.
     """
@@ -18,7 +19,7 @@ class UserViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name']
 
-class AdminViewSet(viewsets.ModelViewSet):
+class AdminViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting admins.
     """
@@ -27,7 +28,7 @@ class AdminViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name']
 
-class TeacherViewSet(viewsets.ModelViewSet):
+class TeacherViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting teachers.
     """
@@ -36,7 +37,7 @@ class TeacherViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name']
 
-class StudentViewSet(viewsets.ModelViewSet):
+class StudentViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting students.
     """
@@ -45,7 +46,7 @@ class StudentViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'student_id']
 
-class RoleViewSet(viewsets.ModelViewSet):
+class RoleViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting roles.
     """
@@ -54,7 +55,7 @@ class RoleViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'description']
 
-class PermissionViewSet(viewsets.ModelViewSet):
+class PermissionViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting permissions.
     """
@@ -63,7 +64,7 @@ class PermissionViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'description']
 
-class CourseViewSet(viewsets.ModelViewSet):
+class CourseViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting courses.
     """
@@ -72,7 +73,7 @@ class CourseViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'description']
 
-class SemesterViewSet(viewsets.ModelViewSet):
+class SemesterViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting semesters.
     """
@@ -81,7 +82,7 @@ class SemesterViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'year', 'winter']
 
-class EditionViewSet(viewsets.ModelViewSet):
+class EditionViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting editions.
     """
@@ -105,7 +106,7 @@ class EditionViewSet(viewsets.ModelViewSet):
         'teachers__last_name',
     ]
 
-class TeacherEditionViewSet(viewsets.ModelViewSet):
+class TeacherEditionViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting teachers in editions.
     """
@@ -132,7 +133,7 @@ class TeacherEditionViewSet(viewsets.ModelViewSet):
         'teacher__last_name',
     ]
 
-class GroupViewSet(viewsets.ModelViewSet):
+class GroupViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting groups.
     """
@@ -158,7 +159,7 @@ class GroupViewSet(viewsets.ModelViewSet):
     ]
 
 
-class ServerViewSet(viewsets.ModelViewSet):
+class ServerViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting servers.
     """
@@ -185,7 +186,7 @@ class ServerViewSet(viewsets.ModelViewSet):
         'edition__course__description',
     ]
 
-class EditionServerViewSet(viewsets.ModelViewSet):
+class EditionServerViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting edition servers.
     """
@@ -213,7 +214,7 @@ class EditionServerViewSet(viewsets.ModelViewSet):
         'server__active'
     ]
 
-class DBAccountViewSet(viewsets.ModelViewSet):
+class DBAccountViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting db accounts.
     """
@@ -249,9 +250,8 @@ class DBAccountViewSet(viewsets.ModelViewSet):
         'student__student_id',
     ]
 
-class AddUserAccountToExternalDB(viewsets.ViewSet):
+class AddUserAccountToExternalDB(ViewSet):
     @action (methods=['post'], detail=False)
-
     def add_db_account(self, request, format=None):
         print('Request log:', request.data)
         user_data = request.data

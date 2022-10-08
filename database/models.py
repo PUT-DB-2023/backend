@@ -1,3 +1,4 @@
+from enum import unique
 from polymorphic.models import PolymorphicModel
 from django.db import models
 
@@ -19,7 +20,7 @@ class Teacher(User):
 
 class Student(User):
     student_id = models.CharField(max_length=6, unique=True)
-    # groups = models.ManyToManyField('Group', related_name='groups', blank=True, null=True)
+    # groups = models.ManyToManyField(Group, related_name='groups', blank=True, null=True)
 
 
 class Permission(models.Model):
@@ -28,14 +29,14 @@ class Permission(models.Model):
 
 
 class Role(models.Model):
-    name = models.CharField(max_length=30)
+    name = models.CharField(max_length=30, unique=True)
     description = models.CharField(max_length=100)
-    permisssions = models.ManyToManyField('Permission')
-    users = models.ManyToManyField('User')
+    permisssions = models.ManyToManyField(Permission)
+    users = models.ManyToManyField(User)
 
 
 class Course(models.Model):
-    name = models.CharField(max_length=30)
+    name = models.CharField(max_length=30, unique=True)
     description = models.CharField(max_length=100)
 
 
@@ -64,8 +65,8 @@ class Group(models.Model):
     day = models.CharField(max_length=30)
     hour = models.CharField(max_length=30)
     room = models.CharField(max_length=30, blank=True, default='')
-    teacherEdition = models.ForeignKey(TeacherEdition, on_delete=models.CASCADE, default=None, null=True)
-    students = models.ManyToManyField(Student, related_name='students')
+    teacherEdition = models.ForeignKey(TeacherEdition, on_delete=models.SET_NULL, default=None, null=True)
+    students = models.ManyToManyField(Student, related_name='groups')
 
 
 class Server(models.Model):
