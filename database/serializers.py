@@ -96,6 +96,7 @@ class EditionSerializer(ModelSerializer):
     def to_representation(self, instance):
         self.fields['course'] = CourseSerializer(many=False, read_only=True)
         self.fields['semester'] = SemesterSerializer(many=False, read_only=True)
+        self.fields['teachers'] = TeacherSerializer(many=True, read_only=True)
         return super(EditionSerializer, self).to_representation(instance)
 
 
