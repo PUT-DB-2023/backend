@@ -75,7 +75,7 @@ class Server(models.Model):
     port = models.CharField(max_length=10)
     date_created = models.DateField(auto_now_add=True)
     active = models.BooleanField(default=True)
-    edition = models.ManyToManyField(Edition, through='EditionServer')
+    edition = models.ManyToManyField(Edition, through='EditionServer', related_name='servers')
 
 
 class EditionServer(models.Model):

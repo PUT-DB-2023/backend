@@ -91,12 +91,14 @@ class EditionSerializer(ModelSerializer):
             'semester',
             'course',
             'teachers',
+            'servers',
         ]
     
     def to_representation(self, instance):
         self.fields['course'] = CourseSerializer(many=False, read_only=True)
         self.fields['semester'] = SemesterSerializer(many=False, read_only=True)
         self.fields['teachers'] = TeacherSerializer(many=True, read_only=True)
+        self.fields['servers'] = ServerSerializer(many=True, read_only=True)
         return super(EditionSerializer, self).to_representation(instance)
 
 
@@ -115,6 +117,20 @@ class TeacherEditionSerializer(ModelSerializer):
         return super(TeacherEditionSerializer, self).to_representation(instance)
 
 
+class GroupSerializerForStudent(ModelSerializer):
+    class Meta:
+        model = Group
+        fields = [
+            'id',
+            'name',
+            'day',
+            'hour',
+            'room',
+            'teacherEdition',
+        ]
+
+
+
 class StudentSerializer(ModelSerializer):
     class Meta:
         model = Student
@@ -126,6 +142,23 @@ class StudentSerializer(ModelSerializer):
             'password',
             'student_id',
             'groups',
+        ]
+    
+    def to_representation(self, instance):
+        self.fields['groups'] = GroupSerializerForStudent(many=True, read_only=True)
+        return super(StudentSerializer, self).to_representation(instance)
+
+
+class StudentSerializerForGroup(ModelSerializer):
+    class Meta:
+        model = Student
+        fields = [
+            'id',
+            'first_name',
+            'last_name',
+            'email',
+            'password',
+            'student_id',
         ]
 
 
@@ -144,7 +177,7 @@ class GroupSerializer(ModelSerializer):
     
     def to_representation(self, instance):
         self.fields['teacherEdition'] = TeacherEditionSerializer(many=False, read_only=True)
-        self.fields['students'] = StudentSerializer(many=True, read_only=True)
+        self.fields['students'] = StudentSerializerForGroup(many=True, read_only=True)
         return super(GroupSerializer, self).to_representation(instance)
 
 
