@@ -15,7 +15,7 @@ class UserViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting users.
     """
     serializer_class = UserSerializer
-    queryset = User.objects.all()
+    queryset = User.objects.prefetch_related('roles').all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name']
 
@@ -42,7 +42,7 @@ class StudentViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting students.
     """
     serializer_class = StudentSerializer
-    queryset = Student.objects.all()
+    queryset = Student.objects.prefetch_related('groups').all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'student_id']
 
@@ -248,6 +248,7 @@ class DBAccountViewSet(ModelViewSet):
         'student__first_name',
         'student__last_name',
         'student__student_id',
+        'isMovedToExtDB',
     ]
 
 class AddUserAccountToExternalDB(ViewSet):
