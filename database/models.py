@@ -20,7 +20,6 @@ class Teacher(User):
 
 class Student(User):
     student_id = models.CharField(max_length=6, unique=True)
-    # groups = models.ManyToManyField(Group, related_name='groups', blank=True, null=True)
 
 
 class Permission(models.Model):
@@ -31,8 +30,8 @@ class Permission(models.Model):
 class Role(models.Model):
     name = models.CharField(max_length=30, unique=True)
     description = models.CharField(max_length=100)
-    permisssions = models.ManyToManyField(Permission)
-    users = models.ManyToManyField(User)
+    permisssions = models.ManyToManyField(Permission, related_name='roles', blank=True)
+    users = models.ManyToManyField(User, related_name='roles', blank=True)
 
 
 class Course(models.Model):
@@ -52,7 +51,7 @@ class Edition(models.Model):
     active = models.BooleanField(default=True)
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
-    teachers = models.ManyToManyField(Teacher, through='TeacherEdition')
+    teachers = models.ManyToManyField(Teacher, through='TeacherEdition', related_name='editions', blank=True)
 
 
 class TeacherEdition(models.Model):
