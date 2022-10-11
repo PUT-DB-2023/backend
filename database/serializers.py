@@ -1,8 +1,8 @@
-from rest_framework import serializers
-from .models import User, Admin, Teacher, Student, Role, UserRole, Permission, RolePermission, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, StudentGroup, DBAccount
+from rest_framework.serializers import ModelSerializer
+from .models import User, Admin, Teacher, Student, Role, Permission, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = [
@@ -11,9 +11,15 @@ class UserSerializer(serializers.ModelSerializer):
             'last_name',
             'email',
             'password',
+            'roles',
         ]
+    
+    def to_representation(self, instance):
+        self.fields['roles'] = BasicRoleSerializer(many=True, read_only=True)
+        return super(UserSerializer, self).to_representation(instance)
 
-class AdminSerializer(serializers.ModelSerializer):
+
+class AdminSerializer(ModelSerializer):
     class Meta:
         model = Admin
         fields = [
@@ -24,7 +30,25 @@ class AdminSerializer(serializers.ModelSerializer):
             'password',
         ]
 
-class TeacherSerializer(serializers.ModelSerializer):
+
+class TeacherSerializer(ModelSerializer):
+    class Meta:
+        model = Teacher
+        fields = [
+            'id',
+            'first_name',
+            'last_name',
+            'email',
+            'password',
+            'editions',
+        ]
+
+    def to_representation(self, instance):
+        self.fields['editions'] = EditionSerializer(many=True, read_only=True)
+        return super(TeacherSerializer, self).to_representation(instance)
+
+
+class BasicTeacherSerializer(ModelSerializer):
     class Meta:
         model = Teacher
         fields = [
@@ -35,7 +59,28 @@ class TeacherSerializer(serializers.ModelSerializer):
             'password',
         ]
 
-class StudentSerializer(serializers.ModelSerializer):
+
+class StudentSerializer(ModelSerializer):
+    class Meta:
+        model = Student
+        fields = [
+            'id',
+            'first_name',
+            'last_name',
+            'email',
+            'password',
+            'student_id',
+            'groups',
+            'db_accounts',
+        ]
+    
+    def to_representation(self, instance):
+        self.fields['groups'] = BasicGroupSerializer(many=True, read_only=True)
+        self.fields['db_accounts'] = BasicDBAccountSerializer(many=True, read_only=True)
+        return super(StudentSerializer, self).to_representation(instance)
+
+
+class BasicStudentSerializer(ModelSerializer):
     class Meta:
         model = Student
         fields = [
@@ -47,7 +92,25 @@ class StudentSerializer(serializers.ModelSerializer):
             'student_id',
         ]
 
-class RoleSerializer(serializers.ModelSerializer):
+
+class RoleSerializer(ModelSerializer):
+    class Meta:
+        model = Role
+        fields = [
+            'id',
+            'name',
+            'description',
+            'permisssions',
+            'users',
+        ]
+    
+    def to_representation(self, instance):
+        self.fields['permisssions'] = BasicPermissionSerializer(many=True, read_only=True)
+        # self.fields['users'] = UserSerializer(many=True, read_only=True)
+        return super(RoleSerializer, self).to_representation(instance)
+
+
+class BasicRoleSerializer(ModelSerializer):
     class Meta:
         model = Role
         fields = [
@@ -56,16 +119,23 @@ class RoleSerializer(serializers.ModelSerializer):
             'description',
         ]
 
-class UserRoleSerializer(serializers.ModelSerializer):
+
+class PermissionSerializer(ModelSerializer):
     class Meta:
-        model = UserRole
+        model = Permission
         fields = [
             'id',
-            'user',
-            'role',
+            'name',
+            'description',
+            'roles',
         ]
+    
+    def to_representation(self, instance):
+        self.fields['roles'] = BasicRoleSerializer(many=True, read_only=True)
+        return super(PermissionSerializer, self).to_representation(instance)
 
-class PermissionSerializer(serializers.ModelSerializer):
+
+class BasicPermissionSerializer(ModelSerializer):
     class Meta:
         model = Permission
         fields = [
@@ -74,16 +144,8 @@ class PermissionSerializer(serializers.ModelSerializer):
             'description',
         ]
 
-class RolePermissionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RolePermission
-        fields = [
-            'id',
-            'role',
-            'permission',
-        ]
 
-class CourseSerializer(serializers.ModelSerializer):
+class CourseSerializer(ModelSerializer):
     class Meta:
         model = Course
         fields = [
@@ -92,7 +154,8 @@ class CourseSerializer(serializers.ModelSerializer):
             'description',
         ]
 
-class SemesterSerializer(serializers.ModelSerializer):
+
+class SemesterSerializer(ModelSerializer):
     class Meta:
         model = Semester
         fields = [
@@ -101,7 +164,8 @@ class SemesterSerializer(serializers.ModelSerializer):
             'winter',
         ]
 
-class EditionSerializer(serializers.ModelSerializer):
+
+class EditionSerializer(ModelSerializer):
     class Meta:
         model = Edition
         fields = [
@@ -112,9 +176,36 @@ class EditionSerializer(serializers.ModelSerializer):
             'active',
             'semester',
             'course',
+            'teachers',
+            'servers',
         ]
+    
+    def to_representation(self, instance):
+        self.fields['course'] = CourseSerializer(many=False, read_only=True)
+        self.fields['semester'] = SemesterSerializer(many=False, read_only=True)
+        self.fields['teachers'] = BasicTeacherSerializer(many=True, read_only=True)
+        self.fields['servers'] = ServerSerializer(many=True, read_only=True)
+        return super(EditionSerializer, self).to_representation(instance)
 
-class TeacherEditionSerializer(serializers.ModelSerializer):
+
+class BasicEditionSerializer(ModelSerializer):
+    class Meta:
+        model = Edition
+        fields = [
+            'id',
+            'semester',
+            'course',
+            'servers',
+        ]
+    
+    def to_representation(self, instance):
+        self.fields['semester'] = SemesterSerializer(many=False, read_only=True)
+        self.fields['course'] = CourseSerializer(many=False, read_only=True)
+        self.fields['servers'] = ServerSerializer(many=True, read_only=True)
+        return super(BasicEditionSerializer, self).to_representation(instance)
+
+
+class TeacherEditionSerializer(ModelSerializer):
     class Meta:
         model = TeacherEdition
         fields = [
@@ -122,8 +213,33 @@ class TeacherEditionSerializer(serializers.ModelSerializer):
             'teacher',
             'edition',
         ]
+    
+    def to_representation(self, instance):
+        self.fields['teacher'] = BasicTeacherSerializer(many=False, read_only=True)
+        self.fields['edition'] = BasicEditionSerializer(many=False, read_only=True)
+        return super(TeacherEditionSerializer, self).to_representation(instance)
 
-class GroupSerializer(serializers.ModelSerializer):
+
+class GroupSerializer(ModelSerializer):
+    class Meta:
+        model = Group
+        fields = [
+            'id',
+            'name',
+            'day',
+            'hour',
+            'room',
+            'teacherEdition',
+            'students',
+        ]
+    
+    def to_representation(self, instance):
+        self.fields['teacherEdition'] = TeacherEditionSerializer(many=False, read_only=True)
+        self.fields['students'] = BasicStudentSerializer(many=True, read_only=True)
+        return super(GroupSerializer, self).to_representation(instance)
+
+
+class BasicGroupSerializer(ModelSerializer):
     class Meta:
         model = Group
         fields = [
@@ -135,7 +251,8 @@ class GroupSerializer(serializers.ModelSerializer):
             'teacherEdition',
         ]
 
-class ServerSerializer(serializers.ModelSerializer):
+
+class ServerSerializer(ModelSerializer):
     class Meta:
         model = Server
         fields = [
@@ -147,7 +264,8 @@ class ServerSerializer(serializers.ModelSerializer):
             'active',
         ]
 
-class EditionServerSerializer(serializers.ModelSerializer):
+
+class EditionServerSerializer(ModelSerializer):
     class Meta:
         model = EditionServer
         fields = [
@@ -156,17 +274,28 @@ class EditionServerSerializer(serializers.ModelSerializer):
             'server',
             'additional_info',
         ]
+    
+    def to_representation(self, instance):
+        self.fields['edition'] = BasicEditionSerializer(many=False, read_only=True)
+        self.fields['server'] = ServerSerializer(many=False, read_only=True)
+        return super(EditionServerSerializer, self).to_representation(instance)
 
-class StudentGroupSerializer(serializers.ModelSerializer):
+
+class BasicEditionServerSerializer(ModelSerializer):
     class Meta:
-        model = StudentGroup
+        model = EditionServer
         fields = [
             'id',
-            'student',
-            'group',
+            'edition',
+            'server',
         ]
+    
+    def to_representation(self, instance):
+        self.fields['server'] = ServerSerializer(many=False, read_only=True)
+        return super(BasicEditionServerSerializer, self).to_representation(instance)
 
-class DBAccountSerializer(serializers.ModelSerializer):
+
+class DBAccountSerializer(ModelSerializer):
     class Meta:
         model = DBAccount
         fields = [
@@ -175,6 +304,24 @@ class DBAccountSerializer(serializers.ModelSerializer):
             'password',
             'additional_info',
             'student',
+            'editionServer',
+            'isMovedToExtDB'
+        ]
+    
+    def to_representation(self, instance):
+        self.fields['student'] = BasicStudentSerializer(many=False, read_only=True)
+        self.fields['editionServer'] = BasicEditionServerSerializer(many=False, read_only=True)
+        return super(DBAccountSerializer, self).to_representation(instance)
+
+
+class BasicDBAccountSerializer(ModelSerializer):
+    class Meta:
+        model = DBAccount
+        fields = [
+            'id',
+            'username',
+            'password',
+            'additional_info',
             'editionServer',
             'isMovedToExtDB'
         ]

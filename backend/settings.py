@@ -50,8 +50,7 @@ INSTALLED_APPS = [
     'polymorphic',
     'django_filters',
     'corsheaders',
-
-
+    'rest_framework_serializer_extensions',
 ]
 
 MIDDLEWARE = [

@@ -1,23 +1,25 @@
-from rest_framework import viewsets
+from rest_framework.viewsets import ModelViewSet, ViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
+# from rest_framework_serializer_extensions.views import SerializerExtensionsAPIViewMixin
 from django_filters.rest_framework import DjangoFilterBackend
 import MySQLdb as mdb
+import psycopg2
 
-from .serializers import UserSerializer, AdminSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, UserRoleSerializer, PermissionSerializer, RolePermissionSerializer, CourseSerializer, SemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, StudentGroupSerializer, DBAccountSerializer
-from .models import User, Admin, Teacher, Student, Role, UserRole, Permission, RolePermission, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, StudentGroup, DBAccount
+from .serializers import UserSerializer, AdminSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, PermissionSerializer, CourseSerializer, SemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, DBAccountSerializer
+from .models import User, Admin, Teacher, Student, Role, Permission, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting users.
     """
     serializer_class = UserSerializer
-    queryset = User.objects.all()
+    queryset = User.objects.prefetch_related('roles').all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name']
 
-class AdminViewSet(viewsets.ModelViewSet):
+class AdminViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting admins.
     """
@@ -26,7 +28,7 @@ class AdminViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name']
 
-class TeacherViewSet(viewsets.ModelViewSet):
+class TeacherViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting teachers.
     """
@@ -35,16 +37,16 @@ class TeacherViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name']
 
-class StudentViewSet(viewsets.ModelViewSet):
+class StudentViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting students.
     """
     serializer_class = StudentSerializer
-    queryset = Student.objects.all()
+    queryset = Student.objects.prefetch_related('groups').all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'student_id']
 
-class RoleViewSet(viewsets.ModelViewSet):
+class RoleViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting roles.
     """
@@ -53,26 +55,7 @@ class RoleViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'description']
 
-class UserRoleViewSet(viewsets.ModelViewSet):
-    """
-    A simple ViewSet for listing, retrieving and posting user roles.
-    """
-    serializer_class = UserRoleSerializer
-    queryset = UserRole.objects.all()
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = [
-        'id',
-        'user',
-        'role',
-        'user__first_name',
-        'user__last_name',
-        'user__email',
-        'user__password',
-        'role__name',
-        'role__description',
-    ]
-
-class PermissionViewSet(viewsets.ModelViewSet):
+class PermissionViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting permissions.
     """
@@ -81,24 +64,7 @@ class PermissionViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'description']
 
-class RolePermissionViewSet(viewsets.ModelViewSet):
-    """
-    A simple ViewSet for listing, retrieving and posting role permissions.
-    """
-    serializer_class = RolePermissionSerializer
-    queryset = RolePermission.objects.all()
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = [
-        'id', 
-        'role', 
-        'permission',
-        'role',
-        'permission',
-        'role__name',
-        'permission__name',
-    ]
-
-class CourseViewSet(viewsets.ModelViewSet):
+class CourseViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting courses.
     """
@@ -107,7 +73,7 @@ class CourseViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'description']
 
-class SemesterViewSet(viewsets.ModelViewSet):
+class SemesterViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting semesters.
     """
@@ -116,12 +82,12 @@ class SemesterViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'year', 'winter']
 
-class EditionViewSet(viewsets.ModelViewSet):
+class EditionViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting editions.
     """
     serializer_class = EditionSerializer
-    queryset = Edition.objects.all()
+    queryset = Edition.objects.prefetch_related('teachers').select_related('course', 'semester')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id', 
@@ -135,14 +101,17 @@ class EditionViewSet(viewsets.ModelViewSet):
         'semester__winter', 
         'course__name',
         'course__description',
+        'teachers',
+        'teachers__first_name',
+        'teachers__last_name',
     ]
 
-class TeacherEditionViewSet(viewsets.ModelViewSet):
+class TeacherEditionViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting teachers in editions.
     """
     serializer_class = TeacherEditionSerializer
-    queryset = TeacherEdition.objects.all()
+    queryset = TeacherEdition.objects.select_related('teacher', 'edition')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id',
@@ -164,12 +133,12 @@ class TeacherEditionViewSet(viewsets.ModelViewSet):
         'teacher__last_name',
     ]
 
-class GroupViewSet(viewsets.ModelViewSet):
+class GroupViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting groups.
     """
     serializer_class = GroupSerializer
-    queryset = Group.objects.all()
+    queryset = Group.objects.prefetch_related('students').select_related('teacherEdition')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id', 
@@ -189,16 +158,35 @@ class GroupViewSet(viewsets.ModelViewSet):
         'teacherEdition__teacher__last_name'
     ]
 
-class ServerViewSet(viewsets.ModelViewSet):
+
+class ServerViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting servers.
     """
     serializer_class = ServerSerializer
     queryset = Server.objects.all()
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'name', 'ip', 'port', 'date_created', 'active']
+    filterset_fields = [
+        'id', 
+        'name',
+        'ip', 
+        'port', 
+        'date_created', 
+        'active',
+        'edition', 
+        'edition__description', 
+        'edition__date_opened', 
+        'edition__date_closed', 
+        'edition__active', 
+        'edition__course', 
+        'edition__semester', 
+        'edition__semester__year', 
+        'edition__semester__winter', 
+        'edition__course__name', 
+        'edition__course__description',
+    ]
 
-class EditionServerViewSet(viewsets.ModelViewSet):
+class EditionServerViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting edition servers.
     """
@@ -226,36 +214,7 @@ class EditionServerViewSet(viewsets.ModelViewSet):
         'server__active'
     ]
 
-class StudentGroupViewSet(viewsets.ModelViewSet):
-    """
-    A simple ViewSet for listing, retrieving and posting student groups.
-    """
-    serializer_class = StudentGroupSerializer
-    queryset = StudentGroup.objects.all()
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = [
-        'id', 
-        'student', 
-        'group',
-        'student__first_name',
-        'student__last_name',
-        'group__name',
-        'group__day',
-        'group__hour',
-        'group__room',
-        'group__teacherEdition',
-        'group__teacherEdition__edition',
-        'group__teacherEdition__edition__course',
-        'group__teacherEdition__edition__semester',
-        'group__teacherEdition__edition__semester__year',
-        'group__teacherEdition__edition__semester__winter',
-        'group__teacherEdition__edition__course__name',
-        'group__teacherEdition__teacher',
-        'group__teacherEdition__teacher__first_name',
-        'group__teacherEdition__teacher__last_name'
-    ]
-
-class DBAccountViewSet(viewsets.ModelViewSet):
+class DBAccountViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting db accounts.
     """
@@ -289,23 +248,52 @@ class DBAccountViewSet(viewsets.ModelViewSet):
         'student__first_name',
         'student__last_name',
         'student__student_id',
+        'isMovedToExtDB',
     ]
 
-class AddUserAccountToExternalDB(viewsets.ViewSet):
+class AddUserAccountToExternalDB(ViewSet):
     @action (methods=['post'], detail=False)
-
     def add_db_account(self, request, format=None):
+        print('Request log:', request.data)
         user_data = request.data
-        conn = mdb.connect(host='localhost', port=3306, user='root', passwd='root', db='lab')
+
+        conn_postgres = psycopg2.connect(
+            host="postgres",
+            database="postgres",
+            user="postgres",
+            password="postgres",
+            port=5432)
+        
         try:
-            cursor = conn.cursor()
-            cursor.execute("INSERT INTO students (first_name, last_name, email, password, student_id) VALUES (%s, %s, %s, %s, %s)", (user_data['first_name'], user_data['last_name'], user_data['email'], user_data['password'], user_data['student_id']))
-            conn.commit()
-            return Response({'status': 'ok'})
-        except:
-            conn.rollback()
-            print("Error")
+            cur = conn_postgres.cursor()
+            cur.execute('select dd.username, dd.password, dd.id from database_server dser inner join (database_editionserver de inner join (database_dbaccount dd inner join (database_group_students ds inner join database_group dg on ds.group_id = dg.id) on dd.student_id = ds.student_id) on de.id = dd."editionServer_id") on dser.id = de.server_id where dser.id=%s and dg.id=%s and dd."isMovedToExtDB" = false;', (user_data['server_id'], user_data['group_id']))
+            user_ids = cur.fetchall()
+            print("Select result: ", user_ids)
+            db_ids = [el[2] for el in user_ids]
+            cur.close()
+        except (Exception, psycopg2.DatabaseError) as error:
+            print(error)
         finally:
-            conn.close()
-            print("Successfully added a new user to an external DB")
+            if conn_postgres is not None:
+                conn_postgres.close()
+                print('Database connection closed.')
+            
+
+        conn_mysql = mdb.connect(host='localhost', port=3306, user='root', passwd='root', db='mysql')
+        try:
+            cursor = conn_mysql.cursor()
+            print("user_ids:", user_ids)
+            if len(user_ids) == 0:
+                return Response({'status': 'No accounts to move.'})
+            for user in user_ids:
+                cursor.execute("CREATE USER IF NOT EXISTS %s@'localhost' IDENTIFIED BY %s;", (user[0], user[1]))
+            conn_mysql.commit()
+            print("db_ids:", db_ids)
+            DBAccount.objects.filter(id__in=db_ids).update(isMovedToExtDB=True)
+            return Response({'status': 'ok'})
+        except (Exception, mdb.DatabaseError) as error:
+            print(error)
+            conn_mysql.rollback()
+        finally:
+            conn_mysql.close()
         return Response({'status': 'bad'})
