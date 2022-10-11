@@ -205,6 +205,21 @@ class BasicEditionSerializer(ModelSerializer):
         return super(BasicEditionSerializer, self).to_representation(instance)
 
 
+class EditionForESSerializer(ModelSerializer):
+    class Meta:
+        model = Edition
+        fields = [
+            'id',
+            'semester',
+            'course',
+        ]
+    
+    def to_representation(self, instance):
+        self.fields['semester'] = SemesterSerializer(many=False, read_only=True)
+        self.fields['course'] = CourseSerializer(many=False, read_only=True)
+        return super(EditionForESSerializer, self).to_representation(instance)
+
+
 class TeacherEditionSerializer(ModelSerializer):
     class Meta:
         model = TeacherEdition
@@ -276,7 +291,7 @@ class EditionServerSerializer(ModelSerializer):
         ]
     
     def to_representation(self, instance):
-        self.fields['edition'] = BasicEditionSerializer(many=False, read_only=True)
+        self.fields['edition'] = EditionForESSerializer(many=False, read_only=True)
         self.fields['server'] = ServerSerializer(many=False, read_only=True)
         return super(EditionServerSerializer, self).to_representation(instance)
 

@@ -254,42 +254,24 @@ class DBAccountViewSet(ModelViewSet):
 class AddUserAccountToExternalDB(ViewSet):
     @action (methods=['post'], detail=False)
     def add_db_account(self, request, format=None):
-        print('Request log:', request.data)
-        user_data = request.data
-
-        conn_postgres = psycopg2.connect(
-            host="postgres",
-            database="postgres",
-            user="postgres",
-            password="postgres",
-            port=5432)
-        
-        try:
-            cur = conn_postgres.cursor()
-            cur.execute('select dd.username, dd.password, dd.id from database_server dser inner join (database_editionserver de inner join (database_dbaccount dd inner join (database_group_students ds inner join database_group dg on ds.group_id = dg.id) on dd.student_id = ds.student_id) on de.id = dd."editionServer_id") on dser.id = de.server_id where dser.id=%s and dg.id=%s and dd."isMovedToExtDB" = false;', (user_data['server_id'], user_data['group_id']))
-            user_ids = cur.fetchall()
-            print("Select result: ", user_ids)
-            db_ids = [el[2] for el in user_ids]
-            cur.close()
-        except (Exception, psycopg2.DatabaseError) as error:
-            print(error)
-        finally:
-            if conn_postgres is not None:
-                conn_postgres.close()
-                print('Database connection closed.')
+        accounts_data = request.data
+        print('Request log:', accounts_data)
             
+        db_accounts = DBAccount.objects.filter(isMovedToExtDB=False, editionServer__server__active=True, editionServer__server__id=accounts_data['server_id'], student__groups__id=accounts_data['group_id'])
 
-        conn_mysql = mdb.connect(host='localhost', port=3306, user='root', passwd='root', db='mysql')
+        server = Server.objects.get(id=accounts_data['server_id'])
+        conn_mysql = mdb.connect(host=server.ip, port=int(server.port), user='root', passwd='root', db='mysql')
         try:
             cursor = conn_mysql.cursor()
-            print("user_ids:", user_ids)
-            if len(user_ids) == 0:
+            if not db_accounts:
                 return Response({'status': 'No accounts to move.'})
-            for user in user_ids:
-                cursor.execute("CREATE USER IF NOT EXISTS %s@'localhost' IDENTIFIED BY %s;", (user[0], user[1]))
+            for account in db_accounts:
+                cursor.execute("CREATE USER IF NOT EXISTS %s@'localhost' IDENTIFIED BY %s;", (account.username, account.password))
+                print(f"Successfully created user '{account.username}' with '{account.password}' password.")
             conn_mysql.commit()
-            print("db_ids:", db_ids)
-            DBAccount.objects.filter(id__in=db_ids).update(isMovedToExtDB=True)
+            
+            for account in db_accounts:
+                DBAccount.objects.filter(id=account.id).update(isMovedToExtDB=True)
             return Response({'status': 'ok'})
         except (Exception, mdb.DatabaseError) as error:
             print(error)
