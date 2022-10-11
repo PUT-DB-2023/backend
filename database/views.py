@@ -266,10 +266,10 @@ class AddUserAccountToExternalDB(ViewSet):
         
         try:
             cur = conn_postgres.cursor()
-            cur.execute('select dd.username, dd.password, dd.id from database_server dser inner join (database_editionserver de inner join (database_dbaccount dd inner join (database_group_students ds inner join database_group dg on ds.group_id = dg.id) on dd.student_id = ds.student_id) on de.id = dd."editionServer_id") on dser.id = de.server_id where dser.id=%s and dg.id=%s and dd."isMovedToExtDB" = false;', (user_data['serverID'], user_data['groupID']))
-            userIDS = cur.fetchall()
-            print("Select result: ", userIDS)
-            DB_IDS = [el[2] for el in userIDS]
+            cur.execute('select dd.username, dd.password, dd.id from database_server dser inner join (database_editionserver de inner join (database_dbaccount dd inner join (database_group_students ds inner join database_group dg on ds.group_id = dg.id) on dd.student_id = ds.student_id) on de.id = dd."editionServer_id") on dser.id = de.server_id where dser.id=%s and dg.id=%s and dd."isMovedToExtDB" = false;', (user_data['server_id'], user_data['group_id']))
+            user_ids = cur.fetchall()
+            print("Select result: ", user_ids)
+            db_ids = [el[2] for el in user_ids]
             cur.close()
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
@@ -282,15 +282,14 @@ class AddUserAccountToExternalDB(ViewSet):
         conn_mysql = mdb.connect(host='localhost', port=3306, user='root', passwd='root', db='mysql')
         try:
             cursor = conn_mysql.cursor()
-            print(userIDS)
-            if len(userIDS) == 0:
-                return Response({'status': 'empty'})
-            for user in userIDS:
+            print("user_ids:", user_ids)
+            if len(user_ids) == 0:
+                return Response({'status': 'No accounts to move.'})
+            for user in user_ids:
                 cursor.execute("CREATE USER IF NOT EXISTS %s@'localhost' IDENTIFIED BY %s;", (user[0], user[1]))
-                
             conn_mysql.commit()
-            print(DB_IDS)
-            DBAccount.objects.filter(id__in=DB_IDS).update(isMovedToExtDB=True)
+            print("db_ids:", db_ids)
+            DBAccount.objects.filter(id__in=db_ids).update(isMovedToExtDB=True)
             return Response({'status': 'ok'})
         except (Exception, mdb.DatabaseError) as error:
             print(error)

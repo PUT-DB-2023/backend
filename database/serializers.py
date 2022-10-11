@@ -1,5 +1,4 @@
 from rest_framework.serializers import ModelSerializer
-# from rest_framework_serializer_extensions.serializers import SerializerExtensionsMixin
 from .models import User, Admin, Teacher, Student, Role, Permission, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
 
 
@@ -196,11 +195,13 @@ class BasicEditionSerializer(ModelSerializer):
             'id',
             'semester',
             'course',
+            'servers',
         ]
     
     def to_representation(self, instance):
         self.fields['semester'] = SemesterSerializer(many=False, read_only=True)
         self.fields['course'] = CourseSerializer(many=False, read_only=True)
+        self.fields['servers'] = ServerSerializer(many=True, read_only=True)
         return super(BasicEditionSerializer, self).to_representation(instance)
 
 
@@ -219,21 +220,6 @@ class TeacherEditionSerializer(ModelSerializer):
         return super(TeacherEditionSerializer, self).to_representation(instance)
 
 
-class BasicTeacherEditionSerializer(ModelSerializer):
-    class Meta:
-        model = TeacherEdition
-        fields = [
-            'id',
-            'edition',
-            'teacher',
-        ]
-    
-    def to_representation(self, instance):
-        self.fields['edition'] = BasicEditionSerializer(many=False, read_only=True)
-        self.fields['teacher'] = BasicTeacherSerializer(many=False, read_only=True)
-        return super(BasicTeacherEditionSerializer, self).to_representation(instance)
-
-
 class GroupSerializer(ModelSerializer):
     class Meta:
         model = Group
@@ -248,7 +234,7 @@ class GroupSerializer(ModelSerializer):
         ]
     
     def to_representation(self, instance):
-        self.fields['teacherEdition'] = BasicTeacherEditionSerializer(many=False, read_only=True)
+        self.fields['teacherEdition'] = TeacherEditionSerializer(many=False, read_only=True)
         self.fields['students'] = BasicStudentSerializer(many=True, read_only=True)
         return super(GroupSerializer, self).to_representation(instance)
 
@@ -337,4 +323,5 @@ class BasicDBAccountSerializer(ModelSerializer):
             'password',
             'additional_info',
             'editionServer',
+            'isMovedToExtDB'
         ]
