@@ -1,3 +1,4 @@
+from email.policy import default
 from enum import unique
 from polymorphic.models import PolymorphicModel
 from django.db import models
@@ -72,6 +73,10 @@ class Server(models.Model):
     name = models.CharField(max_length=30)
     ip = models.CharField(max_length=30)
     port = models.CharField(max_length=10)
+    provider = models.CharField(max_length=30, default='')
+    user = models.CharField(max_length=30, default='root')
+    password = models.CharField(max_length=30, default='root')
+    database = models.CharField(max_length=30, default='db')
     date_created = models.DateField(auto_now_add=True)
     active = models.BooleanField(default=True)
     edition = models.ManyToManyField(Edition, through='EditionServer', related_name='servers')

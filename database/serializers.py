@@ -275,6 +275,10 @@ class ServerSerializer(ModelSerializer):
             'name',
             'ip',
             'port',
+            'provider',
+            'user',
+            'password',
+            'database',
             'date_created',
             'active',
         ]
