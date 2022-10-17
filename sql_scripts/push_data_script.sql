@@ -1,5 +1,4 @@
 delete from database_dbaccount;
-delete from database_studentgroup;
 delete from database_group;
 delete from database_teacheredition;
 delete from database_editionserver;

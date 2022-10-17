@@ -16,6 +16,10 @@ def forwards_func(apps, schema_editor):
         first_name='Krystian', last_name='Jakusik', email='krystian.jakusik@student.put.poznan.pl', password='password', student_id='123456', polymorphic_ctype_id=student_ct.id
     )
 
+    Student.objects.using(db_alias).create(
+        first_name='Jakub', last_name='Wróbel', email='jakub.p.wrobel@student.put.poznan.pl', password='password', student_id='123456', polymorphic_ctype_id=student_ct.id
+    )
+
 
 
 
