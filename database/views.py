@@ -256,26 +256,35 @@ class AddUserAccountToExternalDB(ViewSet):
     def add_db_account(self, request, format=None):
         accounts_data = request.data
         print('Request log:', accounts_data)
-            
+
         db_accounts = DBAccount.objects.filter(isMovedToExtDB=False, editionServer__server__active=True, editionServer__server__id=accounts_data['server_id'], student__groups__id=accounts_data['group_id'])
 
         server = Server.objects.get(id=accounts_data['server_id'])
         conn_mysql = mdb.connect(host=server.ip, port=int(server.port), user='root', passwd='root', db='mysql')
+        moved_accounts = []
         try:
             cursor = conn_mysql.cursor()
             if not db_accounts:
+                print('No accounts to move')
                 return Response({'status': 'No accounts to move.'})
             for account in db_accounts:
                 cursor.execute("CREATE USER IF NOT EXISTS %s@'localhost' IDENTIFIED BY %s;", (account.username, account.password))
+                moved_accounts.append(account.username)
+                DBAccount.objects.filter(id=account.id).update(isMovedToExtDB=True)
                 print(f"Successfully created user '{account.username}' with '{account.password}' password.")
             conn_mysql.commit()
-            
-            for account in db_accounts:
-                DBAccount.objects.filter(id=account.id).update(isMovedToExtDB=True)
-            return Response({'status': 'ok'})
+            cursor.close()
+            return Response({
+                'status': 'ok',
+                'moved_accounts': moved_accounts
+                })
         except (Exception, mdb.DatabaseError) as error:
             print(error)
             conn_mysql.rollback()
+            cursor.close()
+            return Response({
+                'status': 'error',
+                'error': error
+            })
         finally:
             conn_mysql.close()
-        return Response({'status': 'bad'})
