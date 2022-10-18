@@ -73,6 +73,12 @@ class CourseViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'description']
 
+    def perform_destroy(self, instance):
+        instance.delete()
+        # Delete all editions of the course
+        Edition.objects.filter(course=instance).delete()
+        print("Deleted all editions of the course")
+
 class SemesterViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting semesters.
@@ -265,6 +271,7 @@ class AddUserAccountToExternalDB(ViewSet):
         
         if server.provider == 'MySQL':
             conn_mysql = mdb.connect(host=server.ip, port=int(server.port), user=server.user, passwd=server.password, db=server.database)
+            print('Connected to MySQL server')
             try:
                 cursor = conn_mysql.cursor()
                 if not db_accounts:

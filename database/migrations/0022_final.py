@@ -38,15 +38,15 @@ def forwards_func(apps, schema_editor):
     Course.objects.all().delete()
     Server.objects.all().delete()
 
-    server_names = ['Oracle ZBD Server', 'MySQL ZBD Server - OFFLINE', 'Postgres PBD Server', 'Mongo ZBDNS Server', 'Microsoft SQL Server PBD']
-    server_ipss = ['128.127.80.0', 'localhost', '146.112.218.0', '156.154.84.0', '176.119.32.0']
-    server_ports = ['1234', '3306', '5836', '2850', '4179']
+    server_names = ['MySQL ZBD Server', 'Oracle ZBD Server - OFFLINE', 'Postgres PBD Server', 'Mongo ZBDNS Server', 'Microsoft SQL Server PBD']
+    server_ipss = ['localhost', '128.127.80.0', '146.112.218.0', '156.154.84.0', '176.119.32.0']
+    server_ports = ['3306', '5432', '5836', '2850', '4179']
     server_date_createds = '2021-12-31'
-    server_actives = [True, True, True, True, True]
-    server_databases = ['oracledb', 'mysql', 'postgres', 'mongodbnosql', 'mssql']
-    server_passwords = ['oracledbpass', 'root', 'postgrespass', 'mongodbnosqlpass', 'mssqlpass']
-    server_providers = ['Oracle', 'MySQL', 'Postgres', 'MongoDB', 'Microsoft SQL Server']
-    server_users = ['oracledbuser', 'root', 'postgresuser', 'mongodbnosqluser', 'mssqluser']
+    server_actives = [True, False, True, True, True]
+    server_databases = ['mysql', 'oracledb', 'postgres', 'mongodbnosql', 'mssql']
+    server_passwords = ['root', 'oracledbpass', 'postgrespass', 'mongodbnosqlpass', 'mssqlpass']
+    server_providers = ['MySQL', 'Oracle', 'Postgres', 'MongoDB', 'Microsoft SQL Server']
+    server_users = ['root', 'oracledbuser', 'postgresuser', 'mongodbnosqluser', 'mssqluser']
 
     for i in range(len(server_names)):
         Server.objects.using(db_alias).create(
