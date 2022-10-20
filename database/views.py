@@ -36,7 +36,7 @@ class TeacherViewSet(ModelViewSet):
     serializer_class = TeacherSerializer
     queryset = Teacher.objects.prefetch_related('editions__semester', 'editions__course')
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name']
+    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'editions__semester__year', 'editions__semester__winter', 'editions__course__name']
 
 
 class StudentViewSet(ModelViewSet):
@@ -46,7 +46,7 @@ class StudentViewSet(ModelViewSet):
     serializer_class = StudentSerializer
     queryset = Student.objects.prefetch_related('groups', 'db_accounts')
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'student_id']
+    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'student_id', 'groups__name', 'db_accounts__server__name']
 
 
 class RoleViewSet(ModelViewSet):
@@ -56,7 +56,7 @@ class RoleViewSet(ModelViewSet):
     serializer_class = RoleSerializer
     queryset = Role.objects.prefetch_related('permissions', 'users')
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'name', 'description']
+    filterset_fields = ['id', 'name', 'description', 'permissions__name', 'users__first_name', 'users__last_name']
 
 
 class PermissionViewSet(ModelViewSet):
@@ -66,7 +66,7 @@ class PermissionViewSet(ModelViewSet):
     serializer_class = PermissionSerializer
     queryset = Permission.objects.all()
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'name', 'description']
+    filterset_fields = ['id', 'name', 'description', 'roles__name', 'roles__users__first_name', 'roles__users__last_name']
 
 
 class CourseViewSet(ModelViewSet):
@@ -76,13 +76,7 @@ class CourseViewSet(ModelViewSet):
     serializer_class = CourseSerializer
     queryset = Course.objects.all()
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'name', 'description']
-
-    def perform_destroy(self, instance):
-        instance.delete()
-        # Delete all editions of the course
-        Edition.objects.filter(course=instance).delete()
-        print("Deleted all editions of the course")
+    filterset_fields = ['id', 'name', 'description', 'major', 'editions__active']
 
 
 class SemesterViewSet(ModelViewSet):
