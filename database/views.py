@@ -5,8 +5,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 import MySQLdb as mdb
 import psycopg2
 
-from .serializers import UserSerializer, AdminSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, PermissionSerializer, CourseSerializer, SemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, DBAccountSerializer
-from .models import User, Admin, Teacher, Student, Role, Permission, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
+from .serializers import UserSerializer, AdminSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, PermissionSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, DBAccountSerializer
+from .models import User, Admin, Teacher, Student, Role, Permission, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
 
 
 class UserViewSet(ModelViewSet):
@@ -69,12 +69,22 @@ class PermissionViewSet(ModelViewSet):
     filterset_fields = ['id', 'name', 'description', 'roles__name', 'roles__users__first_name', 'roles__users__last_name']
 
 
+class MajorViewSet(ModelViewSet):
+    """
+    A simple ViewSet for listing, retrieving and posting majors.
+    """
+    serializer_class = MajorSerializer
+    queryset = Major.objects.prefetch_related('courses')
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['id', 'name', 'courses__name']
+
+
 class CourseViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting courses.
     """
     serializer_class = CourseSerializer
-    queryset = Course.objects.all()
+    queryset = Course.objects.distinct().prefetch_related('editions')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'description', 'major', 'editions__active']
 

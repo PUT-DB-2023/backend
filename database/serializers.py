@@ -1,5 +1,5 @@
 from rest_framework.serializers import ModelSerializer
-from .models import User, Admin, Teacher, Student, Role, Permission, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
+from .models import User, Admin, Teacher, Student, Role, Permission, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
 
 
 class UserSerializer(ModelSerializer):
@@ -145,7 +145,47 @@ class BasicPermissionSerializer(ModelSerializer):
         ]
 
 
+class MajorSerializer(ModelSerializer):
+    class Meta:
+        model = Major
+        fields = [
+            'id',
+            'name',
+            'description',
+            'courses',
+        ]
+    
+    def to_representation(self, instance):
+        self.fields['courses'] = BasicCourseSerializer(many=True, read_only=True)
+        return super(MajorSerializer, self).to_representation(instance)
+
+
+class BasicMajorSerializer(ModelSerializer):
+    class Meta:
+        model = Major
+        fields = [
+            'id',
+            'name',
+            'description',
+        ]
+
+
 class CourseSerializer(ModelSerializer):
+    class Meta:
+        model = Course
+        fields = [
+            'id',
+            'name',
+            'description',
+            'major',
+        ]
+    
+    def to_representation(self, instance):
+        self.fields['major'] = BasicMajorSerializer(read_only=True)
+        return super(CourseSerializer, self).to_representation(instance)
+
+
+class BasicCourseSerializer(ModelSerializer):
     class Meta:
         model = Course
         fields = [
