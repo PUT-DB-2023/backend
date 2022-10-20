@@ -25,18 +25,23 @@ class Student(User):
 
 class Permission(models.Model):
     name = models.CharField(max_length=30, unique=True)
-    description = models.CharField(max_length=100)
+    description = models.CharField(max_length=100, blank=True, default='')
 
 
 class Role(models.Model):
     name = models.CharField(max_length=30, unique=True)
-    description = models.CharField(max_length=100)
+    description = models.CharField(max_length=100, blank=True, default='')
     permisssions = models.ManyToManyField(Permission, related_name='roles', blank=True)
     users = models.ManyToManyField(User, related_name='roles', blank=True)
 
 
+class Major(models.Model):
+    name = models.CharField(max_length=30, unique=True)
+    description = models.CharField(max_length=100, blank=True, default='')
+
 class Course(models.Model):
     name = models.CharField(max_length=30, unique=True)
+    major = models.ForeignKey(Major, on_delete=models.SET_NULL, blank=True, null=True, related_name='courses')
     description = models.CharField(max_length=100, blank=True, default='')
 
 
@@ -91,7 +96,7 @@ class EditionServer(models.Model):
 class DBAccount(models.Model):
     username = models.CharField(max_length=30)
     password = models.CharField(max_length=30)
-    additional_info = models.CharField(max_length=255)
+    additional_info = models.CharField(max_length=255, blank=True, default='')
     isMovedToExtDB = models.BooleanField(default=False)
     student = models.ForeignKey(Student, on_delete=models.CASCADE, null=True, related_name='db_accounts')
     editionServer = models.ForeignKey(EditionServer, on_delete=models.SET_NULL, null=True)

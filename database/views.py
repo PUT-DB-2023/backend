@@ -1,7 +1,6 @@
 from rest_framework.viewsets import ModelViewSet, ViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
-# from rest_framework_serializer_extensions.views import SerializerExtensionsAPIViewMixin
 from django_filters.rest_framework import DjangoFilterBackend
 import MySQLdb as mdb
 import psycopg2
@@ -15,9 +14,10 @@ class UserViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting users.
     """
     serializer_class = UserSerializer
-    queryset = User.objects.prefetch_related('roles').all()
+    queryset = User.objects.prefetch_related('roles')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name']
+
 
 class AdminViewSet(ModelViewSet):
     """
@@ -28,32 +28,36 @@ class AdminViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name']
 
+
 class TeacherViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting teachers.
     """
     serializer_class = TeacherSerializer
-    queryset = Teacher.objects.all()
+    queryset = Teacher.objects.prefetch_related('editions__semester', 'editions__course')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name']
+
 
 class StudentViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting students.
     """
     serializer_class = StudentSerializer
-    queryset = Student.objects.prefetch_related('groups').all()
+    queryset = Student.objects.prefetch_related('groups', 'db_accounts')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'student_id']
+
 
 class RoleViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting roles.
     """
     serializer_class = RoleSerializer
-    queryset = Role.objects.all()
+    queryset = Role.objects.prefetch_related('permissions', 'users')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'description']
+
 
 class PermissionViewSet(ModelViewSet):
     """
@@ -63,6 +67,7 @@ class PermissionViewSet(ModelViewSet):
     queryset = Permission.objects.all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'description']
+
 
 class CourseViewSet(ModelViewSet):
     """
@@ -79,6 +84,7 @@ class CourseViewSet(ModelViewSet):
         Edition.objects.filter(course=instance).delete()
         print("Deleted all editions of the course")
 
+
 class SemesterViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting semesters.
@@ -87,6 +93,7 @@ class SemesterViewSet(ModelViewSet):
     queryset = Semester.objects.all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'year', 'winter']
+
 
 class EditionViewSet(ModelViewSet):
     """
@@ -111,6 +118,7 @@ class EditionViewSet(ModelViewSet):
         'teachers__first_name',
         'teachers__last_name',
     ]
+
 
 class TeacherEditionViewSet(ModelViewSet):
     """
@@ -138,6 +146,7 @@ class TeacherEditionViewSet(ModelViewSet):
         'teacher__first_name',
         'teacher__last_name',
     ]
+
 
 class GroupViewSet(ModelViewSet):
     """
@@ -192,6 +201,7 @@ class ServerViewSet(ModelViewSet):
         'edition__course__description',
     ]
 
+
 class EditionServerViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting edition servers.
@@ -219,6 +229,7 @@ class EditionServerViewSet(ModelViewSet):
         'server__date_created', 
         'server__active'
     ]
+
 
 class DBAccountViewSet(ModelViewSet):
     """
@@ -256,6 +267,7 @@ class DBAccountViewSet(ModelViewSet):
         'student__student_id',
         'isMovedToExtDB',
     ]
+
 
 class AddUserAccountToExternalDB(ViewSet):
     @action (methods=['post'], detail=False)
