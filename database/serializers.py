@@ -309,6 +309,8 @@ class EditionServerSerializer(ModelSerializer):
             'edition',
             'server',
             'additional_info',
+            'username_template',
+            'passwd_template',
         ]
     
     def to_representation(self, instance):
