@@ -2,8 +2,9 @@ from rest_framework.viewsets import ModelViewSet, ViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Q
+
 import MySQLdb as mdb
-import psycopg2
 
 from .serializers import UserSerializer, AdminSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, PermissionSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, DBAccountSerializer
 from .models import User, Admin, Teacher, Student, Role, Permission, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
@@ -84,7 +85,27 @@ class CourseViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting courses.
     """
     serializer_class = CourseSerializer
-    queryset = Course.objects.distinct().prefetch_related('editions')
+    queryset = Course.objects.prefetch_related('editions')
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['id', 'name', 'major', 'description', 'editions']
+
+
+class ActiveCourseViewSet(ModelViewSet):
+    """
+    A simple ViewSet for listing, retrieving and posting courses.
+    """
+    serializer_class = CourseSerializer
+    queryset = Course.objects.prefetch_related('editions').filter(editions__active=True).distinct()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['id', 'name', 'description', 'major', 'editions__active']
+
+
+class InactiveCourseViewSet(ModelViewSet):
+    """
+    A simple ViewSet for listing, retrieving and posting courses.
+    """
+    serializer_class = CourseSerializer
+    queryset = Course.objects.prefetch_related('editions').exclude(editions__active=True).distinct()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'description', 'major', 'editions__active']
 
