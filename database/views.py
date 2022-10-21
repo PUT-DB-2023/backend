@@ -95,7 +95,7 @@ class ActiveCourseViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting courses.
     """
     serializer_class = CourseSerializer
-    queryset = Course.objects.prefetch_related('editions').filter(editions__active=True).distinct()
+    queryset = Course.objects.prefetch_related('editions').filter(editions__active=True).distinct().order_by('id')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'description', 'major', 'editions__active']
 
@@ -105,7 +105,7 @@ class InactiveCourseViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting courses.
     """
     serializer_class = CourseSerializer
-    queryset = Course.objects.prefetch_related('editions').exclude(editions__active=True).distinct()
+    queryset = Course.objects.prefetch_related('editions').exclude(editions__active=True).distinct().order_by('id')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'description', 'major', 'editions__active']
 
@@ -125,7 +125,7 @@ class EditionViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting editions.
     """
     serializer_class = EditionSerializer
-    queryset = Edition.objects.prefetch_related('teachers').select_related('course', 'semester')
+    queryset = Edition.objects.prefetch_related('teachers', 'servers').select_related('course', 'semester')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id', 
@@ -150,7 +150,7 @@ class TeacherEditionViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting teachers in editions.
     """
     serializer_class = TeacherEditionSerializer
-    queryset = TeacherEdition.objects.select_related('teacher', 'edition')
+    queryset = TeacherEdition.objects.select_related('teacher', 'edition__semester', 'edition__course').prefetch_related('edition__servers').order_by('id')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id',
@@ -178,7 +178,7 @@ class GroupViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting groups.
     """
     serializer_class = GroupSerializer
-    queryset = Group.objects.prefetch_related('students').select_related('teacherEdition')
+    queryset = Group.objects.select_related('teacherEdition__teacher', 'teacherEdition__edition__semester', 'teacherEdition__edition__course').prefetch_related('students', 'teacherEdition__edition__servers').order_by('id')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id', 
@@ -232,7 +232,7 @@ class EditionServerViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting edition servers.
     """
     serializer_class = EditionServerSerializer
-    queryset = EditionServer.objects.all()
+    queryset = EditionServer.objects.select_related('server', 'edition__semester', 'edition__course').order_by('id')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id', 
@@ -261,7 +261,7 @@ class DBAccountViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting db accounts.
     """
     serializer_class = DBAccountSerializer
-    queryset = DBAccount.objects.all()
+    queryset = DBAccount.objects.select_related('student', 'editionServer__server').order_by('id')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id', 
@@ -272,10 +272,6 @@ class DBAccountViewSet(ModelViewSet):
         'student',
         'editionServer__edition',
         'editionServer__server',
-        'editionServer__additional_info',
-        'editionServer__edition__description',
-        'editionServer__edition__date_opened',
-        'editionServer__edition__date_closed',
         'editionServer__edition__active',
         'editionServer__edition__course',
         'editionServer__edition__semester',
@@ -283,9 +279,6 @@ class DBAccountViewSet(ModelViewSet):
         'editionServer__edition__semester__winter',
         'editionServer__edition__course__name',
         'editionServer__server__name',
-        'editionServer__server__ip',
-        'editionServer__server__port',
-        'editionServer__server__date_created',
         'editionServer__server__active',
         'student__first_name',
         'student__last_name',
