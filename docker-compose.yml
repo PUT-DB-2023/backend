@@ -24,9 +24,10 @@ services:
     ports:
      - "3306:3306"
   web:
-    restart: always
+    restart: on-failure:5
     build: .
     command: bash -c "python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    # command: bash -c "yes | python manage.py makemigrations --merge && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/code
       - ./tmp/mysqld:/run/mysqld
