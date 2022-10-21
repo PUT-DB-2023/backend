@@ -7,7 +7,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('database', '0022_final'),
+        ('database', '0003_alter_course_description_alter_dbaccount_student_and_more'),
     ]
 
     operations = [

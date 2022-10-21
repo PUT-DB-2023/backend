@@ -139,6 +139,15 @@ def forwards_func(apps, schema_editor):
         'Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer'
     ]
 
+    edition_server_username_templates = [
+        "INF_{NR_INDEKSU}", '{IMIE} + { NAZWISKO}', '{NAZWISKO}_{NUMER_INDEKSU}', 'STUDENT_{NUMBER_INDEKSU}', "INF_{NR_INDEKSU}", '{IMIE} + { NAZWISKO}', '{NAZWISKO}_{NUMER_INDEKSU}', 'STUDENT_{NUMBER_INDEKSU}', "INF_{NR_INDEKSU}", '{IMIE} + { NAZWISKO}', '{NAZWISKO}_{NUMER_INDEKSU}', 'STUDENT_{NUMBER_INDEKSU}', "INF_{NR_INDEKSU}", '{IMIE} + { NAZWISKO}', '{NAZWISKO}_{NUMER_INDEKSU}', 'STUDENT_{NUMBER_INDEKSU}'
+    ]
+
+    edition_server_passwd_templates = [
+        "blank", "default_passwd", "123", "inf{NR_INDEKSU}", "blank", "default_passwd", "123", "inf{NR_INDEKSU}", "blank", "default_passwd", "123", "inf{NR_INDEKSU}", "blank", "default_passwd", "123", "inf{NR_INDEKSU}"
+    ]
+
+
     editions = Edition.objects.all().values_list('id', flat=True)
     servers = Server.objects.all().values_list('id', flat=True)
 
@@ -147,7 +156,7 @@ def forwards_func(apps, schema_editor):
 
     for i in range(len(edition_server_add_info)):
         EditionServer.objects.using(db_alias).create(
-            additional_info=edition_server_add_info[i], edition_id=edition_server_edition_ids[i], server_id=edition_server_server_ids[i]
+            additional_info=edition_server_add_info[i], edition_id=edition_server_edition_ids[i], server_id=edition_server_server_ids[i], username_template=edition_server_username_templates[i], passwd_template=edition_server_passwd_templates[i]
     )
 
     teachers = Teacher.objects.all().values_list('id', flat=True)
@@ -226,7 +235,7 @@ def forwards_func(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('database', '0003_alter_course_description_alter_dbaccount_student_and_more'),
+        ('database', '0027_editionserver_passwd_template_and_more'),
     ]
 
     operations = [

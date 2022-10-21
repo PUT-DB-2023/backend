@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('database', '0001_initial'),
+        ('database', '0001_squashed_0021_alter_dbaccount_student'),
     ]
 
     operations = [
