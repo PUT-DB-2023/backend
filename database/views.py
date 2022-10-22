@@ -89,6 +89,14 @@ class CourseViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'major', 'description', 'editions']
 
+    def get_queryset(self):
+        if self.request.query_params.get('active') == "true":
+            return Course.objects.prefetch_related('editions').filter(editions__active=True).distinct().order_by('id')
+        elif self.request.query_params.get('active') == "false":
+            return Course.objects.prefetch_related('editions').exclude(editions__active=True).distinct().order_by('id')
+        else:
+            return Course.objects.prefetch_related('editions').order_by('id')
+
 
 class ActiveCourseViewSet(ModelViewSet):
     """
