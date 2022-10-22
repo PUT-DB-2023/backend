@@ -403,3 +403,7 @@ class BasicDBAccountSerializer(ModelSerializer):
             'editionServer',
             'isMovedToExtDB'
         ]
+    
+    def to_representation(self, instance):
+        self.fields['editionServer'] = BasicEditionServerSerializer(many=False, read_only=True)
+        return super(BasicDBAccountSerializer, self).to_representation(instance)

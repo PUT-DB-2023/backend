@@ -47,7 +47,7 @@ class StudentViewSet(ModelViewSet):
     serializer_class = StudentSerializer
     queryset = Student.objects.prefetch_related('groups', 'db_accounts')
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'student_id', 'groups__name', 'db_accounts__server__name']
+    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'student_id', 'groups__name', 'db_accounts__editionServer__server__name']
 
 
 class RoleViewSet(ModelViewSet):
