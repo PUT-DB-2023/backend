@@ -310,7 +310,6 @@ class AddUserAccountToExternalDB(ViewSet):
         moved_accounts = []
         
         if server.provider == 'MySQL':
-            print(f"Connection string to mysql server: host={server.ip}, port={server.port}, password={server.password}")
             conn_mysql = mdb.connect(host=server.ip, port=int(server.port), user=server.user, passwd=server.password, db=server.database)
             print('Connected to MySQL server')  
             try:
@@ -319,7 +318,8 @@ class AddUserAccountToExternalDB(ViewSet):
                     print('No accounts to move')
                     return Response({'status': 'No accounts to move.'})
                 for account in db_accounts:
-                    cursor.execute("CREATE USER IF NOT EXISTS %s@'localhost' IDENTIFIED BY %s;", (account.username, account.password))
+                    print(server.create_user_template)
+                    cursor.execute(server.create_user_template % (account.username, account.password))
                     moved_accounts.append(account.username)
                     DBAccount.objects.filter(id=account.id).update(isMovedToExtDB=True)
                     print(f"Successfully created user '{account.username}' with '{account.password}' password.")
@@ -350,7 +350,7 @@ class AddUserAccountToExternalDB(ViewSet):
                 for account in db_accounts:
                     print(account.username)
                     cursor.execute('DROP ROLE IF EXISTS "%s";' % (account.username))
-                    cursor.execute('CREATE USER \"%s\" WITH PASSWORD \'%s\';' % (account.username, account.password))
+                    cursor.execute(server.create_user_template % (account.username, account.password))
                     moved_accounts.append(account.username)
                     DBAccount.objects.filter(id=account.id).update(isMovedToExtDB=True)
                     print(f"Successfully created user '{account.username}' with '{account.password}' password.")

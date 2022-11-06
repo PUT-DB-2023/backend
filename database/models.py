@@ -84,8 +84,8 @@ class Server(models.Model):
     database = models.CharField(max_length=30)
     date_created = models.DateField(auto_now_add=True)
     active = models.BooleanField(default=True)
+    create_user_template = models.CharField(max_length=100)
     edition = models.ManyToManyField(Edition, through='EditionServer', related_name='servers')
-
 
 class EditionServer(models.Model):
     edition = models.ForeignKey(Edition, on_delete=models.CASCADE)

@@ -56,10 +56,11 @@ def forwards_func(apps, schema_editor):
     server_passwords = ['root', 'oracledbpass', 'postgrespass', 'mongodbnosqlpass', 'mssqlpass']
     server_providers = ['MySQL', 'Oracle', 'Postgres', 'MongoDB', 'Microsoft SQL Server']
     server_users = ['root', 'oracledbuser', 'postgresuser', 'mongodbnosqluser', 'mssqluser']
+    server_create_user_templates = ["CREATE USER IF NOT EXISTS %s@'localhost' IDENTIFIED BY %s;", ' ', "CREATE USER \"%s\" WITH PASSWORD \'%s\';", ' ', ' ']
 
     for i in range(len(server_names)):
         Server.objects.using(db_alias).create(
-        name=server_names[i], ip=server_ipss[i], port=server_ports[i], date_created=server_date_createds, active=server_actives[i], database=server_databases[i], password=server_passwords[i], provider=server_providers[i], user=server_users[i]
+        name=server_names[i], ip=server_ipss[i], port=server_ports[i], date_created=server_date_createds, active=server_actives[i], database=server_databases[i], password=server_passwords[i], provider=server_providers[i], user=server_users[i], create_user_template=server_create_user_templates[i]
     )
 
     course_names = ['Zarządzanie bazami danych', 'Podstawy baz danych', 'Zarządzanie bazami NoSQL', 'Projektowanie baz danych']
@@ -469,6 +470,11 @@ class Migration(migrations.Migration):
             model_name='edition',
             name='course',
             field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='editions', to='database.course'),
+        ),
+            migrations.AddField(
+            model_name='server',
+            name='create_user_template',
+            field=models.CharField(max_length=100),
         ),
         migrations.RunPython(forwards_func),
         migrations.AlterField(
