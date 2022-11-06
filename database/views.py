@@ -1,8 +1,10 @@
+import psycopg2
 from rest_framework.viewsets import ModelViewSet, ViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
+
 
 import MySQLdb as mdb
 
@@ -308,8 +310,9 @@ class AddUserAccountToExternalDB(ViewSet):
         moved_accounts = []
         
         if server.provider == 'MySQL':
+            print(f"Connection string to mysql server: host={server.ip}, port={server.port}, password={server.password}")
             conn_mysql = mdb.connect(host=server.ip, port=int(server.port), user=server.user, passwd=server.password, db=server.database)
-            print('Connected to MySQL server')
+            print('Connected to MySQL server')  
             try:
                 cursor = conn_mysql.cursor()
                 if not db_accounts:
@@ -336,5 +339,36 @@ class AddUserAccountToExternalDB(ViewSet):
                 })
             finally:
                 conn_mysql.close()
+        elif server.provider == 'Postgres':
+            conn_postgres = psycopg2.connect(database = "postgres", user = "postgres", password = "postgres", host = "postgres-external", port = "5433")
+            print('Connected to Postgres server')  
+            try:
+                cursor = conn_postgres.cursor()
+                if not db_accounts:
+                    print('No accounts to move')
+                    return Response({'status': 'No accounts to move.'})
+                for account in db_accounts:
+                    print(account.username)
+                    cursor.execute('DROP ROLE IF EXISTS "%s";' % (account.username))
+                    cursor.execute('CREATE USER \"%s\" WITH PASSWORD \'%s\';' % (account.username, account.password))
+                    moved_accounts.append(account.username)
+                    DBAccount.objects.filter(id=account.id).update(isMovedToExtDB=True)
+                    print(f"Successfully created user '{account.username}' with '{account.password}' password.")
+                conn_postgres.commit()
+                cursor.close()
+                return Response({
+                    'status': 'ok',
+                    'moved_accounts': moved_accounts
+                    })
+            except (Exception, mdb.DatabaseError) as error:
+                print(error)
+                conn_postgres.rollback()
+                cursor.close()
+                return Response({
+                    'status': 'error',
+                    'error': error
+                })
+            finally:
+                conn_postgres.close()
         else:
             return Response({'status': 'Unknown provider.'})
