@@ -383,7 +383,7 @@ class DBAccountSerializer(ModelSerializer):
             'additional_info',
             'student',
             'editionServer',
-            'isMovedToExtDB'
+            'is_moved'
         ]
     
     def to_representation(self, instance):
@@ -401,7 +401,7 @@ class BasicDBAccountSerializer(ModelSerializer):
             'password',
             'additional_info',
             'editionServer',
-            'isMovedToExtDB'
+            'is_moved'
         ]
     
     def to_representation(self, instance):

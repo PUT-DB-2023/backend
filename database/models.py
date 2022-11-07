@@ -48,6 +48,7 @@ class Course(models.Model):
 class Semester(models.Model):
     year = models.CharField(max_length=9)
     winter = models.BooleanField(default=True)
+    active = models.BooleanField(default=False)
 
 
 class Edition(models.Model):
@@ -98,6 +99,6 @@ class DBAccount(models.Model):
     username = models.CharField(max_length=30)
     password = models.CharField(max_length=30)
     additional_info = models.CharField(max_length=255, blank=True, default='')
-    isMovedToExtDB = models.BooleanField(default=False)
+    is_moved = models.BooleanField(default=False)
     student = models.ForeignKey(Student, on_delete=models.CASCADE, null=True, related_name='db_accounts')
     editionServer = models.ForeignKey(EditionServer, on_delete=models.SET_NULL, null=True)

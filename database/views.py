@@ -320,8 +320,8 @@ class AddUserAccountToExternalDB(ViewSet):
             finally:
                 conn_mysql.close()
         elif server.provider == 'Postgres':
-            conn_postgres = psycopg2.connect(database = "postgres", user = "postgres", password = "postgres", host = "postgres-external", port = "5433")
-            print('Connected to Postgres server')  
+            conn_postgres = psycopg2.connect(database="postgres", user="postgres", password="postgres", host="postgres-external", port="5433")
+            print('Connected to Postgres server') 
             try:
                 cursor = conn_postgres.cursor()
                 if not db_accounts:

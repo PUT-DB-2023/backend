@@ -48,8 +48,8 @@ def forwards_func(apps, schema_editor):
     Server.objects.all().delete()
 
     server_names = ['MySQL ZBD Server', 'Oracle ZBD Server - OFFLINE', 'Postgres PBD Server', 'Mongo ZBDNS Server', 'Microsoft SQL Server PBD']
-    server_ipss = ['localhost', '128.127.80.0', '146.112.218.0', '156.154.84.0', '176.119.32.0']
-    server_ports = ['3306', '5432', '5836', '2850', '4179']
+    server_ipss = ['localhost', '128.127.80.0', 'localhost', '156.154.84.0', '176.119.32.0']
+    server_ports = ['3306', '5432', '5433', '2850', '4179']
     server_date_createds = '2021-12-31'
     server_actives = [True, False, True, True, True]
     server_databases = ['mysql', 'oracledb', 'postgres', 'mongodbnosql', 'mssql']
@@ -208,37 +208,37 @@ def forwards_func(apps, schema_editor):
         if 0 <= i <= 11: # L1 L2
             for j in range(len(L1_L2_edition_servers)):
                 DBAccount.objects.using(db_alias).create(
-                    username=students_all[i-10].last_name + '-dbusername', password=students_all[i-10].last_name + '-dbpassword', additional_info="Additional info about dbaccount", isMovedToExtDB=False, student=students_all[i-10], editionServer=edition_servers[j]
+                    username=students_all[i-10].last_name + '-dbusername', password=students_all[i-10].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-10], editionServer=edition_servers[j]
             )
         if 12 <= i <= 23: # L3 L4
             for j in range(len(L3_L4_edition_servers)):
                 DBAccount.objects.using(db_alias).create(
-                    username=students_all[i-10].last_name + '-dbusername', password=students_all[i-10].last_name + '-dbpassword', additional_info="Additional info about dbaccount", isMovedToExtDB=False, student=students_all[i-10], editionServer=edition_servers[j]
+                    username=students_all[i-10].last_name + '-dbusername', password=students_all[i-10].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-10], editionServer=edition_servers[j]
             )
         if 24 <= i <= 35: # L5 L6
             for j in range(len(L5_L6_edition_servers)):
                 DBAccount.objects.using(db_alias).create(
-                    username=students_all[i-10].last_name + '-dbusername', password=students_all[i-10].last_name + '-dbpassword', additional_info="Additional info about dbaccount", isMovedToExtDB=False, student=students_all[i-10], editionServer=edition_servers[j]
+                    username=students_all[i-10].last_name + '-dbusername', password=students_all[i-10].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-10], editionServer=edition_servers[j]
             )
         if 36 <= i <= 47: # L7 L8
             for j in range(len(L7_L8_edition_servers)):
                 DBAccount.objects.using(db_alias).create(
-                    username=students_all[i-10].last_name + '-dbusername', password=students_all[i-10].last_name + '-dbpassword', additional_info="Additional info about dbaccount", isMovedToExtDB=False, student=students_all[i-10], editionServer=edition_servers[j]
+                    username=students_all[i-10].last_name + '-dbusername', password=students_all[i-10].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-10], editionServer=edition_servers[j]
             )
         if 48 <= i <= 59: # L9 L10
             for j in range(len(L9_L10_edition_servers)):
                 DBAccount.objects.using(db_alias).create(
-                    username=students_all[i-10].last_name + '-dbusername', password=students_all[i-10].last_name + '-dbpassword', additional_info="Additional info about dbaccount", isMovedToExtDB=False, student=students_all[i-10], editionServer=edition_servers[j]
+                    username=students_all[i-10].last_name + '-dbusername', password=students_all[i-10].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-10], editionServer=edition_servers[j]
             )
         if 60 <= i <= 71: # L11 L12
             for j in range(len(L11_L12_edition_servers)):
                 DBAccount.objects.using(db_alias).create(
-                    username=students_all[i-10].last_name + '-dbusername', password=students_all[i-10].last_name + '-dbpassword', additional_info="Additional info about dbaccount", isMovedToExtDB=False, student=students_all[i-10], editionServer=edition_servers[j]
+                    username=students_all[i-10].last_name + '-dbusername', password=students_all[i-10].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-10], editionServer=edition_servers[j]
             )
         if 72 <= i <= 83: # L13 L14
             for j in range(len(L13_L14_edition_servers)):
                 DBAccount.objects.using(db_alias).create(
-                    username=students_all[i-10].last_name + '-dbusername', password=students_all[i-10].last_name + '-dbpassword', additional_info="Additional info about dbaccount", isMovedToExtDB=False, student=students_all[i-10], editionServer=edition_servers[j]
+                    username=students_all[i-10].last_name + '-dbusername', password=students_all[i-10].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-10], editionServer=edition_servers[j]
             )
 
 class Migration(migrations.Migration):
@@ -284,6 +284,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('year', models.CharField(max_length=9)),
                 ('winter', models.BooleanField(default=True)),
+                ('active', models.BooleanField(default=False)),
             ],
         ),
         migrations.CreateModel(
@@ -453,7 +454,7 @@ class Migration(migrations.Migration):
                 ('additional_info', models.CharField(blank=True, default='', max_length=255)),
                 ('editionServer', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='database.editionserver')),
                 ('student', models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='db_accounts', to='database.student')),
-                ('isMovedToExtDB', models.BooleanField(default=False)),
+                ('is_moved', models.BooleanField(default=False)),
             ],
         ),
         migrations.CreateModel(
