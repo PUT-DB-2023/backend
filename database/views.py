@@ -98,26 +98,6 @@ class CourseViewSet(ModelViewSet):
             return Course.objects.prefetch_related('editions').order_by('id')
 
 
-class ActiveCourseViewSet(ModelViewSet):
-    """
-    A simple ViewSet for listing, retrieving and posting courses.
-    """
-    serializer_class = CourseSerializer
-    queryset = Course.objects.prefetch_related('editions').filter(editions__active=True).distinct().order_by('id')
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'name', 'description', 'major', 'editions__active']
-
-
-class InactiveCourseViewSet(ModelViewSet):
-    """
-    A simple ViewSet for listing, retrieving and posting courses.
-    """
-    serializer_class = CourseSerializer
-    queryset = Course.objects.prefetch_related('editions').exclude(editions__active=True).distinct().order_by('id')
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'name', 'description', 'major', 'editions__active']
-
-
 class SemesterViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting semesters.
