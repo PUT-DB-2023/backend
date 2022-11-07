@@ -16,3 +16,4 @@ django-cors-headers==3.13.0
 psycopg2==2.9.4
 djangorestframework-serializer-extensions==2.0.1
 pymongo[srv]==4.3.2
+psycopg2==2.9.4
