@@ -273,7 +273,7 @@ class DBAccountViewSet(ModelViewSet):
         'student__first_name',
         'student__last_name',
         'student__student_id',
-        'isMovedToExtDB',
+        'is_moved',
     ]
 
 
@@ -283,7 +283,7 @@ class AddUserAccountToExternalDB(ViewSet):
         accounts_data = request.data
         print('Request log:', accounts_data)
 
-        db_accounts = DBAccount.objects.filter(isMovedToExtDB=False, editionServer__server__active=True, editionServer__server__id=accounts_data['server_id'], student__groups__id=accounts_data['group_id'])
+        db_accounts = DBAccount.objects.filter(is_moved=False, editionServer__server__active=True, editionServer__server__id=accounts_data['server_id'], student__groups__id=accounts_data['group_id'])
 
         server = Server.objects.get(id=accounts_data['server_id'], active=True)
         
@@ -301,7 +301,7 @@ class AddUserAccountToExternalDB(ViewSet):
                     print(server.create_user_template)
                     cursor.execute(server.create_user_template % (account.username, account.password))
                     moved_accounts.append(account.username)
-                    DBAccount.objects.filter(id=account.id).update(isMovedToExtDB=True)
+                    DBAccount.objects.filter(id=account.id).update(is_moved=True)
                     print(f"Successfully created user '{account.username}' with '{account.password}' password.")
                 conn_mysql.commit()
                 cursor.close()
@@ -332,7 +332,7 @@ class AddUserAccountToExternalDB(ViewSet):
                     cursor.execute('DROP ROLE IF EXISTS "%s";' % (account.username))
                     cursor.execute(server.create_user_template % (account.username, account.password))
                     moved_accounts.append(account.username)
-                    DBAccount.objects.filter(id=account.id).update(isMovedToExtDB=True)
+                    DBAccount.objects.filter(id=account.id).update(is_moved=True)
                     print(f"Successfully created user '{account.username}' with '{account.password}' password.")
                 conn_postgres.commit()
                 cursor.close()
