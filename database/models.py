@@ -55,7 +55,6 @@ class Edition(models.Model):
     description = models.CharField(max_length=100, blank=True, default='')
     date_opened = models.DateField(blank=True, null=True)
     date_closed = models.DateField(blank=True, null=True)
-    active = models.BooleanField(default=True)
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE, related_name='editions')
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='editions')
     teachers = models.ManyToManyField(Teacher, through='TeacherEdition', blank=True, related_name='editions')

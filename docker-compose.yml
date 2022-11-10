@@ -28,7 +28,7 @@ services:
       test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 10s
       timeout: 10s
-      retries: 6
+      retries: 20
   mysql:
     image: mysql:8.0
     environment:

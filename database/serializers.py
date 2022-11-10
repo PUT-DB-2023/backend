@@ -202,6 +202,7 @@ class SemesterSerializer(ModelSerializer):
             'id',
             'year',
             'winter',
+            'active',
         ]
 
 
@@ -213,7 +214,6 @@ class EditionSerializer(ModelSerializer):
             'description',
             'date_opened',
             'date_closed',
-            'active',
             'semester',
             'course',
             'teachers',
@@ -236,7 +236,6 @@ class BasicEditionSerializer(ModelSerializer):
             'semester',
             'course',
             'servers',
-            'active',
         ]
     
     def to_representation(self, instance):
@@ -253,7 +252,6 @@ class EditionSerializerForTeacher(ModelSerializer):
             'id',
             'semester',
             'course',
-            'active',
         ]
     
     def to_representation(self, instance):

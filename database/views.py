@@ -39,7 +39,11 @@ class TeacherViewSet(ModelViewSet):
     serializer_class = TeacherSerializer
     queryset = Teacher.objects.prefetch_related('editions__semester', 'editions__course')
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'editions__semester__year', 'editions__semester__winter', 'editions__course__name']
+    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name',
+    'editions__semester__year',
+    'editions__semester__winter',
+    'editions__semester__active',
+    'editions__course__name']
 
 
 class StudentViewSet(ModelViewSet):
@@ -93,9 +97,9 @@ class CourseViewSet(ModelViewSet):
 
     def get_queryset(self):
         if self.request.query_params.get('active') == "true":
-            return Course.objects.prefetch_related('editions').filter(editions__active=True).distinct().order_by('id')
+            return Course.objects.prefetch_related('editions').filter(editions__semester__active=True).distinct().order_by('id')
         elif self.request.query_params.get('active') == "false":
-            return Course.objects.prefetch_related('editions').exclude(editions__active=True).distinct().order_by('id')
+            return Course.objects.prefetch_related('editions').exclude(editions__semester__active=True).distinct().order_by('id')
         else:
             return Course.objects.prefetch_related('editions').order_by('id')
 
@@ -107,7 +111,7 @@ class SemesterViewSet(ModelViewSet):
     serializer_class = SemesterSerializer
     queryset = Semester.objects.all()
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'year', 'winter']
+    filterset_fields = ['id', 'year', 'winter', 'active']
 
 
 class EditionViewSet(ModelViewSet):
@@ -121,12 +125,12 @@ class EditionViewSet(ModelViewSet):
         'id', 
         'description', 
         'date_opened', 
-        'date_closed', 
-        'active', 
+        'date_closed',
         'course', 
         'semester', 
         'semester__year', 
         'semester__winter', 
+        'semester__active',
         'course__name',
         'course__description',
         'teachers',
@@ -149,11 +153,11 @@ class TeacherEditionViewSet(ModelViewSet):
         'edition__description',
         'edition__date_opened',
         'edition__date_closed',
-        'edition__active',
         'edition__course',
         'edition__semester',
         'edition__semester__year',
         'edition__semester__winter',
+        'edition__semester__active',
         'edition__course__name',
         'teacher__id',
         'teacher__password',
@@ -181,7 +185,8 @@ class GroupViewSet(ModelViewSet):
         'teacherEdition__edition__course', 
         'teacherEdition__edition__semester', 
         'teacherEdition__edition__semester__year', 
-        'teacherEdition__edition__semester__winter', 
+        'teacherEdition__edition__semester__winter',
+        'teacherEdition__edition__semester__active',
         'teacherEdition__edition__course__name', 
         'teacherEdition__teacher', 
         'teacherEdition__teacher__first_name', 
@@ -207,11 +212,11 @@ class ServerViewSet(ModelViewSet):
         'edition__description', 
         'edition__date_opened', 
         'edition__date_closed', 
-        'edition__active', 
         'edition__course', 
         'edition__semester', 
         'edition__semester__year', 
         'edition__semester__winter', 
+        'edition__semester__active',
         'edition__course__name', 
         'edition__course__description',
     ]
@@ -232,11 +237,11 @@ class EditionServerViewSet(ModelViewSet):
         'edition__description', 
         'edition__date_opened', 
         'edition__date_closed', 
-        'edition__active', 
         'edition__course', 
         'edition__semester', 
         'edition__semester__year', 
         'edition__semester__winter', 
+        'edition__semester__active',
         'edition__course__name', 
         'server__name', 
         'server__ip', 
@@ -267,6 +272,7 @@ class DBAccountViewSet(ModelViewSet):
         'editionServer__edition__semester',
         'editionServer__edition__semester__year',
         'editionServer__edition__semester__winter',
+        'editionServer__edition__semester__active',
         'editionServer__edition__course__name',
         'editionServer__server__name',
         'editionServer__server__active',
@@ -320,7 +326,7 @@ class AddUserAccountToExternalDB(ViewSet):
             finally:
                 conn_mysql.close()
         elif server.provider == 'Postgres':
-            conn_postgres = psycopg2.connect(database="postgres", user="postgres", password="postgres", host="postgres-external", port="5433")
+            conn_postgres = psycopg2.connect(dbname=server.database, user=server.user, password=server.password, host=server.ip, port=server.port)
             print('Connected to Postgres server') 
             try:
                 cursor = conn_postgres.cursor()
