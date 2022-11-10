@@ -102,12 +102,7 @@ def forwards_func(apps, schema_editor):
         'Edycja 2022/2023 kursu Podstawy baz danych','Edycja 2022/2023 kursu Zarządzanie bazami danych', 'Edycja 2022/2023 kursu Zarządzanie bazami danych noSQL', 'Edycja 2022/2023 kursu Projektowanie baz danych'
         ]
 
-    dates_opened = [
-        '2019-10-01', '2019-10-01', '2019-10-01', '2019-10-01',
-        '2020-10-01', '2020-10-01', '2020-10-01', '2020-10-01',
-        '2021-10-01', '2021-10-01', '2021-10-01', '2021-10-01',
-        '2022-10-01', '2022-10-01', '2022-10-01', '2022-10-01'
-    ]
+    dates_opened = ['2019-10-01' for _ in range(16)]
 
     dates_closed = [
         '2020-06-30', '2020-06-30', '2020-06-30', '2020-06-30',
@@ -145,12 +140,10 @@ def forwards_func(apps, schema_editor):
             description=edition_descriptions[i], date_opened=dates_opened[i], date_closed=dates_closed[i], active=actives[i], course_id=courses_ids[i], semester_id=semestres_ids[i]
     )
 
-    edition_server_add_info = [
-        'Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer','Additional info about EditionServer'
-    ]
+    edition_server_add_info = ['Additional info about EditionServer' for _ in range(16)]
 
     edition_server_username_templates = [
-        "INF_{NR_INDEKSU}", '{IMIE} + { NAZWISKO}', '{NAZWISKO}_{NUMER_INDEKSU}', 'STUDENT_{NUMBER_INDEKSU}', "INF_{NR_INDEKSU}", '{IMIE} + { NAZWISKO}', '{NAZWISKO}_{NUMER_INDEKSU}', 'STUDENT_{NUMBER_INDEKSU}', "INF_{NR_INDEKSU}", '{IMIE} + { NAZWISKO}', '{NAZWISKO}_{NUMER_INDEKSU}', 'STUDENT_{NUMBER_INDEKSU}', "INF_{NR_INDEKSU}", '{IMIE} + { NAZWISKO}', '{NAZWISKO}_{NUMER_INDEKSU}', 'STUDENT_{NUMBER_INDEKSU}'
+        "INF_{NR_INDEKSU}", '{IMIE} + {NAZWISKO}', '{NAZWISKO}_{NR_INDEKSU}', 'STUDENT_{NR_INDEKSU}', "INF_{NR_INDEKSU}", '{IMIE} + {NAZWISKO}', '{NAZWISKO}_{NR_INDEKSU}', 'STUDENT_{NR_INDEKSU}', "INF_{NR_INDEKSU}", '{IMIE} + {NAZWISKO}', '{NAZWISKO}_{NR_INDEKSU}', 'STUDENT_{NR_INDEKSU}', "INF_{NR_INDEKSU}", '{IMIE} + {NAZWISKO}', '{NAZWISKO}_{NR_INDEKSU}', 'STUDENT_{NR_INDEKSU}'
     ]
 
     edition_server_passwd_templates = [
@@ -161,7 +154,7 @@ def forwards_func(apps, schema_editor):
     editions = Edition.objects.all().values_list('id', flat=True)
     servers = Server.objects.all().values_list('id', flat=True)
 
-    edition_server_edition_ids = [editions[0], editions[1], editions[2], editions[3], editions[4], editions[5], editions[6], editions[7], editions[8], editions[9], editions[10], editions[11], editions[12], editions[13], editions[14], editions[15]]
+    edition_server_edition_ids = [editions[i] for i in range(16)]
     edition_server_server_ids = [servers[2], servers[0], servers[3], servers[4], servers[2], servers[0], servers[3], servers[4], servers[2], servers[0], servers[3], servers[4], servers[2], servers[0], servers[3], servers[4]]
 
     for i in range(len(edition_server_add_info)):
@@ -171,7 +164,7 @@ def forwards_func(apps, schema_editor):
 
     teachers = Teacher.objects.all().values_list('id', flat=True)
 
-    teacher_edition_edition_id = [editions[0], editions[1], editions[2], editions[3], editions[4], editions[5], editions[6], editions[7], editions[8], editions[9], editions[10], editions[11], editions[12], editions[13], editions[14], editions[15]]
+    teacher_edition_edition_id = [editions[i] for i in range(16)]
     teacher_edition_teacher_id = [teachers[0], teachers[1], teachers[2], teachers[3], teachers[0], teachers[1], teachers[2], teachers[3], teachers[0], teachers[1], teachers[2], teachers[3], teachers[0], teachers[1], teachers[2], teachers[3]]
 
     for i in range(len(teacher_edition_edition_id)):

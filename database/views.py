@@ -39,11 +39,14 @@ class TeacherViewSet(ModelViewSet):
     serializer_class = TeacherSerializer
     queryset = Teacher.objects.prefetch_related('editions__semester', 'editions__course')
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name',
-    'editions__semester__year',
-    'editions__semester__winter',
-    'editions__semester__active',
-    'editions__course__name']
+    filterset_fields = [
+        'id', 'password', 'email', 'first_name', 'last_name',
+        'editions__semester__year',
+        'editions__semester__winter',
+        'editions__semester__active',
+        'editions_course',
+        'editions__course__name',
+    ]
 
 
 class StudentViewSet(ModelViewSet):
@@ -53,7 +56,10 @@ class StudentViewSet(ModelViewSet):
     serializer_class = StudentSerializer
     queryset = Student.objects.prefetch_related('groups', 'db_accounts')
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'student_id', 'groups__name', 'db_accounts__editionServer__server__name']
+    filterset_fields = [
+        'id', 'password', 'email', 'first_name', 'last_name', 'student_id',
+        'groups', 'groups__name', 'db_accounts__editionServer__server', 'db_accounts__editionServer__server__name',
+    ]
 
 
 class RoleViewSet(ModelViewSet):
@@ -63,7 +69,7 @@ class RoleViewSet(ModelViewSet):
     serializer_class = RoleSerializer
     queryset = Role.objects.prefetch_related('permissions', 'users')
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'name', 'description', 'permissions__name', 'users__first_name', 'users__last_name']
+    filterset_fields = ['id', 'name', 'description', 'permissions', 'permissions__name', 'users', 'users__first_name', 'users__last_name']
 
 
 class PermissionViewSet(ModelViewSet):
@@ -73,7 +79,7 @@ class PermissionViewSet(ModelViewSet):
     serializer_class = PermissionSerializer
     queryset = Permission.objects.all()
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'name', 'description', 'roles__name', 'roles__users__first_name', 'roles__users__last_name']
+    filterset_fields = ['id', 'name', 'description', 'roles', 'roles__name', 'roles__users', 'roles__users__first_name', 'roles__users__last_name']
 
 
 class MajorViewSet(ModelViewSet):
@@ -83,7 +89,7 @@ class MajorViewSet(ModelViewSet):
     serializer_class = MajorSerializer
     queryset = Major.objects.prefetch_related('courses')
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'name', 'courses__name']
+    filterset_fields = ['id', 'name', 'courses', 'courses__name']
 
 
 class CourseViewSet(ModelViewSet):
@@ -126,11 +132,11 @@ class EditionViewSet(ModelViewSet):
         'description', 
         'date_opened', 
         'date_closed',
-        'course', 
         'semester', 
         'semester__year', 
         'semester__winter', 
         'semester__active',
+        'course', 
         'course__name',
         'course__description',
         'teachers',
@@ -159,9 +165,7 @@ class TeacherEditionViewSet(ModelViewSet):
         'edition__semester__winter',
         'edition__semester__active',
         'edition__course__name',
-        'teacher__id',
-        'teacher__password',
-        'teacher__email',
+        'teacher',
         'teacher__first_name',
         'teacher__last_name',
     ]
@@ -182,15 +186,15 @@ class GroupViewSet(ModelViewSet):
         'room', 
         'teacherEdition', 
         'teacherEdition__edition', 
-        'teacherEdition__edition__course', 
         'teacherEdition__edition__semester', 
         'teacherEdition__edition__semester__year', 
         'teacherEdition__edition__semester__winter',
         'teacherEdition__edition__semester__active',
+        'teacherEdition__edition__course', 
         'teacherEdition__edition__course__name', 
         'teacherEdition__teacher', 
         'teacherEdition__teacher__first_name', 
-        'teacherEdition__teacher__last_name'
+        'teacherEdition__teacher__last_name',
     ]
 
 
@@ -212,11 +216,11 @@ class ServerViewSet(ModelViewSet):
         'edition__description', 
         'edition__date_opened', 
         'edition__date_closed', 
-        'edition__course', 
         'edition__semester', 
         'edition__semester__year', 
         'edition__semester__winter', 
         'edition__semester__active',
+        'edition__course',
         'edition__course__name', 
         'edition__course__description',
     ]
@@ -231,23 +235,23 @@ class EditionServerViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id', 
-        'edition', 
-        'server', 
-        'additional_info', 
+        'additional_info',
+        'edition',
         'edition__description', 
         'edition__date_opened', 
         'edition__date_closed', 
-        'edition__course', 
         'edition__semester', 
         'edition__semester__year', 
         'edition__semester__winter', 
         'edition__semester__active',
+        'edition__course',
         'edition__course__name', 
+        'server', 
         'server__name', 
         'server__ip', 
         'server__port', 
         'server__date_created', 
-        'server__active'
+        'server__active',
     ]
 
 
@@ -262,11 +266,10 @@ class DBAccountViewSet(ModelViewSet):
         'id', 
         'username', 
         'password', 
+        'additional_info',
+        'is_moved',
         'editionServer', 
-        'additional_info', 
-        'student',
         'editionServer__edition',
-        'editionServer__server',
         'editionServer__edition__active',
         'editionServer__edition__course',
         'editionServer__edition__semester',
@@ -274,12 +277,13 @@ class DBAccountViewSet(ModelViewSet):
         'editionServer__edition__semester__winter',
         'editionServer__edition__semester__active',
         'editionServer__edition__course__name',
+        'editionServer__server',
         'editionServer__server__name',
         'editionServer__server__active',
+        'student',
         'student__first_name',
         'student__last_name',
         'student__student_id',
-        'is_moved',
     ]
 
 
@@ -288,11 +292,8 @@ class AddUserAccountToExternalDB(ViewSet):
     def add_db_account(self, request, format=None):
         accounts_data = request.data
         print('Request log:', accounts_data)
-
         db_accounts = DBAccount.objects.filter(is_moved=False, editionServer__server__active=True, editionServer__server__id=accounts_data['server_id'], student__groups__id=accounts_data['group_id'])
-
         server = Server.objects.get(id=accounts_data['server_id'], active=True)
-        
         moved_accounts = []
         
         if server.provider == 'MySQL':
