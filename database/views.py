@@ -44,7 +44,7 @@ class TeacherViewSet(ModelViewSet):
         'editions__semester__year',
         'editions__semester__winter',
         'editions__semester__active',
-        'editions_course',
+        'editions__course',
         'editions__course__name',
     ]
 

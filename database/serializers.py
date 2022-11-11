@@ -335,6 +335,7 @@ class ServerSerializer(ModelSerializer):
             'password',
             'database',
             'date_created',
+            'create_user_template',
             'active',
         ]
 

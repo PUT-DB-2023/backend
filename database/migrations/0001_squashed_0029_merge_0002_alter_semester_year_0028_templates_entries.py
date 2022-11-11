@@ -55,7 +55,7 @@ def forwards_func(apps, schema_editor):
     server_passwords = ['root', 'oracledbpass', 'postgres', 'mongodbnosqlpass', 'mssqlpass']
     server_providers = ['MySQL', 'Oracle', 'Postgres', 'MongoDB', 'Microsoft SQL Server']
     server_users = ['root', 'oracledbuser', 'postgres', 'mongodbnosqluser', 'mssqluser']
-    server_create_user_templates = ["CREATE USER IF NOT EXISTS %s@'localhost' IDENTIFIED BY %s;", ' ', "CREATE USER \"%s\" WITH PASSWORD \'%s\';", ' ', ' ']
+    server_create_user_templates = ["CREATE USER IF NOT EXISTS %s@'localhost' IDENTIFIED BY %s;", '', "CREATE USER \"%s\" WITH PASSWORD \'%s\';", '', '']
 
     for i in range(len(server_names)):
         Server.objects.using(db_alias).create(
