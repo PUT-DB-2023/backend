@@ -19,7 +19,7 @@ class UserViewSet(ModelViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.prefetch_related('roles')
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name']
+    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'roles',]
 
 
 class AdminViewSet(ModelViewSet):
@@ -29,7 +29,7 @@ class AdminViewSet(ModelViewSet):
     serializer_class = AdminSerializer
     queryset = Admin.objects.all()
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name']
+    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'roles',]
 
 
 class TeacherViewSet(ModelViewSet):
@@ -40,7 +40,8 @@ class TeacherViewSet(ModelViewSet):
     queryset = Teacher.objects.prefetch_related('editions__semester', 'editions__course')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
-        'id', 'password', 'email', 'first_name', 'last_name',
+        'id', 'password', 'email', 'first_name', 'last_name', 'roles',
+        'editions__semester',
         'editions__semester__year',
         'editions__semester__winter',
         'editions__semester__active',
@@ -69,7 +70,10 @@ class RoleViewSet(ModelViewSet):
     serializer_class = RoleSerializer
     queryset = Role.objects.prefetch_related('permissions', 'users')
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'name', 'description', 'permissions', 'permissions__name', 'users', 'users__first_name', 'users__last_name']
+    filterset_fields = [
+        'id', 'name', 'description',
+        'permissions', 'permissions__name', 'users', 'users__first_name', 'users__last_name',
+    ]
 
 
 class PermissionViewSet(ModelViewSet):
@@ -79,7 +83,10 @@ class PermissionViewSet(ModelViewSet):
     serializer_class = PermissionSerializer
     queryset = Permission.objects.all()
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'name', 'description', 'roles', 'roles__name', 'roles__users', 'roles__users__first_name', 'roles__users__last_name']
+    filterset_fields = [
+        'id', 'name', 'description',
+        'roles', 'roles__name', 'roles__users', 'roles__users__first_name', 'roles__users__last_name',
+    ]
 
 
 class MajorViewSet(ModelViewSet):
@@ -117,7 +124,7 @@ class SemesterViewSet(ModelViewSet):
     serializer_class = SemesterSerializer
     queryset = Semester.objects.all()
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'year', 'winter', 'active']
+    filterset_fields = ['id', 'year', 'winter', 'active', 'editions']
 
 
 class EditionViewSet(ModelViewSet):

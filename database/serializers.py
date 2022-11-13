@@ -203,8 +203,23 @@ class SemesterSerializer(ModelSerializer):
             'year',
             'winter',
             'active',
+            'editions',
         ]
+    
+    def to_representation(self, instance):
+        self.fields['editions'] = EditionSerializerForSemester(many=True, read_only=True)
+        return super(SemesterSerializer, self).to_representation(instance)
 
+
+class BasicSemesterSerializer(ModelSerializer):
+    class Meta:
+        model = Semester
+        fields = [
+            'id',
+            'year',
+            'winter',
+            'active',
+        ]
 
 class EditionSerializer(ModelSerializer):
     class Meta:
@@ -222,7 +237,7 @@ class EditionSerializer(ModelSerializer):
     
     def to_representation(self, instance):
         self.fields['course'] = CourseSerializer(many=False, read_only=True)
-        self.fields['semester'] = SemesterSerializer(many=False, read_only=True)
+        self.fields['semester'] = BasicSemesterSerializer(many=False, read_only=True)
         self.fields['teachers'] = BasicTeacherSerializer(many=True, read_only=True)
         self.fields['servers'] = ServerSerializer(many=True, read_only=True)
         return super(EditionSerializer, self).to_representation(instance)
@@ -239,10 +254,23 @@ class BasicEditionSerializer(ModelSerializer):
         ]
     
     def to_representation(self, instance):
-        self.fields['semester'] = SemesterSerializer(many=False, read_only=True)
+        self.fields['semester'] = BasicSemesterSerializer(many=False, read_only=True)
         self.fields['course'] = CourseSerializer(many=False, read_only=True)
         self.fields['servers'] = ServerSerializer(many=True, read_only=True)
         return super(BasicEditionSerializer, self).to_representation(instance)
+
+
+class EditionSerializerForSemester(ModelSerializer):
+    class Meta:
+        model = Edition
+        fields = [
+            'id',
+            'course',
+        ]
+    
+    def to_representation(self, instance):
+        self.fields['course'] = CourseSerializer(many=False, read_only=True)
+        return super(EditionSerializerForSemester, self).to_representation(instance)
 
 
 class EditionSerializerForTeacher(ModelSerializer):
