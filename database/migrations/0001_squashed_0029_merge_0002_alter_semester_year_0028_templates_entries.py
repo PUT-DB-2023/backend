@@ -456,7 +456,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=30, unique=True)),
                 ('description', models.CharField(blank=True, default='', max_length=100)),
-                ('permisssions', models.ManyToManyField(blank=True, related_name='roles', to='database.permission')),
+                ('permissions', models.ManyToManyField(blank=True, related_name='roles', to='database.permission')),
                 ('users', models.ManyToManyField(blank=True, related_name='roles', to='database.user')),
             ],
         ),
