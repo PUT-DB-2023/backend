@@ -100,12 +100,12 @@ class RoleSerializer(ModelSerializer):
             'id',
             'name',
             'description',
-            'permisssions',
+            'permissions',
             'users',
         ]
     
     def to_representation(self, instance):
-        self.fields['permisssions'] = BasicPermissionSerializer(many=True, read_only=True)
+        self.fields['permissions'] = BasicPermissionSerializer(many=True, read_only=True)
         # self.fields['users'] = UserSerializer(many=True, read_only=True)
         return super(RoleSerializer, self).to_representation(instance)
 
