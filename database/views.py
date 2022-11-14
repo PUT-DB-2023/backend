@@ -72,7 +72,8 @@ class RoleViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id', 'name', 'description',
-        'permissions', 'permissions__name', 'users', 'users__first_name', 'users__last_name',
+        'permissions', 'permissions__name', 
+        'users', 'users__first_name', 'users__last_name',
     ]
 
 
@@ -277,7 +278,6 @@ class DBAccountViewSet(ModelViewSet):
         'is_moved',
         'editionServer', 
         'editionServer__edition',
-        'editionServer__edition__active',
         'editionServer__edition__course',
         'editionServer__edition__semester',
         'editionServer__edition__semester__year',
