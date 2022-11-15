@@ -177,6 +177,7 @@ class CourseSerializer(ModelSerializer):
             'id',
             'name',
             'description',
+            'active',
             'major',
         ]
     
@@ -192,6 +193,7 @@ class BasicCourseSerializer(ModelSerializer):
             'id',
             'name',
             'description',
+            'active',
         ]
 
 
@@ -364,6 +366,8 @@ class ServerSerializer(ModelSerializer):
             'database',
             'date_created',
             'create_user_template',
+            'modify_user_template',
+            'delete_user_template',
             'active',
         ]
 

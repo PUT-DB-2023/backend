@@ -25,24 +25,30 @@ class Student(User):
 
 class Permission(models.Model):
     name = models.CharField(max_length=30, unique=True)
-    description = models.CharField(max_length=100, blank=True, default='')
+    description = models.CharField(max_length=255, blank=True, default='')
 
 
 class Role(models.Model):
     name = models.CharField(max_length=30, unique=True)
-    description = models.CharField(max_length=100, blank=True, default='')
+    description = models.CharField(max_length=255, blank=True, default='')
     permissions = models.ManyToManyField(Permission, blank=True, related_name='roles')
     users = models.ManyToManyField(User, related_name='roles', blank=True)
 
 
 class Major(models.Model):
     name = models.CharField(max_length=30, unique=True)
-    description = models.CharField(max_length=100, blank=True, default='')
+    description = models.CharField(max_length=255, blank=True, default='')
 
 class Course(models.Model):
     name = models.CharField(max_length=30, unique=True)
     major = models.ForeignKey(Major, on_delete=models.SET_NULL, blank=True, null=True, related_name='courses')
-    description = models.CharField(max_length=100, blank=True, default='')
+    description = models.CharField(max_length=255, blank=True, default='')
+    active = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        if self.editions is None:
+            self.active = False
+        super().save(*args, **kwargs)
 
 
 class Semester(models.Model):
@@ -52,12 +58,20 @@ class Semester(models.Model):
 
 
 class Edition(models.Model):
-    description = models.CharField(max_length=100, blank=True, default='')
+    description = models.CharField(max_length=255, blank=True, default='')
     date_opened = models.DateField(blank=True, null=True)
     date_closed = models.DateField(blank=True, null=True)
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE, related_name='editions')
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='editions')
     teachers = models.ManyToManyField(Teacher, through='TeacherEdition', blank=True, related_name='editions')
+
+    def save(self, *args, **kwargs):
+        if self.course and self.semester.active == 'true':
+            self.course.active = True
+        else:
+            self.course.active = False
+        self.course.save()
+        super().save(*args, **kwargs)
 
 
 class TeacherEdition(models.Model):
@@ -84,8 +98,10 @@ class Server(models.Model):
     database = models.CharField(max_length=30)
     date_created = models.DateField(auto_now_add=True)
     active = models.BooleanField(default=True)
-    create_user_template = models.CharField(max_length=100)
     edition = models.ManyToManyField(Edition, through='EditionServer', related_name='servers')
+    create_user_template = models.CharField(max_length=255, blank=True, default='')
+    modify_user_template = models.CharField(max_length=255, blank=True, default='')
+    delete_user_template = models.CharField(max_length=255, blank=True, default='')
 
 class EditionServer(models.Model):
     edition = models.ForeignKey(Edition, on_delete=models.CASCADE)

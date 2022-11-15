@@ -55,11 +55,14 @@ def forwards_func(apps, schema_editor):
     server_passwords = ['root', 'oracledbpass', 'postgres', 'mongodbnosqlpass', 'mssqlpass']
     server_providers = ['MySQL', 'Oracle', 'Postgres', 'MongoDB', 'Microsoft SQL Server']
     server_users = ['root', 'oracledbuser', 'postgres', 'mongodbnosqluser', 'mssqluser']
-    server_create_user_templates = ["CREATE USER IF NOT EXISTS %s@'localhost' IDENTIFIED BY %s;", '', "CREATE USER \"%s\" WITH PASSWORD \'%s\';", '', '']
+    server_create_user_templates = ["CREATE USER IF NOT EXISTS %s@'localhost' IDENTIFIED BY %s;", "", "CREATE USER \"%s\" WITH PASSWORD \'%s\';", "", ""]
+    server_modify_user_templates = ["ALTER USER %s@'localhost' IDENTIFIED BY %s;", "", "ALTER USER \"%s\" WITH PASSWORD \'%s\';", "", ""]
+    server_delete_user_templates = ["DROP USER %s@'localhost';", "", "DROP USER \"%s\";", "", ""]
 
     for i in range(len(server_names)):
         Server.objects.using(db_alias).create(
-        name=server_names[i], ip=server_ipss[i], port=server_ports[i], date_created=server_date_createds, database=server_databases[i], password=server_passwords[i], provider=server_providers[i], user=server_users[i], create_user_template=server_create_user_templates[i]
+        name=server_names[i], ip=server_ipss[i], port=server_ports[i], date_created=server_date_createds, database=server_databases[i], password=server_passwords[i], provider=server_providers[i], user=server_users[i], create_user_template=server_create_user_templates[i],
+        modify_user_template=server_modify_user_templates[i], delete_user_template=server_delete_user_templates[i]
     )
 
     course_names = ['Zarządzanie bazami danych', 'Podstawy baz danych', 'Zarządzanie bazami NoSQL', 'Projektowanie baz danych']
@@ -111,12 +114,6 @@ def forwards_func(apps, schema_editor):
         None, None, None, None
     ]
 
-    actives = [
-        False, False, False, False,
-        False, False, False, False,
-        False, False, False, False,
-        True, True, True, True
-    ]
 
     courses = Course.objects.all().values_list('id', flat=True)
 
@@ -137,7 +134,7 @@ def forwards_func(apps, schema_editor):
 
     for i in range(len(edition_descriptions)):
         Edition.objects.using(db_alias).create(
-            description=edition_descriptions[i], date_opened=dates_opened[i], date_closed=dates_closed[i], active=actives[i], course_id=courses_ids[i], semester_id=semestres_ids[i]
+            description=edition_descriptions[i], date_opened=dates_opened[i], date_closed=dates_closed[i], course_id=courses_ids[i], semester_id=semestres_ids[i]
     )
 
     edition_server_add_info = ['Additional info about EditionServer' for _ in range(16)]
@@ -248,7 +245,8 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=30, unique=True)),
-                ('description', models.CharField(blank=True, default='', max_length=100)),
+                ('description', models.CharField(blank=True, default="", max_length=100)),
+                ('active', models.BooleanField(default=False)),
             ],
         ),
         migrations.CreateModel(
@@ -259,8 +257,7 @@ class Migration(migrations.Migration):
                 ('description', models.CharField(max_length=100)),
                 ('date_opened', models.DateField()),
                 ('date_closed', models.DateField()),
-                ('active', models.BooleanField(default=True)),
-                ('course', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='database.course')),
+                ('course', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='editions', to='database.course')),
             ],
         ),
         migrations.CreateModel(
@@ -268,7 +265,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=30, unique=True)),
-                ('description', models.CharField(blank=True, default='', max_length=100)),
+                ('description', models.CharField(blank=True, default="", max_length=100)),
             ],
         ),
         migrations.CreateModel(
@@ -289,6 +286,9 @@ class Migration(migrations.Migration):
                 ('port', models.CharField(max_length=10)),
                 ('date_created', models.DateField(auto_now_add=True)),
                 ('active', models.BooleanField(default=True)),
+                ('create_user_template', models.CharField(blank=True, default="", max_length=255)),
+                ('modify_user_template', models.CharField(blank=True, default="", max_length=255)),
+                ('delete_user_template', models.CharField(blank=True, default="", max_length=255)),
             ],
         ),
         migrations.CreateModel(
@@ -340,7 +340,7 @@ class Migration(migrations.Migration):
             name='EditionServer',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('additional_info', models.CharField(blank=True, default='', max_length=255)),
+                ('additional_info', models.CharField(blank=True, default="", max_length=255)),
                 ('edition', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='database.edition')),
                 ('server', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='database.server')),
                 ('passwd_template', models.CharField(max_length=255, null=True)),
@@ -391,16 +391,16 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='edition',
             name='description',
-            field=models.CharField(blank=True, default='', max_length=100),
+            field=models.CharField(blank=True, default="", max_length=100),
         ),
         migrations.CreateModel(
             name='Group',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=30)),
-                ('day', models.CharField(blank=True, default='', max_length=30)),
-                ('hour', models.CharField(blank=True, default='', max_length=30)),
-                ('room', models.CharField(blank=True, default='', max_length=30)),
+                ('day', models.CharField(blank=True, default="", max_length=30)),
+                ('hour', models.CharField(blank=True, default="", max_length=30)),
+                ('room', models.CharField(blank=True, default="", max_length=30)),
                 ('teacherEdition', models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, to='database.teacheredition')),
                 ('students', models.ManyToManyField(related_name='groups', to='database.student')),
             ],
@@ -430,7 +430,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=30, unique=True)),
-                ('description', models.CharField(blank=True, default='', max_length=100)),
+                ('description', models.CharField(blank=True, default="", max_length=100)),
             ],
         ),
         migrations.AddField(
@@ -444,7 +444,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('username', models.CharField(max_length=30)),
                 ('password', models.CharField(max_length=30)),
-                ('additional_info', models.CharField(blank=True, default='', max_length=255)),
+                ('additional_info', models.CharField(blank=True, default="", max_length=255)),
                 ('editionServer', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='database.editionserver')),
                 ('student', models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='db_accounts', to='database.student')),
                 ('is_moved', models.BooleanField(default=False)),
@@ -455,20 +455,10 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=30, unique=True)),
-                ('description', models.CharField(blank=True, default='', max_length=100)),
+                ('description', models.CharField(blank=True, default="", max_length=100)),
                 ('permissions', models.ManyToManyField(blank=True, related_name='roles', to='database.permission')),
                 ('users', models.ManyToManyField(blank=True, related_name='roles', to='database.user')),
             ],
-        ),
-        migrations.AlterField(
-            model_name='edition',
-            name='course',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='editions', to='database.course'),
-        ),
-            migrations.AddField(
-            model_name='server',
-            name='create_user_template',
-            field=models.CharField(max_length=100),
         ),
         migrations.RunPython(forwards_func),
         migrations.AlterField(
