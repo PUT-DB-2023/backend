@@ -26,9 +26,9 @@ services:
       - "5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
-      interval: 10s
-      timeout: 10s
-      retries: 20
+      interval: 5s
+      timeout: 5s
+      retries: 50
   mysql:
     image: mysql:8.0
     environment:
