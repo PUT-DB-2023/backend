@@ -105,17 +105,17 @@ class CourseViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting courses.
     """
     serializer_class = CourseSerializer
-    queryset = Course.objects.prefetch_related('editions')
+    queryset = Course.objects.prefetch_related('editions').order_by('id')
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'name', 'major', 'description', 'editions']
+    filterset_fields = ['id', 'name', 'major', 'active', 'description', 'editions']
 
-    def get_queryset(self):
-        if self.request.query_params.get('active') == "true":
-            return Course.objects.prefetch_related('editions').filter(editions__semester__active=True).distinct().order_by('id')
-        elif self.request.query_params.get('active') == "false":
-            return Course.objects.prefetch_related('editions').exclude(editions__semester__active=True).distinct().order_by('id')
-        else:
-            return Course.objects.prefetch_related('editions').order_by('id')
+    # def get_queryset(self):
+    #     if self.request.query_params.get('active') == "true":
+    #         return Course.objects.prefetch_related('editions').filter(editions__semester__active=True).distinct().order_by('id')
+    #     elif self.request.query_params.get('active') == "false":
+    #         return Course.objects.prefetch_related('editions').exclude(editions__semester__active=True).distinct().order_by('id')
+    #     else:
+    #         return Course.objects.prefetch_related('editions').order_by('id')
 
 
 class SemesterViewSet(ModelViewSet):
@@ -302,6 +302,8 @@ class AddUserAccountToExternalDB(ViewSet):
         db_accounts = DBAccount.objects.filter(is_moved=False, editionServer__server__active=True, editionServer__server__id=accounts_data['server_id'], student__groups__id=accounts_data['group_id'])
         server = Server.objects.get(id=accounts_data['server_id'], active=True)
         moved_accounts = []
+
+        print(f"Server: {server}, server user: {server.user}, server password: {server.password}, server ip: {server.ip}, server port: {server.port}")
         
         if server.provider == 'MySQL':
             conn_mysql = mdb.connect(host=server.ip, port=int(server.port), user=server.user, passwd=server.password, db=server.database)

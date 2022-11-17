@@ -48,11 +48,14 @@ def forwards_func(apps, schema_editor):
     Server.objects.all().delete()
 
     server_names = ['MySQL ZBD Server', 'Oracle ZBD Server - OFFLINE', 'Postgres PBD Server', 'Mongo ZBDNS Server', 'Microsoft SQL Server PBD']
-    server_ipss = ['localhost', '128.127.80.0', 'postgres-external', '156.154.84.0', '176.119.32.0']
-    server_ports = ['3306', '5432', '5433', '2850', '4179']
+    server_ipss = ['46.41.140.27', '128.127.80.0', '46.41.140.27', '156.154.84.0', '176.119.32.0']
+    # server_ports = ['3306', '5432', '5433', '2850', '4179']
+    # server_ipss = ['localhost', '128.127.80.0', 'postgres-external', '156.154.84.0', '176.119.32.0']
+    server_ports = ['3306', '1234', '5432', '2850', '4179']
     server_date_createds = '2021-12-31'
     server_databases = ['mysql', 'oracledb', 'postgres', 'mongodbnosql', 'mssql']
-    server_passwords = ['root', 'oracledbpass', 'postgres', 'mongodbnosqlpass', 'mssqlpass']
+    server_passwords = ['admin', 'oracledbpass', 'admin', 'mongodbnosqlpass', 'mssqlpass']
+    # server_passwords = ['root', 'oracledbpass', 'postgres', 'mongodbnosqlpass', 'mssqlpass']
     server_providers = ['MySQL', 'Oracle', 'Postgres', 'MongoDB', 'Microsoft SQL Server']
     server_users = ['root', 'oracledbuser', 'postgres', 'mongodbnosqluser', 'mssqluser']
     server_create_user_templates = ["CREATE USER IF NOT EXISTS %s@'localhost' IDENTIFIED BY %s;", "", "CREATE USER \"%s\" WITH PASSWORD \'%s\';", "", ""]
