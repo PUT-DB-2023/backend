@@ -46,7 +46,19 @@ class Course(models.Model):
     active = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
-        if self.editions is None:
+        # check if self.editions.all() is empty
+        if self.editions.all():
+            print(f"Editions: {self.editions.all()}")
+            for edition in self.editions.all():
+                if edition.semester.active:
+                    print(f"Found active semester: {edition.semester}")
+                    self.active = True
+                    break
+                else:
+                    print(f"Found inactive semester: {edition.semester}")
+                    self.active = False
+        else:
+            print(f"No editions found for course: {self}")
             self.active = False
         super().save(*args, **kwargs)
 
@@ -66,12 +78,21 @@ class Edition(models.Model):
     teachers = models.ManyToManyField(Teacher, through='TeacherEdition', blank=True, related_name='editions')
 
     def save(self, *args, **kwargs):
-        if self.course and self.semester.active == 'true':
-            self.course.active = True
-        else:
-            self.course.active = False
-        self.course.save()
+        print(f"Course: {self.course}, Course active: {self.course.active}, semester active: {self.semester.active}")
         super().save(*args, **kwargs)
+        self.course.save()
+
+    # override create method to check if the course is active
+    def create(self, *args, **kwargs):
+        super().create(*args, **kwargs)
+        self.course.save()
+
+    # override delete method to check if the course is active
+    def delete(self, *args, **kwargs):
+        print(f"Deleting edition: {self}")
+        super().delete(*args, **kwargs)
+        print("Saving course")
+        self.course.save()
 
 
 class TeacherEdition(models.Model):
