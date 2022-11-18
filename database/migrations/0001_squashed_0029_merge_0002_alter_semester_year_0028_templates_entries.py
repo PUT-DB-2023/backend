@@ -73,7 +73,7 @@ def forwards_func(apps, schema_editor):
 
     for i in range(len(course_names)):
         Course.objects.using(db_alias).create(
-            name=course_names[i], description=course_descriptions[i]
+            name=course_names[i], description=course_descriptions[i], active=True
     )
 
     semester_years = ['2019/2020', '2020/2021', '2021/2022', '2022/2023']
