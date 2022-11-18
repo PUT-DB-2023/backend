@@ -25,6 +25,7 @@ def forwards_func(apps, schema_editor):
     Semester = apps.get_model('database', 'Semester')
     Course = apps.get_model('database', 'Course')
     Server = apps.get_model('database', 'Server')
+    Major = apps.get_model('database', 'Major')
     
 
     
@@ -45,6 +46,7 @@ def forwards_func(apps, schema_editor):
     User.objects.all().delete()
     Semester.objects.all().delete()
     Course.objects.all().delete()
+    Major.objects.all().delete()
     Server.objects.all().delete()
 
     server_names = ['MySQL ZBD Server', 'Oracle ZBD Server - OFFLINE', 'Postgres PBD Server', 'Mongo ZBDNS Server', 'Microsoft SQL Server PBD']
@@ -68,17 +70,27 @@ def forwards_func(apps, schema_editor):
         modify_user_template=server_modify_user_templates[i], delete_user_template=server_delete_user_templates[i]
     )
 
+    major_names = ['Informatyka', 'Automatyka i Robotyka']
+    major_description = ['Opis kierunku Informatyka', 'Opis kierunku Automatyka i Robotyka']
+
+    for i in range(len(major_names)):
+        Major.objects.using(db_alias).create(
+        name=major_names[i], description=major_description[i]
+    )
+
     course_names = ['Zarządzanie bazami danych', 'Podstawy baz danych', 'Zarządzanie bazami NoSQL', 'Projektowanie baz danych']
     course_descriptions = ['Opis kursu zarządzania bazami danych', 'Opis kursu podstaw baz danych', 'Opis kursu zarządzania bazami danych noSQL', 'Opis kursu projektowania baz danych']
+    course_active = [True, True, True, False]
+    course_major = [Major.objects.get(name='Informatyka'), Major.objects.get(name='Informatyka'), Major.objects.get(name='Automatyka i Robotyka'), Major.objects.get(name='Informatyka')]
 
     for i in range(len(course_names)):
         Course.objects.using(db_alias).create(
-            name=course_names[i], description=course_descriptions[i], active=True
+            name=course_names[i], description=course_descriptions[i], active=course_active[i], major=course_major[i]
     )
 
-    semester_years = ['2019/2020', '2020/2021', '2021/2022', '2022/2023']
-    semester_winters = [True, True, False, False]
-    semester_actives = [False, False, False, True]
+    semester_years = ['2021/2022', '2022/2023']
+    semester_winters = [True, True]
+    semester_actives = [False, True]
 
     for i in range(len(semester_years)):
         Semester.objects.using(db_alias).create(
@@ -91,48 +103,34 @@ def forwards_func(apps, schema_editor):
         first_name="Admin", last_name="Admin", email='admin@cs.put.poznan.pl' , password='admin123', polymorphic_ctype_id=admin_ct.id
     )
 
-    for i in range(10):
+    for i in range(4):
         Teacher.objects.using(db_alias).create(
             first_name=users_names[i].split()[0], last_name=users_names[i].split()[1], email=users_names[i].split()[0] + '.' + users_names[i].split()[1] + '@cs.put.poznan.pl' , password=users_names[i].split()[1] + '123', polymorphic_ctype_id=teacher_ct.id
         )
 
-    for i in range(11, len(users_names)):
+    for i in range(4, len(users_names)):
         Student.objects.using(db_alias).create(
             first_name=users_names[i].split()[0], last_name=users_names[i].split()[1], email=users_names[i].split()[0] + '.' + users_names[i].split()[1] + '@student.put.poznan.pl' , password=users_names[i].split()[1] + '123', student_id=str(100000+i), polymorphic_ctype_id=student_ct.id
         )
 
     edition_descriptions = [
-        'Edycja 2019/2020 kursu Podstawy baz danych','Edycja 2019/2020 kursu Zarządzanie bazami danych', 'Edycja 2019/2020 kursu Zarządzanie bazami danych noSQL', 'Edycja 2019/2020 kursu Projektowanie baz danych',
-        'Edycja 2020/2021 kursu Podstawy baz danych','Edycja 2020/2021 kursu Zarządzanie bazami danych', 'Edycja 2020/2021 kursu Zarządzanie bazami danych noSQL', 'Edycja 2020/2021 kursu Projektowanie baz danych',
-        'Edycja 2021/2022 kursu Podstawy baz danych','Edycja 2021/2022 kursu Zarządzanie bazami danych', 'Edycja 2021/2022 kursu Zarządzanie bazami danych noSQL', 'Edycja 2021/2022 kursu Projektowanie baz danych',
-        'Edycja 2022/2023 kursu Podstawy baz danych','Edycja 2022/2023 kursu Zarządzanie bazami danych', 'Edycja 2022/2023 kursu Zarządzanie bazami danych noSQL', 'Edycja 2022/2023 kursu Projektowanie baz danych'
+        'Edycja 2022/2023 kursu Podstawy baz danych','Edycja 2022/2023 kursu Zarządzanie bazami danych', 'Edycja 2022/2023 kursu Zarządzanie bazami danych noSQL', 'Edycja 2021/2022 kursu Projektowanie baz danych'
         ]
 
-    dates_opened = ['2019-10-01' for _ in range(16)]
+    dates_opened = ['2019-10-01' for _ in range(8)]
 
     dates_closed = [
-        '2020-06-30', '2020-06-30', '2020-06-30', '2020-06-30',
-        '2021-06-30', '2021-06-30', '2021-06-30', '2021-06-30',
-        '2022-06-30', '2022-06-30', '2022-06-30', '2022-06-30',
-        None, None, None, None
+        None, None, None, '2022-06-30'
     ]
-
 
     courses = Course.objects.all().values_list('id', flat=True)
 
-    courses_ids = [
-    courses[1], courses[0], courses[2], courses[3],
-    courses[1], courses[0], courses[2], courses[3],
-    courses[1], courses[0], courses[2], courses[3],
-    courses[1], courses[0], courses[2], courses[3]]
+    courses_ids = [courses[1], courses[0], courses[2], courses[3]]
 
     semesters = Semester.objects.all().values_list('id', flat=True)
 
     semestres_ids = [
-        semesters[0], semesters[0], semesters[0], semesters[0],
-        semesters[1], semesters[1], semesters[1], semesters[1],
-        semesters[2], semesters[2], semesters[2], semesters[2],
-        semesters[3], semesters[3], semesters[3], semesters[3]
+        semesters[1], semesters[1], semesters[1], semesters[0],
     ]
 
     for i in range(len(edition_descriptions)):
@@ -140,22 +138,21 @@ def forwards_func(apps, schema_editor):
             description=edition_descriptions[i], date_opened=dates_opened[i], date_closed=dates_closed[i], course_id=courses_ids[i], semester_id=semestres_ids[i]
     )
 
-    edition_server_add_info = ['Additional info about EditionServer' for _ in range(16)]
+    edition_server_add_info = ['Additional info about EditionServer' for _ in range(4)]
 
     edition_server_username_templates = [
-        "INF_{NR_INDEKSU}", '{IMIE} + {NAZWISKO}', '{NAZWISKO}_{NR_INDEKSU}', 'STUDENT_{NR_INDEKSU}', "INF_{NR_INDEKSU}", '{IMIE} + {NAZWISKO}', '{NAZWISKO}_{NR_INDEKSU}', 'STUDENT_{NR_INDEKSU}', "INF_{NR_INDEKSU}", '{IMIE} + {NAZWISKO}', '{NAZWISKO}_{NR_INDEKSU}', 'STUDENT_{NR_INDEKSU}', "INF_{NR_INDEKSU}", '{IMIE} + {NAZWISKO}', '{NAZWISKO}_{NR_INDEKSU}', 'STUDENT_{NR_INDEKSU}'
+        "INF_{NR_INDEKSU}", '{IMIE} + {NAZWISKO}', '{NAZWISKO}_{NR_INDEKSU}', 'STUDENT_{NR_INDEKSU}'
     ]
 
     edition_server_passwd_templates = [
-        "blank", "default_passwd", "123", "inf{NR_INDEKSU}", "blank", "default_passwd", "123", "inf{NR_INDEKSU}", "blank", "default_passwd", "123", "inf{NR_INDEKSU}", "blank", "default_passwd", "123", "inf{NR_INDEKSU}"
+        "blank", "default_passwd", "123", "inf{NR_INDEKSU}"
     ]
-
 
     editions = Edition.objects.all().values_list('id', flat=True)
     servers = Server.objects.all().values_list('id', flat=True)
 
-    edition_server_edition_ids = [editions[i] for i in range(16)]
-    edition_server_server_ids = [servers[2], servers[0], servers[3], servers[4], servers[2], servers[0], servers[3], servers[4], servers[2], servers[0], servers[3], servers[4], servers[2], servers[0], servers[3], servers[4]]
+    edition_server_edition_ids = [editions[i] for i in range(4)]
+    edition_server_server_ids = [servers[2], servers[0], servers[3], servers[4]]
 
     for i in range(len(edition_server_add_info)):
         EditionServer.objects.using(db_alias).create(
@@ -164,74 +161,53 @@ def forwards_func(apps, schema_editor):
 
     teachers = Teacher.objects.all().values_list('id', flat=True)
 
-    teacher_edition_edition_id = [editions[i] for i in range(16)]
-    teacher_edition_teacher_id = [teachers[0], teachers[1], teachers[2], teachers[3], teachers[0], teachers[1], teachers[2], teachers[3], teachers[0], teachers[1], teachers[2], teachers[3], teachers[0], teachers[1], teachers[2], teachers[3]]
+    teacher_edition_edition_id = [editions[i] for i in range(4)]
+    teacher_edition_teacher_id = [teachers[0], teachers[1], teachers[2], teachers[3]]
 
     for i in range(len(teacher_edition_edition_id)):
         TeacherEdition.objects.using(db_alias).create(
             edition_id=teacher_edition_edition_id[i], teacher_id=teacher_edition_teacher_id[i]
     )
 
-    group_names = ['L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'L7', 'L8', 'L9', 'L10', 'L11', 'L12', 'L13', 'L14']
-    group_days = ['Poniedziałek', 'Środa', 'Wtorek', 'Poniedziałek', 'Wtorek', 'Piątek', 'Czwartek', 'Poniedziałek', 'Środa', 'Piątek', 'Wtorek', 'Środa', 'Czwartek', 'Poniedziałek']
-    group_hours = ['11:45', '8:00', '8:00', '9:45', '13:30', '16:50', '13:30', '11:45', '15:10', '8:00', '8:00', '9:45', '11:45', '13:30']
-    group_rooms = ['1.6.18', 'CW 8', '2.2.2', 'CW 9', '1.5.5', 'A6', '1.4.4', '2.2.2', '1.2.2', '2.2.2', '1.1.1', '4.4.4', '2.2.2', '1.1.1']
+    group_names = ['Grupa 1 ZBD', 'Grupa 2 ZBD', 'Grupa 3 ZBD', 'Grupa 4 PBD', 'Grupa 5 PBD', 'Grupa 6 PBD', 'Grupa 7 ZBN', 'Grupa 8 ZBN', 'Grupa 9 ZBN', 'Grupa 10 ProjBD - NA', 'Grupa 11 ProjBD - NA', 'Grupa 12 ProjBD - NA']
+    group_days = ['Poniedziałek', 'Środa', 'Wtorek', 'Poniedziałek', 'Wtorek', 'Piątek', 'Czwartek', 'Poniedziałek', 'Środa', 'Piątek', 'Wtorek', 'Środa']
+    group_hours = ['11:45', '8:00', '8:00', '9:45', '13:30', '16:50', '13:30', '11:45', '15:10', '8:00', '8:00', '9:45']
+    group_rooms = ['1.6.18', 'CW 8', '2.2.2', 'CW 9', '1.5.5', 'A6', '1.4.4', '2.2.2', '1.2.2', '2.2.2', '1.1.1', '4.4.4']
 
     teacher_editions = TeacherEdition.objects.all()
+    teacher_editions_for_groups = [teacher_editions[1], teacher_editions[1], teacher_editions[1], teacher_editions[0], teacher_editions[0], teacher_editions[0], teacher_editions[2], teacher_editions[2], teacher_editions[2], teacher_editions[3], teacher_editions[3], teacher_editions[3]]
+    
+    
     students_all = Student.objects.all()
+
+    print("Len teacher_editions: ", len(teacher_editions_for_groups))
+    print("Len group_names: ", len(group_names))
 
     for i in range(len(group_names)):
         created_group = Group.objects.using(db_alias).create(
-            name=group_names[i], day=group_days[i], hour=group_hours[i], room=group_rooms[i], teacherEdition=teacher_editions[i]
+            name=group_names[i], day=group_days[i], hour=group_hours[i], room=group_rooms[i], teacherEdition=teacher_editions_for_groups[i]
         )
-        for j in range(i * 6, i * 6 + 6):
+        for j in range(i * 8, i * 8 + 8):
             created_group.students.add(students_all[j])
-
-    L1_L2_edition_servers = [0,5,10,15]
-    L3_L4_edition_servers = [1,6,11]
-    L5_L6_edition_servers = [2,7]
-    L7_L8_edition_servers = [3]
-    L9_L10_edition_servers = [4,9,14]
-    L11_L12_edition_servers = [8,13]
-    L13_L14_edition_servers = [12]
 
     edition_servers = EditionServer.objects.all()
 
-    for i in range(10, len(users_names)):
-        if 0 <= i <= 11: # L1 L2
-            for j in range(len(L1_L2_edition_servers)):
+    for i in range(4, len(users_names)):
+        if 4 <= i <= 27: # GRUPY 1-3
                 DBAccount.objects.using(db_alias).create(
-                    username=students_all[i-10].last_name + '-dbusername', password=students_all[i-10].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-10], editionServer=edition_servers[j]
+                    username=students_all[i-4].last_name + '-dbusername', password=students_all[i-4].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-4], editionServer=edition_servers[0]
             )
-        if 12 <= i <= 23: # L3 L4
-            for j in range(len(L3_L4_edition_servers)):
+        if 28 <= i <= 51: # GRUPY 4-6
                 DBAccount.objects.using(db_alias).create(
-                    username=students_all[i-10].last_name + '-dbusername', password=students_all[i-10].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-10], editionServer=edition_servers[j]
+                    username=students_all[i-4].last_name + '-dbusername', password=students_all[i-4].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-4], editionServer=edition_servers[1]
             )
-        if 24 <= i <= 35: # L5 L6
-            for j in range(len(L5_L6_edition_servers)):
+        if 52 <= i <= 75: # GRUPY 7-9
                 DBAccount.objects.using(db_alias).create(
-                    username=students_all[i-10].last_name + '-dbusername', password=students_all[i-10].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-10], editionServer=edition_servers[j]
+                    username=students_all[i-4].last_name + '-dbusername', password=students_all[i-4].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-4], editionServer=edition_servers[2]
             )
-        if 36 <= i <= 47: # L7 L8
-            for j in range(len(L7_L8_edition_servers)):
+        if 76 <= i <= 99: # GRUPY 10-12
                 DBAccount.objects.using(db_alias).create(
-                    username=students_all[i-10].last_name + '-dbusername', password=students_all[i-10].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-10], editionServer=edition_servers[j]
-            )
-        if 48 <= i <= 59: # L9 L10
-            for j in range(len(L9_L10_edition_servers)):
-                DBAccount.objects.using(db_alias).create(
-                    username=students_all[i-10].last_name + '-dbusername', password=students_all[i-10].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-10], editionServer=edition_servers[j]
-            )
-        if 60 <= i <= 71: # L11 L12
-            for j in range(len(L11_L12_edition_servers)):
-                DBAccount.objects.using(db_alias).create(
-                    username=students_all[i-10].last_name + '-dbusername', password=students_all[i-10].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-10], editionServer=edition_servers[j]
-            )
-        if 72 <= i <= 83: # L13 L14
-            for j in range(len(L13_L14_edition_servers)):
-                DBAccount.objects.using(db_alias).create(
-                    username=students_all[i-10].last_name + '-dbusername', password=students_all[i-10].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-10], editionServer=edition_servers[j]
+                    username=students_all[i-4].last_name + '-dbusername', password=students_all[i-4].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-4], editionServer=edition_servers[3]
             )
 
 class Migration(migrations.Migration):
