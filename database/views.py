@@ -307,10 +307,10 @@ class AddUserAccountToExternalDB(ViewSet):
 
         print(f"Server: {server}, server user: {server.user}, server password: {server.password}, server ip: {server.ip}, server port: {server.port}")
         
-        if server.provider == 'MySQL':
-            conn_mysql = mdb.connect(host=server.ip, port=int(server.port), user=server.user, passwd=server.password, db=server.database)
-            print('Connected to MySQL server')  
+        if server.provider == 'MySQL':  
             try:
+                conn_mysql = mdb.connect(host=server.ip, port=int(server.port), user=server.user, passwd=server.password, db=server.database)
+                print('Connected to MySQL server')
                 cursor = conn_mysql.cursor()
                 if not db_accounts:
                     print('No accounts to move')
@@ -337,10 +337,10 @@ class AddUserAccountToExternalDB(ViewSet):
                 })
             finally:
                 conn_mysql.close()
-        elif server.provider == 'Postgres':
-            conn_postgres = psycopg2.connect(dbname=server.database, user=server.user, password=server.password, host=server.ip, port=server.port)
-            print('Connected to Postgres server') 
+        elif server.provider == 'Postgres': 
             try:
+                conn_postgres = psycopg2.connect(dbname=server.database, user=server.user, password=server.password, host=server.ip, port=server.port)
+                print('Connected to Postgres server')
                 cursor = conn_postgres.cursor()
                 if not db_accounts:
                     print('No accounts to move')
