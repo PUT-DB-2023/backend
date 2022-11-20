@@ -303,32 +303,33 @@ class AddUserAccountToExternalDB(ViewSet):
         accounts_data = request.data
         print('Request log:', accounts_data)
         db_accounts = DBAccount.objects.filter(is_moved=False, editionServer__server__active=True, editionServer__server__id=accounts_data['server_id'], student__groups__id=accounts_data['group_id'])
+
+        if not db_accounts:
+            print('No accounts to move')
+            return Response({'status': 'No accounts to move.'})
+
         server = Server.objects.get(id=accounts_data['server_id'], active=True)
         moved_accounts = []
 
         print(f"Server: {server}, server user: {server.user}, server password: {server.password}, server ip: {server.ip}, server port: {server.port}")
         
-        if server.provider == 'MySQL':  
+        if server.provider.lower() == 'mysql':  
             try:
-                if not db_accounts:
-                    print('No accounts to move')
-                    return Response({'status': 'No accounts to move.'})
-                else:
-                    conn_mysql = mdb.connect(host=server.ip, port=int(server.port), user=server.user, passwd=server.password, db=server.database)
-                    print('Connected to MySQL server')
-                    cursor = conn_mysql.cursor()
-                    for account in db_accounts:
-                        print(server.create_user_template)
-                        cursor.execute(server.create_user_template % (account.username, account.password))
-                        moved_accounts.append(account.username)
-                        DBAccount.objects.filter(id=account.id).update(is_moved=True)
-                        print(f"Successfully created user '{account.username}' with '{account.password}' password.")
-                    conn_mysql.commit()
-                    cursor.close()
-                    return Response({
-                        'status': 'ok',
-                        'moved_accounts': moved_accounts
-                    })
+                conn_mysql = mdb.connect(host=server.ip, port=int(server.port), user=server.user, passwd=server.password, db=server.database)
+                print('Connected to MySQL server')
+                cursor = conn_mysql.cursor()
+                for account in db_accounts:
+                    print(server.create_user_template)
+                    cursor.execute(server.create_user_template % (account.username, account.password))
+                    moved_accounts.append(account.username)
+                    DBAccount.objects.filter(id=account.id).update(is_moved=True)
+                    print(f"Successfully created user '{account.username}' with '{account.password}' password.")
+                conn_mysql.commit()
+                cursor.close()
+                return Response({
+                    'status': 'ok',
+                    'moved_accounts': moved_accounts
+                })
 
             except (Exception, mdb.DatabaseError) as error:
                 print(error)
@@ -341,29 +342,24 @@ class AddUserAccountToExternalDB(ViewSet):
             finally:
                 conn_mysql.close()
 
-        elif server.provider == 'Postgres': 
+        elif server.provider.lower() == 'postgres' or server.provider.lower() == 'postgresql': 
             try:
-                if not db_accounts:
-                    print('No accounts to move')
-                    return Response({'status': 'No accounts to move.'})
-                else:
-                    conn_postgres = psycopg2.connect(dbname=server.database, user=server.user, password=server.password, host=server.ip, port=server.port)
-                    print('Connected to Postgres server')
-                    cursor = conn_postgres.cursor()
-                    for account in db_accounts:
-                        print(account.username)
-                        cursor.execute('DROP ROLE IF EXISTS "%s";' % (account.username))
-                        cursor.execute(server.create_user_template % (account.username, account.password))
-                        moved_accounts.append(account.username)
-                        DBAccount.objects.filter(id=account.id).update(is_moved=True)
-                        print(f"Successfully created user '{account.username}' with '{account.password}' password.")
-                    conn_postgres.commit()
-                    cursor.close()
-                    return Response({
-                        'status': 'ok',
-                        'moved_accounts': moved_accounts
-                    })
-                    
+                conn_postgres = psycopg2.connect(dbname=server.database, user=server.user, password=server.password, host=server.ip, port=server.port)
+                print('Connected to Postgres server')
+                cursor = conn_postgres.cursor()
+                for account in db_accounts:
+                    print(account.username)
+                    cursor.execute('DROP ROLE IF EXISTS "%s";' % (account.username))
+                    cursor.execute(server.create_user_template % (account.username, account.password))
+                    moved_accounts.append(account.username)
+                    DBAccount.objects.filter(id=account.id).update(is_moved=True)
+                    print(f"Successfully created user '{account.username}' with '{account.password}' password.")
+                conn_postgres.commit()
+                cursor.close()
+                return Response({
+                    'status': 'ok',
+                    'moved_accounts': moved_accounts
+                })
             except (Exception, mdb.DatabaseError) as error:
                 print(error)
                 conn_postgres.rollback()
@@ -375,38 +371,28 @@ class AddUserAccountToExternalDB(ViewSet):
             finally:
                 conn_postgres.close()
 
-        elif server.provider == 'MongoDB':
+        elif server.provider.lower() == 'mongo' or server.provider.lower() == 'mongodb':
             try:
-                if not db_accounts:
-                    print('No accounts to move')
-                    return Response({'status': 'No accounts to move.'})
-                else:
-                    conn = MongoClient(f'mongodb://{server.user}:{server.password}@{server.ip}:{server.port}/')
-                    db = conn[server.database]
-                    for account in db_accounts:
-                        print(account.username)
-                        db.command({
-                            "createUser" : account.username,
-                            "pwd" : account.password,
-                            "customData" : {
-
-                            },
-                            "roles" : [
-
-                            ]
-                        })
-                        moved_accounts.append(account.username)
-                        DBAccount.objects.filter(id=account.id).update(is_moved=True)
-                        print(f"Successfully created user '{account.username}' with '{account.password}' password.")
-                    
-                    return Response({
-                        'status': 'ok',
-                        'moved_accounts': moved_accounts
+                conn = MongoClient(f'mongodb://{server.user}:{server.password}@{server.ip}:{server.port}/')
+                db = conn[server.database]
+                for account in db_accounts:
+                    print(account.username)
+                    db.command({
+                        "createUser" : account.username,
+                        "pwd" : account.password,
+                        "customData" : {},
+                        "roles" : []
                     })
-
+                    moved_accounts.append(account.username)
+                    DBAccount.objects.filter(id=account.id).update(is_moved=True)
+                    print(f"Successfully created user '{account.username}' with '{account.password}' password.")
+                
+                return Response({
+                    'status': 'ok',
+                    'moved_accounts': moved_accounts
+                })
             except (Exception, mdb.DatabaseError) as error:
                 print(error)
-                # client.rollback()
                 return Response({
                     'status': 'error',
                     'error': error
