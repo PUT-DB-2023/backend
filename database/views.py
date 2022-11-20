@@ -369,12 +369,10 @@ class AddUserAccountToExternalDB(ViewSet):
                 })
             finally:
                 conn_postgres.close()
-        elif server.provider == 'Oracle':
-
-            conn = MongoClient('mongodb://root:mongo12@mongo:27017/')
-            db = conn['database']
-
+        elif server.provider == 'MongoDB':
             try:
+                conn = MongoClient(f'mongodb://{server.user}:{server.password}@{server.ip}:{server.port}/')
+                db = conn[server.database]
                 if not db_accounts:
                     print('No accounts to move')
                     return Response({'status': 'No accounts to move.'})
@@ -390,14 +388,8 @@ class AddUserAccountToExternalDB(ViewSet):
 
                         ]
                     })
-                    # conn.testdb.command(
-                    #     'createUser', 'newTestUser', 
-                    #     pwd='Test123',
-                    #     roles=[{'role': 'readWrite', 'db': 'testdb'}]
-                    # )
-                    # cursor.execute(server.create_user_template % (account.username, account.password))
-                    # moved_accounts.append(account.username)
-                    # DBAccount.objects.filter(id=account.id).update(is_moved=True)
+                    moved_accounts.append(account.username)
+                    DBAccount.objects.filter(id=account.id).update(is_moved=True)
                     print(f"Successfully created user '{account.username}' with '{account.password}' password.")
                 return Response({
                     'status': 'ok',
@@ -419,6 +411,31 @@ class RemoveUserFromExternalDB(ViewSet):
     def delete_db_account(self, request, format=None):
         accounts_data = request.data
         print('Request log:', accounts_data)
-        moved_accounts = []
-        return Response({'status': 'ok'})
+
+        db_account = DBAccount.objects.get(id=accounts_data['dbaccount_id'])
+        db_account_server_provider = db_account.editionServer.server.provider
         
+        if db_account_server_provider == 'MySQL':
+            conn_mysql = mdb.connect(host=db_account.editionServer.server.ip, port=int(db_account.editionServer.server.port), user=db_account.editionServer.server.user, passwd=db_account.editionServer.server.password, db=db_account.editionServer.server.database)
+            print('Connected to MySQL server')  
+            try:
+                cursor = conn_mysql.cursor()
+                cursor.execute(db_account.editionServer.server.delete_user_template % (db_account.username))
+                conn_mysql.commit()
+                DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
+                cursor.close()
+                print(f"Successfully deleted user '{db_account.username}'")
+                return Response({'status': 'ok'})
+            except (Exception, mdb.DatabaseError) as error:
+                print(error)
+                conn_mysql.rollback()
+                cursor.close()
+                return Response({
+                    'status': 'error',
+                    'error': error
+                })
+            finally:
+                conn_mysql.close()
+
+        
+        return Response({'status': 'ok'})

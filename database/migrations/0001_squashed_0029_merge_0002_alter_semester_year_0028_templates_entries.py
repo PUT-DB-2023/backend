@@ -49,18 +49,20 @@ def forwards_func(apps, schema_editor):
     Major.objects.all().delete()
     Server.objects.all().delete()
 
+    
+
     server_names = ['MySQL ZBD Server', 'Oracle ZBD Server', 'Postgres PBD Server', 'Mongo ZBDNS Server', 'Microsoft SQL Server PBD']
-    server_ipss = ['185.180.207.251', '185.150.207.251', '185.180.207.251', '156.154.84.0', '176.119.32.0']
+    server_ipss = ['185.180.207.251', '185.150.207.251', '185.180.207.251', 'mongo', '176.119.32.0']
     # server_ports = ['3306', '5432', '5433', '2850', '4179']
     # server_ipss = ['localhost', '128.127.80.0', 'postgres-external', '156.154.84.0', '176.119.32.0']
-    server_ports = ['3306', '44475', '5432', '2850', '4179']
+    server_ports = ['3306', '44475', '5432', '27017', '4179']
     server_date_createds = '2021-12-31'
-    server_databases = ['mysql', 'xe', 'postgres', 'mongodbnosql', 'mssql']
-    server_passwords = ['mysql12', 'PASSWORD', 'postgres12', 'mongodbnosqlpass', 'mssqlpass']
+    server_databases = ['mysql', 'xe', 'postgres', 'database', 'mssql']
+    server_passwords = ['mysql12', 'PASSWORD', 'postgres12', 'mongo12', 'mssqlpass']
     # server_passwords = ['root', 'oracledbpass', 'postgres', 'mongodbnosqlpass', 'mssqlpass']
     server_providers = ['MySQL', 'Oracle', 'Postgres', 'MongoDB', 'Microsoft SQL Server']
-    server_users = ['root', 'USERDB', 'postgres', 'mongodbnosqluser', 'mssqluser']
-    server_create_user_templates = ["CREATE USER IF NOT EXISTS \"%s\"@'%%' IDENTIFIED BY '%s'", "", "CREATE USER \"%s\" WITH PASSWORD \'%s\';", "", ""]
+    server_users = ['root', 'USERDB', 'postgres', 'root', 'mssqluser']
+    server_create_user_templates = ["CREATE USER IF NOT EXISTS \"%s\"@'%%' IDENTIFIED BY '%s'", "", "CREATE USER \"%s\" WITH PASSWORD \'%s\';", '"createUser" : %s, "pwd" : %s, "customData" : {}, "roles" : []', ""]
     server_modify_user_templates = ["ALTER USER %s@'localhost' IDENTIFIED BY %s;", "", "ALTER USER \"%s\" WITH PASSWORD \'%s\';", "", ""]
     server_delete_user_templates = ["DROP USER %s@'localhost';", "", "DROP USER \"%s\";", "", ""]
 
@@ -152,7 +154,7 @@ def forwards_func(apps, schema_editor):
     servers = Server.objects.all().values_list('id', flat=True)
 
     edition_server_edition_ids = [editions[i] for i in range(4)]
-    edition_server_server_ids = [servers[2], servers[0], servers[1], servers[3]]
+    edition_server_server_ids = [servers[2], servers[0], servers[3], servers[1]]
 
     for i in range(len(edition_server_add_info)):
         EditionServer.objects.using(db_alias).create(

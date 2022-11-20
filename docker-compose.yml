@@ -36,7 +36,7 @@ services:
       environment:
           - MONGO_INITDB_ROOT_USERNAME=root
           - MONGO_INITDB_ROOT_PASSWORD=mongo12
-          - MONGO_INITDB_DATABASE=local
+          - MONGO_INITDB_DATABASE=database
       volumes:
           - ./data/mongo:/data/db
   # mysql:
