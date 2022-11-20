@@ -410,10 +410,10 @@ class RemoveUserFromExternalDB(ViewSet):
         db_account = DBAccount.objects.get(id=accounts_data['dbaccount_id'])
         db_account_server_provider = db_account.editionServer.server.provider
         
-        if db_account_server_provider == 'MySQL':
-            conn_mysql = mdb.connect(host=db_account.editionServer.server.ip, port=int(db_account.editionServer.server.port), user=db_account.editionServer.server.user, passwd=db_account.editionServer.server.password, db=db_account.editionServer.server.database)
-            print('Connected to MySQL server')  
+        if db_account_server_provider.lower() == 'mysql':
             try:
+                conn_mysql = mdb.connect(host=db_account.editionServer.server.ip, port=int(db_account.editionServer.server.port), user=db_account.editionServer.server.user, passwd=db_account.editionServer.server.password, db=db_account.editionServer.server.database)
+                print('Connected to MySQL server')  
                 cursor = conn_mysql.cursor()
                 cursor.execute(db_account.editionServer.server.delete_user_template % (db_account.username))
                 conn_mysql.commit()
@@ -432,10 +432,11 @@ class RemoveUserFromExternalDB(ViewSet):
                 })
             finally:
                 conn_mysql.close()
-        elif db_account_server_provider == 'Postgres':
-            conn_postgres = psycopg2.connect(dbname=db_account.editionServer.server.database, user=db_account.editionServer.server.user, password=db_account.editionServer.server.password, host=db_account.editionServer.server.ip, port=db_account.editionServer.server.port)
-            print('Connected to Postgres server')
+                
+        elif db_account_server_provider.lower() == 'postgres' or db_account_server_provider.lower() == 'postgresql':
             try:
+                conn_postgres = psycopg2.connect(dbname=db_account.editionServer.server.database, user=db_account.editionServer.server.user, password=db_account.editionServer.server.password, host=db_account.editionServer.server.ip, port=db_account.editionServer.server.port)
+                print('Connected to Postgres server')
                 cursor = conn_postgres.cursor()
                 cursor.execute(db_account.editionServer.server.delete_user_template % (db_account.username))
                 conn_postgres.commit()
@@ -454,7 +455,8 @@ class RemoveUserFromExternalDB(ViewSet):
                 })
             finally:
                 conn_postgres.close()
-        elif db_account_server_provider == 'MongoDB':
+
+        elif db_account_server_provider.lower() == 'mongo' or db_account_server_provider.lower() == 'mongodb':
             try:
                 conn = MongoClient(f'mongodb://{db_account.editionServer.server.user}:{db_account.editionServer.server.password}@{db_account.editionServer.server.ip}:{db_account.editionServer.server.port}/')
                 db = conn[db_account.editionServer.server.database]
