@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
+import cx_Oracle
+import oracledb
 
 
 import MySQLdb as mdb
@@ -366,5 +368,41 @@ class AddUserAccountToExternalDB(ViewSet):
                 })
             finally:
                 conn_postgres.close()
+        elif server.provider == 'Oracle':
+            # params = oracledb.ConnectParams(host="185.180.207.251", port=44475, service_name="xe")
+            # conn_oracle = oracledb.connect(user="USERDB", password="PASSWORD", params=params)
+            # conn_oracle = oracledb.connect(user="USERDB", password="PASSWORD",
+            #                   host="185.180.207.251", port=44475, service_name="xe")
+            un = 'USERDB'
+            pw = 'PASSWORD'
+            cs = '185.180.207.251:44475/xe'
+
+            print(un, pw, cs)
+
+            with oracledb.connect(user=un, password=pw, dsn=cs) as connection:
+                with connection.cursor() as cursor:
+                    print('Connected to Oracle server')
+                    sql = """select sysdate from dual"""
+                    for r in cursor.execute(sql):
+                        print(r)
+            # try:
+            #     cursor = conn_oracle.cursor()
+            #     if not db_accounts:
+            #         print('No accounts to move')
+            #         return Response({'status': 'No accounts to move.'})
+            #     for account in db_accounts:
+            #         print(account.username)
+            #         # cursor.execute(server.create_user_template % (account.username, account.password))
+            #         # moved_accounts.append(account.username)
+            #         # DBAccount.objects.filter(id=account.id).update(is_moved=True)
+            #         print(f"Successfully created user '{account.username}' with '{account.password}' password.")
+            # except (Exception, mdb.DatabaseError) as error:
+            #     print(error)
+            #     conn_oracle.rollback()
+            #     cursor.close()
+            #     return Response({
+            #         'status': 'error',
+            #         'error': error
+            #     })
         else:
             return Response({'status': 'Unknown provider.'})
