@@ -29,6 +29,16 @@ services:
       interval: 5s
       timeout: 5s
       retries: 50
+  mongo:
+      image: mongo
+      ports:
+          - '27017:27017'
+      environment:
+          - MONGO_INITDB_ROOT_USERNAME=root
+          - MONGO_INITDB_ROOT_PASSWORD=mongo12
+          - MONGO_INITDB_DATABASE=local
+      volumes:
+          - ./data/mongo:/data/db
   # mysql:
   #   image: mysql:8.0
   #   environment:
@@ -62,3 +72,5 @@ services:
       #   condition: service_started
       postgres:
         condition: service_healthy
+      mongo:
+        condition: service_started

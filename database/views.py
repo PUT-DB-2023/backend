@@ -6,6 +6,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 import cx_Oracle
 import oracledb
+from pymongo import MongoClient
 
 
 import MySQLdb as mdb
@@ -369,40 +370,55 @@ class AddUserAccountToExternalDB(ViewSet):
             finally:
                 conn_postgres.close()
         elif server.provider == 'Oracle':
-            # params = oracledb.ConnectParams(host="185.180.207.251", port=44475, service_name="xe")
-            # conn_oracle = oracledb.connect(user="USERDB", password="PASSWORD", params=params)
-            # conn_oracle = oracledb.connect(user="USERDB", password="PASSWORD",
-            #                   host="185.180.207.251", port=44475, service_name="xe")
-            un = 'USERDB'
-            pw = 'PASSWORD'
-            cs = '185.180.207.251:44475/xe'
 
-            print(un, pw, cs)
+            conn = MongoClient('mongodb://root:mongo12@mongo:27017/')
+            db = conn['database']
 
-            with oracledb.connect(user=un, password=pw, dsn=cs) as connection:
-                with connection.cursor() as cursor:
-                    print('Connected to Oracle server')
-                    sql = """select sysdate from dual"""
-                    for r in cursor.execute(sql):
-                        print(r)
-            # try:
-            #     cursor = conn_oracle.cursor()
-            #     if not db_accounts:
-            #         print('No accounts to move')
-            #         return Response({'status': 'No accounts to move.'})
-            #     for account in db_accounts:
-            #         print(account.username)
-            #         # cursor.execute(server.create_user_template % (account.username, account.password))
-            #         # moved_accounts.append(account.username)
-            #         # DBAccount.objects.filter(id=account.id).update(is_moved=True)
-            #         print(f"Successfully created user '{account.username}' with '{account.password}' password.")
-            # except (Exception, mdb.DatabaseError) as error:
-            #     print(error)
-            #     conn_oracle.rollback()
-            #     cursor.close()
-            #     return Response({
-            #         'status': 'error',
-            #         'error': error
-            #     })
+            try:
+                if not db_accounts:
+                    print('No accounts to move')
+                    return Response({'status': 'No accounts to move.'})
+                for account in db_accounts:
+                    print(account.username)
+                    db.command({
+                        "createUser" : account.username,
+                        "pwd" : account.password,
+                        "customData" : {
+
+                        },
+                        "roles" : [
+
+                        ]
+                    })
+                    # conn.testdb.command(
+                    #     'createUser', 'newTestUser', 
+                    #     pwd='Test123',
+                    #     roles=[{'role': 'readWrite', 'db': 'testdb'}]
+                    # )
+                    # cursor.execute(server.create_user_template % (account.username, account.password))
+                    # moved_accounts.append(account.username)
+                    # DBAccount.objects.filter(id=account.id).update(is_moved=True)
+                    print(f"Successfully created user '{account.username}' with '{account.password}' password.")
+                return Response({
+                    'status': 'ok',
+                    'moved_accounts': moved_accounts
+                    })
+            except (Exception, mdb.DatabaseError) as error:
+                print(error)
+                # client.rollback()
+                return Response({
+                    'status': 'error',
+                    'error': error
+                })
         else:
             return Response({'status': 'Unknown provider.'})
+
+
+class RemoveUserFromExternalDB(ViewSet):
+    @action (methods=['post'], detail=False)
+    def delete_db_account(self, request, format=None):
+        accounts_data = request.data
+        print('Request log:', accounts_data)
+        moved_accounts = []
+        return Response({'status': 'ok'})
+        
