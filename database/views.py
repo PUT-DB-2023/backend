@@ -434,7 +434,8 @@ class RemoveUserFromExternalDB(ViewSet):
                 DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
                 cursor.close()
                 print(f"Successfully deleted user '{db_account.username}'")
-                return Response({'status': 'ok'})
+                return Response({'status': 'ok',
+                    'deleted_account': db_account.username})
             except (Exception, mdb.DatabaseError) as error:
                 print(error)
                 conn_mysql.rollback()
@@ -445,6 +446,46 @@ class RemoveUserFromExternalDB(ViewSet):
                 })
             finally:
                 conn_mysql.close()
+        elif db_account_server_provider == 'Postgres':
+            conn_postgres = psycopg2.connect(dbname=db_account.editionServer.server.database, user=db_account.editionServer.server.user, password=db_account.editionServer.server.password, host=db_account.editionServer.server.ip, port=db_account.editionServer.server.port)
+            print('Connected to Postgres server')
+            try:
+                cursor = conn_postgres.cursor()
+                cursor.execute(db_account.editionServer.server.delete_user_template % (db_account.username))
+                conn_postgres.commit()
+                DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
+                cursor.close()
+                print(f"Successfully deleted user '{db_account.username}'")
+                return Response({'status': 'ok',
+                    'deleted_account': db_account.username})
+            except (Exception, psycopg2.DatabaseError) as error:
+                print(error)
+                conn_postgres.rollback()
+                cursor.close()
+                return Response({
+                    'status': 'error',
+                    'error': error
+                })
+            finally:
+                conn_postgres.close()
+        elif db_account_server_provider == 'MongoDB':
+            try:
+                conn = MongoClient(f'mongodb://{db_account.editionServer.server.user}:{db_account.editionServer.server.password}@{db_account.editionServer.server.ip}:{db_account.editionServer.server.port}/')
+                db = conn[db_account.editionServer.server.database]
+                db.command({
+                    "dropUser" : db_account.username
+                })
+                DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
+                print(f"Successfully deleted user '{db_account.username}'")
+                return Response({'status': 'ok',
+                    'deleted_account': db_account.username})
+            except (Exception, mdb.DatabaseError) as error:
+                print(error)
+                # client.rollback()
+                return Response({
+                    'status': 'error',
+                    'error': error
+                })
 
         
         return Response({'status': 'ok'})

@@ -64,7 +64,7 @@ def forwards_func(apps, schema_editor):
     server_users = ['root', 'USERDB', 'postgres', 'root', 'mssqluser']
     server_create_user_templates = ["CREATE USER IF NOT EXISTS \"%s\"@'%%' IDENTIFIED BY '%s'", "", "CREATE USER \"%s\" WITH PASSWORD \'%s\';", '"createUser" : %s, "pwd" : %s, "customData" : {}, "roles" : []', ""]
     server_modify_user_templates = ["ALTER USER %s@'localhost' IDENTIFIED BY %s;", "", "ALTER USER \"%s\" WITH PASSWORD \'%s\';", "", ""]
-    server_delete_user_templates = ["DROP USER %s@'localhost';", "", "DROP USER \"%s\";", "", ""]
+    server_delete_user_templates = ["DROP USER IF EXISTS \"%s\"@'%%';", "", "DROP USER IF EXISTS \"%s\";", "", ""]
 
     for i in range(len(server_names)):
         Server.objects.using(db_alias).create(
