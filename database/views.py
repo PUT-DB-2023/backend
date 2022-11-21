@@ -271,7 +271,7 @@ class DBAccountViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting db accounts.
     """
     serializer_class = DBAccountSerializer
-    queryset = DBAccount.objects.select_related('student', 'editionServer__server').order_by('id')
+    queryset = DBAccount.objects.select_related('student', 'editionServer__server', 'editionServer__edition__semester', 'editionServer__edition__course').order_by('id')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id', 
@@ -393,6 +393,30 @@ class AddUserAccountToExternalDB(ViewSet):
                 })
             except (Exception, mdb.DatabaseError) as error:
                 print(error)
+                return Response({
+                    'status': 'error',
+                    'error': error
+                })
+        elif server.provider.lower() == 'oracle' or server.provider.lower() == 'oracledb':
+            try:
+                conn = cx_Oracle.connect(server.user, server.password, f'{server.ip}:{server.port}/{server.database}')
+                cursor = conn.cursor()
+                for account in db_accounts:
+                    print(account.username)
+                    cursor.execute(server.create_user_template % (account.username, account.password))
+                    moved_accounts.append(account.username)
+                    DBAccount.objects.filter(id=account.id).update(is_moved=True)
+                    print(f"Successfully created user '{account.username}' with '{account.password}' password.")
+                conn.commit()
+                cursor.close()
+                return Response({
+                    'status': 'ok',
+                    'moved_accounts': moved_accounts
+                })
+            except (Exception, mdb.DatabaseError) as error:
+                print(error)
+                conn.rollback()
+                cursor.close()
                 return Response({
                     'status': 'error',
                     'error': error
