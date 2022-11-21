@@ -90,9 +90,9 @@ def forwards_func(apps, schema_editor):
             name=course_names[i], description=course_descriptions[i], active=course_active[i], major=course_major[i]
     )
 
-    semester_years = ['2021/2022', '2022/2023']
-    semester_winters = [True, True]
-    semester_actives = [False, True]
+    semester_years = ['2021/2022', '2022/2023', '2023/2024']
+    semester_winters = [True, True, True]
+    semester_actives = [False, True, False]
 
     for i in range(len(semester_years)):
         Semester.objects.using(db_alias).create(
@@ -100,6 +100,9 @@ def forwards_func(apps, schema_editor):
     )
 
     users_names = ["Ferdynand Dulski","Celestyn Tomaszewski","Sylwester Kaczkowski","Juri Rokicki","Pabian Archacki","Leo Zelek","Kwiatosław Greger","Hubert Kiedrowski","Waldemar Piotrowicz","Olaf Gursky","Hilary Franczak","Melchior Perzan","Świętosław Kopa","Marcin Gorniak","Oskar Kobylinski","Tymon Bialek","Gabriel Orlowski","Pankracy Grodzicki","Serwacy Watroba","Zygmunt Bilik","Aleksander Nabozny","Maryn Wyszynski","Remigiusz Ciolek","Cyprian Gracyalny","Dominik Bernacki","Szymon Rogalski","Ignacy Smigel","Ireneusz Dziak","Wisław Gielgud","Korneli Krynicki","Świętosław Lozowski","Bartłomiej Lach","Konstantyn Pitera","Franciszek Sochaczewski","Malachiasz Car","Eugeniusz Jaracz","Zbigniew Kula","Kamil Rajewski","Zenon Kosmalski","Chwalimir Bania","Romuald Mita","Ryszard Nowak","Sławomir Garstka","Tomasz Kocik","Gerwazy Cieply","Gwalbert Grodzicki","Denis Slusarczyk","Edward Przybylowicz","Malachiasz Cesarz","Iwon Capek","Dobrogost Wojtaszek","Świętosław Pawelski","Tobiasz Raczkowski","Gerard Chmiel","Bartosz Burak","Oktawiusz Ignasiak","Arkadiusz Michalak","Zdzisław Luka","Jerzy Kurcz","Julian Karczewski","Herbert Marcinkiewicz","Klemens Krzyzaniak","Metody Mioduszewski","Gościsław Niziolek","Sylwester Kaczkowski","Fryderyk Dusza","Dobrogost Wójcik","Albin Bialy","Jaromir Misiaszek","Tadeusz Galik","Bożidar Jablon","Witold Demby","Chrystian Krolikowski","Kryspyn Piekarz","Nikodem Czepiec","Wojsław Korczak","Hugo Tylka","Lubomił Ciesinski","Wisław Samborski","Bożimir Jagodzinski","Hilary Lesak","Adrian Bartel","Prot Ewy","Ludomił Kaniuk","Dobrogost Syslo","Adrian Dudzinski","Florentyn Rawski","Bożimir Banik","Wandelin Jaroszewski","Herbert Pekala","Gustaw Dobek","Oskar Jusko","Maksymilian Zajac","Bronisław Prus","Marcel Zaczek","Antoni Wiech","Przemysław Woźniak","Jakub Wróbel","Krystian Jakusik","Kamil Ambozy"]
+    users_names2 = ['Eryk Sikorska','Alek Wróblewski','Damian Baran','Emanuel Witkowski','Kamil Borkowski','Anatol Nowak','Gniewomir Makowski','Cyprian Szymański','Joachim Rutkowski','Krystian Kucharski','Ryszard Marciniak','Bruno Szymański','Roman Kołodziej','Leonardo Wojciechowski','Daniel Zieliński','Norbert Jaworski','Kacper Gajewska','Jan Szymański','Ksawery Szymczak','Heronim Wiśniewski','Ludwik Kalinowski','Cezary Szewczyk','Kryspin Zakrzewska','Piotr Głowacka','Jarosław Gajewska','Olgierd Dąbrowski','Joachim Brzeziński','Krzysztof Makowski','Łukasz Malinowski','Eryk Mazur','Gracjan Lewandowski','Alan Zalewski','Korneliusz Marciniak','Igor Sokołowski','Kryspin Wójcik','Rafał Krajewska','Igor Borkowski','Emanuel Piotrowski','Bruno Czerwiński','Roman Maciejewski','Andrzej Walczak','Kacper Sokołowski','Marek Piotrowski','Bartłomiej Krawczyk','Dariusz Wasilewska','Kajetan Marciniak','Ryszard Krajewska','Mateusz Mróz','Arkadiusz Mazur','Bartłomiej Baranowski','Marian Maciejewski','Jędrzej Szymański','Adam Sokołowski','Kryspin Sawicki','Jerzy Krupa','Mikołaj Zawadzki','Kamil Baran','Przemysław Mróz','Gustaw Kaczmarczyk','Lucjan Jankowski','Aleksander Przybylski','Kazimierz Kamiński','Dariusz Szymański','Marek Czerwiński','Gniewomir Adamska','Amadeusz Zalewski','Franciszek Czerwiński','Milan Lis','Ryszard Kalinowski','Łukasz Gajewska','Norbert Woźniak','Ernest Baranowski','Artur Tomaszewski','Krzysztof Laskowska','Kamil Makowski','Dorian Pietrzak','Olaf Ziółkowska','Ariel Sawicki','Jarosław Jankowski','Bolesław Laskowska','Kamil Kubiak','Franciszek Gajewska','Olgierd Kamiński','Adrian Kucharski','Leszek Jakubowski','Mirosław Jaworski','Mateusz Pawlak','Jerzy Kaczmarczyk','Konstanty Kaczmarczyk','Kordian Lis','Cezary Wójcik','Emil Duda','Filip Wojciechowski','Alfred Sokołowski','Ariel Sobczak','Mieszko Sokołowski','Cezary Adamska','Rafał Ziółkowska','Karol Włodarczyk','Milan Górecki']
+
+    users_names.extend(users_names2)
 
     Admin.objects.using(db_alias).create(
         first_name="Admin", last_name="Admin", email='admin@cs.put.poznan.pl' , password='admin123', polymorphic_ctype_id=admin_ct.id
@@ -116,23 +119,24 @@ def forwards_func(apps, schema_editor):
         )
 
     edition_descriptions = [
-        'Edycja 2022/2023 kursu Podstawy baz danych','Edycja 2022/2023 kursu Zarządzanie bazami danych', 'Edycja 2022/2023 kursu Zarządzanie bazami danych noSQL', 'Edycja 2021/2022 kursu Projektowanie baz danych'
+        'Edycja 2022/2023 kursu Podstawy baz danych','Edycja 2022/2023 kursu Zarządzanie bazami danych', 'Edycja 2022/2023 kursu Zarządzanie bazami danych noSQL', 'Edycja 2021/2022 kursu Projektowanie baz danych',
+        'Edycja 2021/2022 kursu Podstawy baz danych', 'Edycja 2023/2024 kursu Podstawy baz danych', 'Edycja 2023/2024 kursu Zarządzanie bazami danych', 'Edycja 2021/2022 kursu Zarządzanie bazami danych noSQL',
         ]
 
     dates_opened = ['2019-10-01' for _ in range(8)]
 
     dates_closed = [
-        None, None, None, '2022-06-30'
+        None, None, None, '2022-06-30', '2022-06-30', None, None, '2022-06-30'
     ]
 
     courses = Course.objects.all().values_list('id', flat=True)
 
-    courses_ids = [courses[1], courses[0], courses[2], courses[3]]
+    courses_ids = [courses[1], courses[0], courses[2], courses[3], courses[1], courses[1], courses[0], courses[2]]
 
     semesters = Semester.objects.all().values_list('id', flat=True)
 
     semestres_ids = [
-        semesters[1], semesters[1], semesters[1], semesters[0],
+        semesters[1], semesters[1], semesters[1], semesters[0], semesters[0], semesters[2], semesters[2], semesters[0]
     ]
 
     for i in range(len(edition_descriptions)):
@@ -140,21 +144,21 @@ def forwards_func(apps, schema_editor):
             description=edition_descriptions[i], date_opened=dates_opened[i], date_closed=dates_closed[i], course_id=courses_ids[i], semester_id=semestres_ids[i]
     )
 
-    edition_server_add_info = ['Additional info about EditionServer' for _ in range(4)]
+    edition_server_add_info = ['Additional info about EditionServer' for _ in range(8)]
 
     edition_server_username_templates = [
-        "INF_{NR_INDEKSU}", '{IMIE} + {NAZWISKO}', '{NAZWISKO}_{NR_INDEKSU}', 'STUDENT_{NR_INDEKSU}'
+        "INF_{NR_INDEKSU}", '{IMIE} + {NAZWISKO}', '{NAZWISKO}_{NR_INDEKSU}', 'STUDENT_{NR_INDEKSU}', "INF_{NR_INDEKSU}", '{IMIE} + {NAZWISKO}', '{NAZWISKO}_{NR_INDEKSU}', 'STUDENT_{NR_INDEKSU}'
     ]
 
     edition_server_passwd_templates = [
-        "blank", "default_passwd", "123", "inf{NR_INDEKSU}"
+        "blank", "default_passwd", "123", "inf{NR_INDEKSU}", "blank", "default_passwd", "123", "inf{NR_INDEKSU}"
     ]
 
     editions = Edition.objects.all().values_list('id', flat=True)
     servers = Server.objects.all().values_list('id', flat=True)
 
-    edition_server_edition_ids = [editions[i] for i in range(4)]
-    edition_server_server_ids = [servers[2], servers[0], servers[3], servers[1]]
+    edition_server_edition_ids = [editions[i] for i in range(8)]
+    edition_server_server_ids = [servers[2], servers[0], servers[3], servers[1], servers[2], servers[2], servers[0], servers[3]]
 
     for i in range(len(edition_server_add_info)):
         EditionServer.objects.using(db_alias).create(
@@ -168,22 +172,28 @@ def forwards_func(apps, schema_editor):
 
     teachers = Teacher.objects.all().values_list('id', flat=True)
 
-    teacher_edition_edition_id = [editions[i] for i in range(4)]
-    teacher_edition_teacher_id = [teachers[0], teachers[1], teachers[2], teachers[3]]
+    teacher_edition_edition_id = [editions[i] for i in range(8)]
+    teacher_edition_teacher_id = [teachers[0], teachers[1], teachers[2], teachers[3], teachers[0], teachers[0], teachers[1], teachers[2]]
 
     for i in range(len(teacher_edition_edition_id)):
         TeacherEdition.objects.using(db_alias).create(
             edition_id=teacher_edition_edition_id[i], teacher_id=teacher_edition_teacher_id[i]
     )
 
-    group_names = ['Grupa 1 ZBD', 'Grupa 2 ZBD', 'Grupa 3 ZBD', 'Grupa 4 PBD', 'Grupa 5 PBD', 'Grupa 6 PBD', 'Grupa 7 ZBN', 'Grupa 8 ZBN', 'Grupa 9 ZBN', 'Grupa 10 ProjBD - NA', 'Grupa 11 ProjBD - NA', 'Grupa 12 ProjBD - NA']
-    group_days = ['Poniedziałek', 'Środa', 'Wtorek', 'Poniedziałek', 'Wtorek', 'Piątek', 'Czwartek', 'Poniedziałek', 'Środa', 'Piątek', 'Wtorek', 'Środa']
-    group_hours = ['11:45', '8:00', '8:00', '9:45', '13:30', '16:50', '13:30', '11:45', '15:10', '8:00', '8:00', '9:45']
-    group_rooms = ['1.6.18', 'CW 8', '2.2.2', 'CW 9', '1.5.5', 'A6', '1.4.4', '2.2.2', '1.2.2', '2.2.2', '1.1.1', '4.4.4']
+    group_names = ['Grupa 1 ZBD', 'Grupa 2 ZBD', 'Grupa 3 ZBD',
+                   'Grupa 4 PBD', 'Grupa 5 PBD', 'Grupa 6 PBD',
+                   'Grupa 7 ZBN', 'Grupa 8 ZBN', 'Grupa 9 ZBN',
+                   'Grupa 10 ProjBD - NA', 'Grupa 11 ProjBD - NA', 'Grupa 12 ProjBD - NA',
+                   'Grupa 13 PBD Past', 'Grupa 14 PBD Past', 'Grupa 15 PBD Past',
+                   'Grupa 16 PBD Future', 'Grupa 17 PBD Future', 'Grupa 18 PBD Future',
+                   'Grupa 19 ZBD Future', 'Grupa 20 ZBD Future', 'Grupa 21 ZBD Future',
+                   'Grupa 22 ZBN Past', 'Grupa 23 ZBN Past', 'Grupa 24 ZBN Past']
+    group_days = ['Poniedziałek', 'Środa', 'Wtorek', 'Poniedziałek', 'Wtorek', 'Piątek', 'Czwartek', 'Poniedziałek', 'Środa', 'Piątek', 'Wtorek', 'Środa', 'Poniedziałek', 'Środa', 'Wtorek', 'Poniedziałek', 'Wtorek', 'Piątek', 'Czwartek', 'Poniedziałek', 'Środa', 'Piątek', 'Wtorek', 'Środa']
+    group_hours = ['11:45', '8:00', '8:00', '9:45', '13:30', '16:50', '13:30', '11:45', '15:10', '8:00', '8:00', '9:45', '11:45', '8:00', '8:00', '9:45', '13:30', '16:50', '13:30', '11:45', '15:10', '8:00', '8:00', '9:45']
+    group_rooms = ['1.6.18', 'CW 8', '2.2.2', 'CW 9', '1.5.5', 'A6', '1.4.4', '2.2.2', '1.2.2', '2.2.2', '1.1.1', '4.4.4', '1.6.18', 'CW 8', '2.2.2', 'CW 9', '1.5.5', 'A6', '1.4.4', '2.2.2', '1.2.2', '2.2.2', '1.1.1', '4.4.4']
 
     teacher_editions = TeacherEdition.objects.all()
-    teacher_editions_for_groups = [teacher_editions[1], teacher_editions[1], teacher_editions[1], teacher_editions[0], teacher_editions[0], teacher_editions[0], teacher_editions[2], teacher_editions[2], teacher_editions[2], teacher_editions[3], teacher_editions[3], teacher_editions[3]]
-    
+    teacher_editions_for_groups = [teacher_editions[1], teacher_editions[1], teacher_editions[1], teacher_editions[0], teacher_editions[0], teacher_editions[0], teacher_editions[2], teacher_editions[2], teacher_editions[2], teacher_editions[3], teacher_editions[3], teacher_editions[3], teacher_editions[4], teacher_editions[4], teacher_editions[4], teacher_editions[5], teacher_editions[5], teacher_editions[5], teacher_editions[6], teacher_editions[6], teacher_editions[6], teacher_editions[7], teacher_editions[7], teacher_editions[7]]
     
     students_all = Student.objects.all()
 
@@ -207,11 +217,9 @@ def forwards_func(apps, schema_editor):
         if 28 <= i <= 51: # GRUPY 4-6
                 DBAccount.objects.using(db_alias).create(
                     username=students_all[i-4].last_name + '-dbusername', password=students_all[i-4].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-4], editionServer=edition_servers[0]
-
             )
                 DBAccount.objects.using(db_alias).create(
-                    username=students_all[i-4].last_name + '-dbusername', password=students_all[i-4].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-4], editionServer=edition_servers[4]
-                    
+                    username=students_all[i-4].last_name + '-dbusername', password=students_all[i-4].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-4], editionServer=edition_servers[4]  
             )
         if 52 <= i <= 75: # GRUPY 7-9
                 DBAccount.objects.using(db_alias).create(
