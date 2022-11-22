@@ -12,7 +12,7 @@ import csv
 
 import MySQLdb as mdb
 
-from .serializers import UserSerializer, AdminSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, PermissionSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, DBAccountSerializer
+from .serializers import UserSerializer, AdminSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, PermissionSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, DBAccountSerializer
 from .models import User, Admin, Teacher, Student, Role, Permission, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
 
 class UserViewSet(ModelViewSet):
@@ -126,9 +126,15 @@ class SemesterViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting semesters.
     """
     serializer_class = SemesterSerializer
-    queryset = Semester.objects.all()
+    queryset = Semester.objects.prefetch_related('editions')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'year', 'winter', 'active', 'editions']
+
+    # def get_queryset(self):
+    #     if self.request.query_params.get('basic') == "true":
+    #         self.serializer_class = BasicSemesterSerializer
+    #     else:
+    #         self.serializer_class = SemesterSerializer
 
 
 class EditionViewSet(ModelViewSet):
@@ -154,6 +160,12 @@ class EditionViewSet(ModelViewSet):
         'teachers__first_name',
         'teachers__last_name',
     ]
+
+    def get_queryset(self):
+        if self.request.query_params.get('basic') == "true":
+            return Edition.objects.only('id', 'course_id', 'semester_id')
+        else:
+            return Edition.objects.prefetch_related('teachers', 'servers').select_related('course', 'semester')
 
 
 class TeacherEditionViewSet(ModelViewSet):
