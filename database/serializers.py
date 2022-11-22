@@ -357,6 +357,17 @@ class ServerSerializer(ModelSerializer):
         ]
 
 
+class BasicServerSerializer(ModelSerializer):
+    class Meta:
+        model = Server
+        fields = [
+            'id',
+            'name',
+            'provider',
+            'active',
+        ]
+
+
 class EditionServerSerializer(ModelSerializer):
     class Meta:
         model = EditionServer
@@ -386,7 +397,7 @@ class BasicEditionServerSerializer(ModelSerializer):
     
     def to_representation(self, instance):
         self.fields['edition'] = BasicEditionSerializer(many=False, read_only=True)
-        self.fields['server'] = ServerSerializer(many=False, read_only=True)
+        self.fields['server'] = BasicServerSerializer(many=False, read_only=True)
         return super(BasicEditionServerSerializer, self).to_representation(instance)
 
 
