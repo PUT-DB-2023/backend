@@ -7,13 +7,13 @@ from django.db.models import Q
 import cx_Oracle
 import oracledb
 from pymongo import MongoClient
+import csv
 
 
 import MySQLdb as mdb
 
 from .serializers import UserSerializer, AdminSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, PermissionSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, DBAccountSerializer
 from .models import User, Admin, Teacher, Student, Role, Permission, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
-
 
 class UserViewSet(ModelViewSet):
     """
@@ -500,4 +500,60 @@ class RemoveUserFromExternalDB(ViewSet):
                 })
 
         
+        return Response({'status': 'ok'})
+
+
+
+class LoadStudentsFromCSV(ViewSet):
+
+    @action (methods=['post'], detail=False)
+    def load_students_csv(self, request, format=None):
+        accounts_data = request.data
+        print('Request log:', accounts_data)
+        group_id = accounts_data['group_id']
+        students_csv = accounts_data['students_csv']
+
+        # read student_csv (InMemoryUploadedFile) and convert it to list of dicts including headers
+        students_csv = students_csv.read().decode('utf-8-sig')
+        csv_reader = csv.DictReader(students_csv.splitlines(), delimiter=',')
+        students_list = list(csv_reader)
+
+        print(students_list[0])
+
+        # create students and return a list of created students
+        created_students = []
+
+        for student in students_list:
+            created_student = Student.objects.create(
+                first_name=student['first_name'],
+                last_name=student['last_name'],
+                email=student['email'],
+                password=student['password'],
+                student_id=student['student_id'])
+            created_students.append(created_student)
+
+        group_to_add = Group.objects.get(id=group_id)
+        group_to_add.students.add(*created_students)
+
+        available_editionServers = EditionServer.objects.filter(edition__teacheredition__group=group_to_add.id)
+
+        added_accounts = []
+        
+        for editionServer in available_editionServers:
+            for student in created_students:
+
+                username_to_add = editionServer.username_template
+
+                if r"{NR_INDEKSU}" in editionServer.username_template:
+                    username_to_add = username_to_add.replace(r"{NR_INDEKSU}", student.student_id)
+                if r"{IMIE}" in editionServer.username_template:
+                    username_to_add = username_to_add.replace(r"{IMIE}", student.first_name)
+                if r"{NAZWISKO}" in editionServer.username_template:
+                    username_to_add = username_to_add.replace(r"{NAZWISKO}", student.last_name)
+
+                added_account = DBAccount.objects.create(
+                    username=username_to_add, password=student.last_name + '-dbpassword', is_moved=False, student=student, editionServer=editionServer
+                )
+                added_accounts.append(added_account)
+        print(added_accounts)
         return Response({'status': 'ok'})

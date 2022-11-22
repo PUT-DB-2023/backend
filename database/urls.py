@@ -25,4 +25,5 @@ urlpatterns = [
     path('api/', include(router.urls)),
     path('api/add_db_account', views.AddUserAccountToExternalDB.as_view({'post': 'add_db_account'})),
     path('api/delete_db_account', views.RemoveUserFromExternalDB.as_view({'post': 'delete_db_account'})),
+    path('api/load_students_csv', views.LoadStudentsFromCSV.as_view({'post': 'load_students_csv'})),
 ]

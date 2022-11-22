@@ -106,7 +106,7 @@ class Group(models.Model):
     hour = models.CharField(max_length=30, blank=True, default='')
     room = models.CharField(max_length=30, blank=True, default='')
     teacherEdition = models.ForeignKey(TeacherEdition, on_delete=models.SET_NULL, default=None, null=True)
-    students = models.ManyToManyField(Student, related_name='groups')
+    students = models.ManyToManyField(Student, related_name='groups', null=True, blank=True)
 
 
 class Server(models.Model):
