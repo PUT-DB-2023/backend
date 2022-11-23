@@ -550,13 +550,15 @@ class LoadStudentsFromCSV(ViewSet):
 
         try:
             for student in students_list:
-                created_student = Student.objects.create(
+                created_student, created = Student.objects.get_or_create(
                     first_name=student['first_name'],
                     last_name=student['last_name'],
                     email=student['email'],
                     password=student['password'],
                     student_id=student['student_id'])
                 created_students.append(created_student)
+                if not created:
+                    print(f"Student {created_student.first_name} {created_student.last_name} already exists.")
         except Exception as error:
             print(error)
             return HttpResponseBadRequest(str(error), status=400)
@@ -575,20 +577,25 @@ class LoadStudentsFromCSV(ViewSet):
             for editionServer in available_editionServers:
                 for student in created_students:
 
-                    username_to_add = editionServer.username_template
+                    username_to_add = editionServer.username_template.lower().replace(
+                        r'{imie}', student.first_name.lower()).replace(
+                        r'{imię}', student.first_name.lower()).replace(
+                        r'{nazwisko}', student.last_name.lower()).replace(
+                        r'{nr_indeksu}', student.student_id.lower()).replace(
+                        r'{numer_indeksu}', student.student_id.lower()).replace(
+                        r'{nr_ind}', student.student_id.lower()).replace(
+                        r'{indeks}', student.student_id.lower()).replace(
+                        r'{email}', student.email.lower()
+                        )
 
-                    if r"{NR_INDEKSU}" in editionServer.username_template:
-                        username_to_add = username_to_add.replace(r"{NR_INDEKSU}", student.student_id)
-                    if r"{IMIE}" in editionServer.username_template:
-                        username_to_add = username_to_add.replace(r"{IMIE}", student.first_name)
-                    if r"{NAZWISKO}" in editionServer.username_template:
-                        username_to_add = username_to_add.replace(r"{NAZWISKO}", student.last_name)
-
-                    added_account = DBAccount.objects.create(
+                    added_account, created = DBAccount.objects.get_or_create(
                         username=username_to_add, password=student.last_name + '-dbpassword', is_moved=False, student=student, editionServer=editionServer
                     )
                     added_accounts.append(added_account)
-            print(added_accounts)
+                    if not created:
+                        print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server already exists.")
+                    else:
+                        print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server.")
             return HttpResponse(status=200)
         except Exception as error:
             print(error)
