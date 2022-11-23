@@ -527,50 +527,64 @@ class LoadStudentsFromCSV(ViewSet):
     def load_students_csv(self, request, format=None):
         accounts_data = request.data
         print('Request log:', accounts_data)
+
+        if 'group_id' not in accounts_data or 'students_csv' not in accounts_data:
+            return Response({'status': 400, 'error': 'Bad request.'})
+        
         group_id = accounts_data['group_id']
         students_csv = accounts_data['students_csv']
 
-        # read student_csv (InMemoryUploadedFile) and convert it to list of dicts including headers
         students_csv = students_csv.read().decode('utf-8-sig')
         csv_reader = csv.DictReader(students_csv.splitlines(), delimiter=',')
         students_list = list(csv_reader)
 
-        print(students_list[0])
-
-        # create students and return a list of created students
         created_students = []
 
-        for student in students_list:
-            created_student = Student.objects.create(
-                first_name=student['first_name'],
-                last_name=student['last_name'],
-                email=student['email'],
-                password=student['password'],
-                student_id=student['student_id'])
-            created_students.append(created_student)
+        if 'first_name' not in students_list[0] or 'last_name' not in students_list[0] or 'email' not in students_list[0] or 'password' not in students_list[0] or 'student_id' not in students_list[0]:
+            return Response({'status': 400, 'error': 'Invalid CSV file.'})
 
-        group_to_add = Group.objects.get(id=group_id)
-        group_to_add.students.add(*created_students)
+        try:
+            for student in students_list:
+                created_student = Student.objects.create(
+                    first_name=student['first_name'],
+                    last_name=student['last_name'],
+                    email=student['email'],
+                    password=student['password'],
+                    student_id=student['student_id'])
+                created_students.append(created_student)
+        except Exception as error:
+            print(error)
+            return Response({'status': 400, 'error': "Bad request. " + str(error)})
 
-        available_editionServers = EditionServer.objects.filter(edition__teacheredition__group=group_to_add.id)
+        try:
+            group_to_add = Group.objects.get(id=group_id)
+        except Exception as error:
+            print(error)
+            return Response({'status': 400, 'error': "Invalid group number."})
 
-        added_accounts = []
-        
-        for editionServer in available_editionServers:
-            for student in created_students:
+        try:
+            group_to_add.students.add(*created_students)
+            available_editionServers = EditionServer.objects.filter(edition__teacheredition__group=group_to_add.id)
+            added_accounts = []
+            
+            for editionServer in available_editionServers:
+                for student in created_students:
 
-                username_to_add = editionServer.username_template
+                    username_to_add = editionServer.username_template
 
-                if r"{NR_INDEKSU}" in editionServer.username_template:
-                    username_to_add = username_to_add.replace(r"{NR_INDEKSU}", student.student_id)
-                if r"{IMIE}" in editionServer.username_template:
-                    username_to_add = username_to_add.replace(r"{IMIE}", student.first_name)
-                if r"{NAZWISKO}" in editionServer.username_template:
-                    username_to_add = username_to_add.replace(r"{NAZWISKO}", student.last_name)
+                    if r"{NR_INDEKSU}" in editionServer.username_template:
+                        username_to_add = username_to_add.replace(r"{NR_INDEKSU}", student.student_id)
+                    if r"{IMIE}" in editionServer.username_template:
+                        username_to_add = username_to_add.replace(r"{IMIE}", student.first_name)
+                    if r"{NAZWISKO}" in editionServer.username_template:
+                        username_to_add = username_to_add.replace(r"{NAZWISKO}", student.last_name)
 
-                added_account = DBAccount.objects.create(
-                    username=username_to_add, password=student.last_name + '-dbpassword', is_moved=False, student=student, editionServer=editionServer
-                )
-                added_accounts.append(added_account)
-        print(added_accounts)
-        return Response({'status': 'ok'})
+                    added_account = DBAccount.objects.create(
+                        username=username_to_add, password=student.last_name + '-dbpassword', is_moved=False, student=student, editionServer=editionServer
+                    )
+                    added_accounts.append(added_account)
+            print(added_accounts)
+            return Response({'status': 'ok'})
+        except Exception as error:
+            print(error)
+            return Response({'status': 400, 'error': "Bad request. " + str(error)})
