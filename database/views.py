@@ -8,6 +8,8 @@ import cx_Oracle
 import oracledb
 from pymongo import MongoClient
 import csv
+from django.http import (HttpResponse, HttpResponseBadRequest, 
+                         HttpResponseForbidden)
 
 
 import MySQLdb as mdb
@@ -529,8 +531,10 @@ class LoadStudentsFromCSV(ViewSet):
         print('Request log:', accounts_data)
 
         if 'group_id' not in accounts_data or 'students_csv' not in accounts_data:
-            return Response({'status': 400, 'error': 'Bad request.'})
-        
+            print('Error: group_id or students_csv not found in request data.')
+            return HttpResponseBadRequest('Group_id or students_csv not found in request data.')
+
+            
         group_id = accounts_data['group_id']
         students_csv = accounts_data['students_csv']
 
@@ -541,7 +545,8 @@ class LoadStudentsFromCSV(ViewSet):
         created_students = []
 
         if 'first_name' not in students_list[0] or 'last_name' not in students_list[0] or 'email' not in students_list[0] or 'password' not in students_list[0] or 'student_id' not in students_list[0]:
-            return Response({'status': 400, 'error': 'Invalid CSV file.'})
+            print("Bad request. Invalid CSV file.")
+            return HttpResponseBadRequest('Invalid CSV file.', status=400)
 
         try:
             for student in students_list:
@@ -554,13 +559,13 @@ class LoadStudentsFromCSV(ViewSet):
                 created_students.append(created_student)
         except Exception as error:
             print(error)
-            return Response({'status': 400, 'error': "Bad request. " + str(error)})
+            return HttpResponseBadRequest(str(error), status=400)
 
         try:
             group_to_add = Group.objects.get(id=group_id)
         except Exception as error:
             print(error)
-            return Response({'status': 400, 'error': "Invalid group number."})
+            return HttpResponseBadRequest('Group of this ID does not exist.', status=400)
 
         try:
             group_to_add.students.add(*created_students)
@@ -584,7 +589,7 @@ class LoadStudentsFromCSV(ViewSet):
                     )
                     added_accounts.append(added_account)
             print(added_accounts)
-            return Response({'status': 'ok'})
+            return HttpResponse(status=200)
         except Exception as error:
             print(error)
-            return Response({'status': 400, 'error': "Bad request. " + str(error)})
+            return HttpResponseBadRequest(error, status=400)
