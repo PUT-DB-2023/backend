@@ -504,6 +504,16 @@ class LoadStudentsFromCSV(ViewSet):
         students_list = list(csv_reader)
 
         created_students = []
+        added_accounts = []
+
+        added_students_log = []
+        added_students_in_group_log = []
+        existing_students_in_group_log = []
+        created_students_log = []
+        existing_students_log = []
+
+        created_accounts_log = []
+        existing_accounts_log = []
 
         if 'first_name' not in students_list[0] or 'last_name' not in students_list[0] or 'email' not in students_list[0] or 'password' not in students_list[0] or 'student_id' not in students_list[0]:
             print("Bad request. Invalid CSV file.")
@@ -511,19 +521,23 @@ class LoadStudentsFromCSV(ViewSet):
 
         try:
             for student in students_list:
-                created_student, created = Student.objects.get_or_create(
+                added_student, created = Student.objects.get_or_create(
                     first_name=student['first_name'],
                     last_name=student['last_name'],
                     email=student['email'],
                     password=student['password'],
                     student_id=student['student_id'])
-                created_students.append(created_student)
+                
                 if not created:
-                    print(f"Student {created_student.first_name} {created_student.last_name} already exists.")
+                    print(f"Student {added_student.first_name} {added_student.last_name} already exists.")
+                    existing_students_log.append(f"{added_student.first_name} {added_student.last_name} {added_student.student_id}")
+                else:
+                    print(f"Student {added_student.first_name} {added_student.last_name} created.")
+                    created_students_log.append(f"{added_student.first_name} {added_student.last_name} {added_student.student_id}")
+                created_students.append(added_student)
         except Exception as error:
             print(error)
             return HttpResponseBadRequest(str(error), status=400)
-
         try:
             group_to_add = Group.objects.get(id=group_id)
         except Exception as error:
@@ -531,9 +545,17 @@ class LoadStudentsFromCSV(ViewSet):
             return HttpResponseBadRequest('Group with this ID does not exist.', status=400)
 
         try:
-            group_to_add.students.add(*created_students)
+            for added_student in created_students:
+                if added_student in group_to_add.students.all():
+                    print(f"Student {added_student.first_name} {added_student.last_name} already exists in group {group_to_add.name}.")
+                    existing_students_in_group_log.append(f"{added_student.first_name} {added_student.last_name} {added_student.student_id}")
+                else:
+                    group_to_add.students.add(added_student)
+                    print(f"Student {added_student.first_name} {added_student.last_name} added to group {group_to_add.name}.")
+                    added_students_in_group_log.append(f"{added_student.first_name} {added_student.last_name} {added_student.student_id}")
+                group_to_add.save()
+
             available_editionServers = EditionServer.objects.filter(edition__teacheredition__group=group_to_add.id)
-            added_accounts = []
             
             for editionServer in available_editionServers:
                 for student in created_students:
@@ -552,11 +574,47 @@ class LoadStudentsFromCSV(ViewSet):
                     added_account, created = DBAccount.objects.get_or_create(
                         username=username_to_add, password=student.last_name + '-dbpassword', is_moved=False, student=student, editionServer=editionServer
                     )
-                    added_accounts.append(added_account)
+                    added_accounts.append(f"{added_student.first_name} {added_student.last_name} {added_student.student_id}")
                     if not created:
+                        existing_accounts_log.append(f"{added_account.username} {added_account.editionServer.server.name} {added_account.editionServer.server.provider}")
                         print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server already exists.")
                     else:
+                        created_accounts_log.append(f"{added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server created.")
                         print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server.")
+
+            return JsonResponse({
+                "added_students": added_students_log,
+                "created_students": created_students_log,
+                "existing_students": existing_students_log,
+                "added_students_in_group": added_students_in_group_log,
+                "existing_students_in_group": existing_students_in_group_log,
+                "created_accounts": created_accounts_log,
+                "existing_accounts": existing_accounts_log
+                }, status=200)
+
+        except Exception as error:
+            print(error)
+            return HttpResponseBadRequest(error, status=400)
+
+
+class ChangeActiveSemester(ViewSet):
+
+    @action (methods=['post'], detail=False)
+    def change_active_semester(self, request, format=None):
+        data = request.data
+        print('Request log:', data)
+
+        if 'semester_id' not in data:
+            print('Error: semester_id not found in request data.')
+            return HttpResponseBadRequest('Semester_id not found in request data.')
+
+        semester_id = data['semester_id']
+
+        try:
+            semester_to_change = Semester.objects.get(id=semester_id)
+            Semester.objects.update(active=False)
+            semester_to_change.active = True
+            semester_to_change.save()
             return HttpResponse(status=200)
         except Exception as error:
             print(error)

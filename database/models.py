@@ -68,6 +68,11 @@ class Semester(models.Model):
     winter = models.BooleanField(default=True)
     active = models.BooleanField(default=False)
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        for course in Course.objects.all():
+            course.save()
+
 
 class Edition(models.Model):
     description = models.CharField(max_length=255, blank=True, default='')
