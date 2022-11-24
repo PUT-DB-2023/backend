@@ -218,9 +218,6 @@ def forwards_func(apps, schema_editor):
                 DBAccount.objects.using(db_alias).create(
                     username=students_all[i-4].last_name + '-dbusername', password=students_all[i-4].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-4], editionServer=edition_servers[0]
             )
-                DBAccount.objects.using(db_alias).create(
-                    username=students_all[i-4].last_name + '-dbusername', password=students_all[i-4].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-4], editionServer=edition_servers[4]  
-            )
         if 52 <= i <= 75: # GRUPY 7-9
                 DBAccount.objects.using(db_alias).create(
                     username=students_all[i-4].last_name + '-dbusername', password=students_all[i-4].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-4], editionServer=edition_servers[2]
@@ -228,8 +225,24 @@ def forwards_func(apps, schema_editor):
         if 76 <= i <= 99: # GRUPY 10-12
                 DBAccount.objects.using(db_alias).create(
                     username=students_all[i-4].last_name + '-dbusername', password=students_all[i-4].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-4], editionServer=edition_servers[3]
+        )
+        if 100 <= i <= 123: # GRUPY 13-15
+                DBAccount.objects.using(db_alias).create(
+                    username=students_all[i-4].last_name + '-dbusername', password=students_all[i-4].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-4], editionServer=edition_servers[4]
             )
-
+        if 124 <= i <= 147: # GRUPY 16-18
+                DBAccount.objects.using(db_alias).create(
+                    username=students_all[i-4].last_name + '-dbusername', password=students_all[i-4].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-4], editionServer=edition_servers[5]
+            )
+        if 148 <= i <= 171: # GRUPY 19-21
+                DBAccount.objects.using(db_alias).create(
+                    username=students_all[i-4].last_name + '-dbusername', password=students_all[i-4].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-4], editionServer=edition_servers[6]
+            )
+        if 172 <= i <= 195: # GRUPY 22-24
+                DBAccount.objects.using(db_alias).create(
+                    username=students_all[i-4].last_name + '-dbusername', password=students_all[i-4].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-4], editionServer=edition_servers[7]
+            )
+        
 class Migration(migrations.Migration):
 
     initial = True
