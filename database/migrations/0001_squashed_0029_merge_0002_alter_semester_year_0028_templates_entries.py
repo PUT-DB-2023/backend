@@ -218,6 +218,9 @@ def forwards_func(apps, schema_editor):
                 DBAccount.objects.using(db_alias).create(
                     username=students_all[i-4].last_name + '-dbusername', password=students_all[i-4].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-4], editionServer=edition_servers[0]
             )
+                DBAccount.objects.using(db_alias).create(
+                    username=students_all[i-4].last_name + '-dbusername', password=students_all[i-4].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-4], editionServer=edition_servers[8]
+            )
         if 52 <= i <= 75: # GRUPY 7-9
                 DBAccount.objects.using(db_alias).create(
                     username=students_all[i-4].last_name + '-dbusername', password=students_all[i-4].last_name + '-dbpassword', additional_info="Additional info about dbaccount", is_moved=False, student=students_all[i-4], editionServer=edition_servers[2]
