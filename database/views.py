@@ -8,8 +8,7 @@ import cx_Oracle
 import oracledb
 from pymongo import MongoClient
 import csv
-from django.http import (HttpResponse, HttpResponseBadRequest, 
-                         HttpResponseForbidden)
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 
 
 import MySQLdb as mdb
@@ -325,7 +324,7 @@ class AddUserAccountToExternalDB(ViewSet):
 
         if not db_accounts:
             print('No accounts to move')
-            return Response({'status': 'No accounts to move.'})
+            return HttpResponse('No accounts to move.', status=400)
 
         server = Server.objects.get(id=accounts_data['server_id'], active=True)
         moved_accounts = []
@@ -345,21 +344,14 @@ class AddUserAccountToExternalDB(ViewSet):
                     print(f"Successfully created user '{account.username}' with '{account.password}' password.")
                 conn_mysql.commit()
                 cursor.close()
-                return Response({
-                    'status': 'ok',
-                    'moved_accounts': moved_accounts
-                })
+                conn_mysql.close()
+
+                return JsonResponse({'moved_accounts': moved_accounts}, status=200)
 
             except (Exception, mdb.DatabaseError) as error:
-                print(error)
-                conn_mysql.rollback()
-                cursor.close()
-                return Response({
-                    'status': 'error',
-                    'error': error
-                })
-            finally:
-                conn_mysql.close()
+                print("error: ", error)
+                return HttpResponse(error, status=500)
+                
 
         elif server.provider.lower() == 'postgres' or server.provider.lower() == 'postgresql': 
             try:
@@ -375,20 +367,12 @@ class AddUserAccountToExternalDB(ViewSet):
                     print(f"Successfully created user '{account.username}' with '{account.password}' password.")
                 conn_postgres.commit()
                 cursor.close()
-                return Response({
-                    'status': 'ok',
-                    'moved_accounts': moved_accounts
-                })
+                conn_postgres.close()
+                return JsonResponse({'moved_accounts': moved_accounts}, status=200)
+
             except (Exception, mdb.DatabaseError) as error:
                 print(error)
-                conn_postgres.rollback()
-                cursor.close()
-                return Response({
-                    'status': 'error',
-                    'error': error
-                })
-            finally:
-                conn_postgres.close()
+                return HttpResponse(error, status=500)
 
         elif server.provider.lower() == 'mongo' or server.provider.lower() == 'mongodb':
             try:
@@ -396,26 +380,27 @@ class AddUserAccountToExternalDB(ViewSet):
                 db = conn[server.database]
                 for account in db_accounts:
                     print(account.username)
-                    db.command({
-                        "createUser" : account.username,
-                        "pwd" : account.password,
-                        "customData" : {},
-                        "roles" : []
-                    })
-                    moved_accounts.append(account.username)
-                    DBAccount.objects.filter(id=account.id).update(is_moved=True)
-                    print(f"Successfully created user '{account.username}' with '{account.password}' password.")
-                
-                return Response({
-                    'status': 'ok',
-                    'moved_accounts': moved_accounts
-                })
+
+                    listing = db.command('usersInfo')
+                    exists = False
+                    for document in listing['users']:
+                        if account.username == document['user']:
+                            print(f"User '{account.username}' already exists.")
+                            exists = True
+
+                    if exists:
+                        continue
+                    else:
+                        db.command('createUser', account.username, pwd=account.password, roles=[{'role': 'readWrite', 'db': server.database}])
+                        moved_accounts.append(account.username)
+                        DBAccount.objects.filter(id=account.id).update(is_moved=True)
+                        print(f"Successfully created user '{account.username}' with '{account.password}' password.")
+                conn.close()
+                return JsonResponse({'moved_accounts': moved_accounts}, status=200)
             except (Exception, mdb.DatabaseError) as error:
                 print(error)
-                return Response({
-                    'status': 'error',
-                    'error': error
-                })
+                return HttpResponse(error, status=500)
+
         elif server.provider.lower() == 'oracle' or server.provider.lower() == 'oracledb':
             try:
                 conn = cx_Oracle.connect(server.user, server.password, f'{server.ip}:{server.port}/{server.database}')
@@ -434,14 +419,9 @@ class AddUserAccountToExternalDB(ViewSet):
                 })
             except (Exception, mdb.DatabaseError) as error:
                 print(error)
-                conn.rollback()
-                cursor.close()
-                return Response({
-                    'status': 'error',
-                    'error': error
-                })
+                return HttpResponse(error, status=500)
         else:
-            return Response({'status': 'Unknown provider.'})
+            return HttpResponse('Unknown provider.', status=400)
 
 
 class RemoveUserFromExternalDB(ViewSet):
@@ -462,19 +442,12 @@ class RemoveUserFromExternalDB(ViewSet):
                 conn_mysql.commit()
                 DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
                 cursor.close()
+                conn_mysql.close()
                 print(f"Successfully deleted user '{db_account.username}'")
-                return Response({'status': 'ok',
-                    'deleted_account': db_account.username})
+                return HttpResponse(f'deleted_account: {db_account.username}', status=200)
             except (Exception, mdb.DatabaseError) as error:
                 print(error)
-                conn_mysql.rollback()
-                cursor.close()
-                return Response({
-                    'status': 'error',
-                    'error': error
-                })
-            finally:
-                conn_mysql.close()
+                return HttpResponse(error, status=500)
                 
         elif db_account_server_provider.lower() == 'postgres' or db_account_server_provider.lower() == 'postgresql':
             try:
@@ -486,18 +459,11 @@ class RemoveUserFromExternalDB(ViewSet):
                 DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
                 cursor.close()
                 print(f"Successfully deleted user '{db_account.username}'")
-                return Response({'status': 'ok',
-                    'deleted_account': db_account.username})
+                return HttpResponse(f'deleted_account: {db_account.username}', status=200)
             except (Exception, psycopg2.DatabaseError) as error:
                 print(error)
-                conn_postgres.rollback()
-                cursor.close()
-                return Response({
-                    'status': 'error',
-                    'error': error
-                })
-            finally:
-                conn_postgres.close()
+                return HttpResponse(error, status=500)
+
 
         elif db_account_server_provider.lower() == 'mongo' or db_account_server_provider.lower() == 'mongodb':
             try:
@@ -508,18 +474,13 @@ class RemoveUserFromExternalDB(ViewSet):
                 })
                 DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
                 print(f"Successfully deleted user '{db_account.username}'")
-                return Response({'status': 'ok',
-                    'deleted_account': db_account.username})
+                return HttpResponse(f'deleted_account: {db_account.username}', status=200)
             except (Exception, mdb.DatabaseError) as error:
                 print(error)
-                # client.rollback()
-                return Response({
-                    'status': 'error',
-                    'error': error
-                })
+                return HttpResponse(error, status=500)
 
         
-        return Response({'status': 'ok'})
+        return HttpResponse('Unknown provider.', status=400)
 
 
 
@@ -567,7 +528,7 @@ class LoadStudentsFromCSV(ViewSet):
             group_to_add = Group.objects.get(id=group_id)
         except Exception as error:
             print(error)
-            return HttpResponseBadRequest('Group of this ID does not exist.', status=400)
+            return HttpResponseBadRequest('Group with this ID does not exist.', status=400)
 
         try:
             group_to_add.students.add(*created_students)

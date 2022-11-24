@@ -109,11 +109,16 @@ class Group(models.Model):
     students = models.ManyToManyField(Student, blank=True, related_name='groups')
 
 
+# class DBProvider(models.Model):
+#     name = models.CharField(max_length=30)
+#     description = models.CharField(max_length=255, blank=True, default='')
+
 class Server(models.Model):
     name = models.CharField(max_length=30)
     ip = models.CharField(max_length=30)
     port = models.CharField(max_length=10)
     provider = models.CharField(max_length=30)
+    # provider = models.ForeignKey(DBProvider, on_delete=models.SET_NULL, null=True, related_name='servers')
     user = models.CharField(max_length=30)
     password = models.CharField(max_length=30)
     database = models.CharField(max_length=30)
