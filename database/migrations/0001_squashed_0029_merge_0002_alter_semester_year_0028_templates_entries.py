@@ -90,13 +90,13 @@ def forwards_func(apps, schema_editor):
             name=course_names[i], description=course_descriptions[i], active=course_active[i], major=course_major[i]
     )
 
-    semester_years = ['2021/2022', '2022/2023', '2023/2024']
+    semester_years = ['2021', '2022', '2023']
     semester_winters = [True, True, True]
     semester_actives = [False, True, False]
 
     for i in range(len(semester_years)):
         Semester.objects.using(db_alias).create(
-            year=semester_years[i], winter=semester_winters[i], active=semester_actives[i]
+            start_year=semester_years[i], winter=semester_winters[i], active=semester_actives[i]
     )
 
     users_names = ["Ferdynand Dulski","Celestyn Tomaszewski","Sylwester Kaczkowski","Juri Rokicki","Pabian Archacki","Leo Zelek","Kwiatosław Greger","Hubert Kiedrowski","Waldemar Piotrowicz","Olaf Gursky","Hilary Franczak","Melchior Perzan","Świętosław Kopa","Marcin Gorniak","Oskar Kobylinski","Tymon Bialek","Gabriel Orlowski","Pankracy Grodzicki","Serwacy Watroba","Zygmunt Bilik","Aleksander Nabozny","Maryn Wyszynski","Remigiusz Ciolek","Cyprian Gracyalny","Dominik Bernacki","Szymon Rogalski","Ignacy Smigel","Ireneusz Dziak","Wisław Gielgud","Korneli Krynicki","Świętosław Lozowski","Bartłomiej Lach","Konstantyn Pitera","Franciszek Sochaczewski","Malachiasz Car","Eugeniusz Jaracz","Zbigniew Kula","Kamil Rajewski","Zenon Kosmalski","Chwalimir Bania","Romuald Mita","Ryszard Nowak","Sławomir Garstka","Tomasz Kocik","Gerwazy Cieply","Gwalbert Grodzicki","Denis Slusarczyk","Edward Przybylowicz","Malachiasz Cesarz","Iwon Capek","Dobrogost Wojtaszek","Świętosław Pawelski","Tobiasz Raczkowski","Gerard Chmiel","Bartosz Burak","Oktawiusz Ignasiak","Arkadiusz Michalak","Zdzisław Luka","Jerzy Kurcz","Julian Karczewski","Herbert Marcinkiewicz","Klemens Krzyzaniak","Metody Mioduszewski","Gościsław Niziolek","Sylwester Kaczkowski","Fryderyk Dusza","Dobrogost Wójcik","Albin Bialy","Jaromir Misiaszek","Tadeusz Galik","Bożidar Jablon","Witold Demby","Chrystian Krolikowski","Kryspyn Piekarz","Nikodem Czepiec","Wojsław Korczak","Hugo Tylka","Lubomił Ciesinski","Wisław Samborski","Bożimir Jagodzinski","Hilary Lesak","Adrian Bartel","Prot Ewy","Ludomił Kaniuk","Dobrogost Syslo","Adrian Dudzinski","Florentyn Rawski","Bożimir Banik","Wandelin Jaroszewski","Herbert Pekala","Gustaw Dobek","Oskar Jusko","Maksymilian Zajac","Bronisław Prus","Marcel Zaczek","Antoni Wiech","Przemysław Woźniak","Jakub Wróbel","Krystian Jakusik","Kamil Ambozy"]
@@ -287,7 +287,7 @@ class Migration(migrations.Migration):
             name='Semester',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('year', models.CharField(max_length=9)),
+                ('start_year', models.CharField(max_length=9)),
                 ('winter', models.BooleanField(default=True)),
                 ('active', models.BooleanField(default=False)),
             ],
@@ -478,7 +478,7 @@ class Migration(migrations.Migration):
         migrations.RunPython(forwards_func),
         migrations.AlterField(
             model_name='semester',
-            name='year',
+            name='start_year',
             field=models.CharField(max_length=9),
         ),
     ]

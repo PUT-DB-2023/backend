@@ -202,7 +202,7 @@ class SemesterSerializer(ModelSerializer):
         model = Semester
         fields = [
             'id',
-            'year',
+            'start_year',
             'winter',
             'active',
             'editions',
@@ -218,7 +218,7 @@ class BasicSemesterSerializer(ModelSerializer):
         model = Semester
         fields = [
             'id',
-            'year',
+            'start_year',
             'winter',
             'active',
         ]

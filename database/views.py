@@ -46,7 +46,7 @@ class TeacherViewSet(ModelViewSet):
     filterset_fields = [
         'id', 'password', 'email', 'first_name', 'last_name', 'roles',
         'editions__semester',
-        'editions__semester__year',
+        'editions__semester__start_year',
         'editions__semester__winter',
         'editions__semester__active',
         'editions__course',
@@ -129,7 +129,7 @@ class SemesterViewSet(ModelViewSet):
     serializer_class = SemesterSerializer
     queryset = Semester.objects.prefetch_related('editions')
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'year', 'winter', 'active', 'editions']
+    filterset_fields = ['id', 'start_year', 'winter', 'active', 'editions']
 
     # def get_queryset(self):
     #     if self.request.query_params.get('basic') == "true":
@@ -151,7 +151,7 @@ class EditionViewSet(ModelViewSet):
         'date_opened', 
         'date_closed',
         'semester', 
-        'semester__year', 
+        'semester__start_year', 
         'semester__winter', 
         'semester__active',
         'course', 
