@@ -321,6 +321,18 @@ class TeacherEditionSerializer(ModelSerializer):
         self.fields['edition'] = EditionSerializerForTeacherEdition(many=False, read_only=True)
         return super(TeacherEditionSerializer, self).to_representation(instance)
 
+# class BasicTeacherEdition(ModelSerializer):
+#     class Meta:
+#         model = TeacherEdition
+#         fields = [
+#             'id',
+#             'teacher',
+#         ]
+    
+#     def to_representation(self, instance):
+#         self.fields['teacher'] = BasicTeacherSerializer(many=False, read_only=True)
+#         return super(TeacherEditionSerializer, self).to_representation(instance)
+
 
 class GroupSerializer(ModelSerializer):
     class Meta:
