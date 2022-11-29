@@ -46,7 +46,7 @@ class TeacherViewSet(ModelViewSet):
     filterset_fields = [
         'id', 'password', 'email', 'first_name', 'last_name', 'roles',
         'editions__semester',
-        'editions__semester__year',
+        'editions__semester__start_year',
         'editions__semester__winter',
         'editions__semester__active',
         'editions__course',
@@ -129,7 +129,7 @@ class SemesterViewSet(ModelViewSet):
     serializer_class = SemesterSerializer
     queryset = Semester.objects.prefetch_related('editions')
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'year', 'winter', 'active', 'editions']
+    filterset_fields = ['id', 'start_year', 'winter', 'active', 'editions']
 
     # def get_queryset(self):
     #     if self.request.query_params.get('basic') == "true":
@@ -151,7 +151,7 @@ class EditionViewSet(ModelViewSet):
         'date_opened', 
         'date_closed',
         'semester', 
-        'semester__year', 
+        'semester__start_year', 
         'semester__winter', 
         'semester__active',
         'course', 
@@ -185,7 +185,7 @@ class TeacherEditionViewSet(ModelViewSet):
         'edition__date_closed',
         'edition__course',
         'edition__semester',
-        'edition__semester__year',
+        'edition__semester__start_year',
         'edition__semester__winter',
         'edition__semester__active',
         'edition__course__name',
@@ -211,7 +211,7 @@ class GroupViewSet(ModelViewSet):
         'teacherEdition', 
         'teacherEdition__edition', 
         'teacherEdition__edition__semester', 
-        'teacherEdition__edition__semester__year', 
+        'teacherEdition__edition__semester__start_year', 
         'teacherEdition__edition__semester__winter',
         'teacherEdition__edition__semester__active',
         'teacherEdition__edition__course', 
@@ -246,7 +246,7 @@ class ServerViewSet(ModelViewSet):
         'edition__date_opened', 
         'edition__date_closed', 
         'edition__semester', 
-        'edition__semester__year', 
+        'edition__semester__start_year', 
         'edition__semester__winter', 
         'edition__semester__active',
         'edition__course',
@@ -270,7 +270,7 @@ class EditionServerViewSet(ModelViewSet):
         'edition__date_opened', 
         'edition__date_closed', 
         'edition__semester', 
-        'edition__semester__year', 
+        'edition__semester__start_year', 
         'edition__semester__winter', 
         'edition__semester__active',
         'edition__course',
@@ -301,7 +301,7 @@ class DBAccountViewSet(ModelViewSet):
         'editionServer__edition',
         'editionServer__edition__course',
         'editionServer__edition__semester',
-        'editionServer__edition__semester__year',
+        'editionServer__edition__semester__start_year',
         'editionServer__edition__semester__winter',
         'editionServer__edition__semester__active',
         'editionServer__edition__course__name',

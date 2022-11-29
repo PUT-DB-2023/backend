@@ -2,6 +2,7 @@ from email.policy import default
 from enum import unique
 from polymorphic.models import PolymorphicModel
 from django.db import models
+from django.db.models import CheckConstraint, Q, F
 
 
 class User(PolymorphicModel):
@@ -64,9 +65,15 @@ class Course(models.Model):
 
 
 class Semester(models.Model):
-    year = models.CharField(max_length=9)
+    start_year = models.IntegerField()
     winter = models.BooleanField(default=True)
     active = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['start_year', 'winter'], name='unique_semester'),
+            models.CheckConstraint(check=Q(start_year__gte=2020) & Q(start_year__lte=3000), name='start_year_between_2020_and_3000'),
+        ]
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)

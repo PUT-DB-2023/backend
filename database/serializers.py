@@ -202,7 +202,7 @@ class SemesterSerializer(ModelSerializer):
         model = Semester
         fields = [
             'id',
-            'year',
+            'start_year',
             'winter',
             'active',
             'editions',
@@ -218,7 +218,7 @@ class BasicSemesterSerializer(ModelSerializer):
         model = Semester
         fields = [
             'id',
-            'year',
+            'start_year',
             'winter',
             'active',
         ]
@@ -320,6 +320,18 @@ class TeacherEditionSerializer(ModelSerializer):
         self.fields['teacher'] = BasicTeacherSerializer(many=False, read_only=True)
         self.fields['edition'] = EditionSerializerForTeacherEdition(many=False, read_only=True)
         return super(TeacherEditionSerializer, self).to_representation(instance)
+
+# class BasicTeacherEdition(ModelSerializer):
+#     class Meta:
+#         model = TeacherEdition
+#         fields = [
+#             'id',
+#             'teacher',
+#         ]
+    
+#     def to_representation(self, instance):
+#         self.fields['teacher'] = BasicTeacherSerializer(many=False, read_only=True)
+#         return super(TeacherEditionSerializer, self).to_representation(instance)
 
 
 class GroupSerializer(ModelSerializer):
