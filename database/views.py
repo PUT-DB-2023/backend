@@ -6,6 +6,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 import cx_Oracle
 import oracledb
+# import pyodbc
 from pymongo import MongoClient
 import csv
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
@@ -351,6 +352,28 @@ class AddUserAccountToExternalDB(ViewSet):
             except (Exception, mdb.DatabaseError) as error:
                 print("error: ", error)
                 return HttpResponse(error, status=500)
+
+            # connect to mysql server using odbc driver
+
+            # try:
+            #     conn_mysql = pyodbc.connect(f"DRIVER={server.driver};SERVER={server.ip};PORT={server.port};DATABASE={server.database};USER={server.user};PASSWORD={server.password}")
+            #     print('Connected to MySQL server')
+            #     cursor = conn_mysql.cursor()
+            #     for account in db_accounts:
+            #         print(server.create_user_template)
+            #         cursor.execute(server.create_user_template % (account.username, account.password))
+            #         moved_accounts.append(account.username)
+            #         DBAccount.objects.filter(id=account.id).update(is_moved=True)
+            #         print(f"Successfully created user '{account.username}' with '{account.password}' password.")
+            #     conn_mysql.commit()
+            #     cursor.close()
+            #     conn_mysql.close()
+
+            #     return JsonResponse({'moved_accounts': moved_accounts}, status=200)
+
+            # except (Exception, pyodbc.DatabaseError) as error:
+            #     print("error: ", error)
+            #     return HttpResponse(error, status=500)
                 
 
         elif server.provider.lower() == 'postgres' or server.provider.lower() == 'postgresql': 
