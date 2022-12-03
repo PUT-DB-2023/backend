@@ -139,7 +139,7 @@ class SimpleSemesterViewSet(ModelViewSet):
     serializer_class = BasicSemesterSerializer
     queryset = Semester.objects.all()
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'start_year', 'winter', 'active']
+    filterset_fields = ['id', 'start_year', 'winter', 'active', 'editions']
 
 class EditionViewSet(ModelViewSet):
     """
@@ -206,7 +206,10 @@ class SimpleTeacherEditionViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id',
+        'teacher',
         'teacher__first_name',
+        'teacher__last_name',
+        'edition',
     ]
 
 
