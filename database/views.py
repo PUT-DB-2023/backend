@@ -14,7 +14,7 @@ from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbid
 
 import MySQLdb as mdb
 
-from .serializers import UserSerializer, AdminSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, PermissionSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, DBAccountSerializer
+from .serializers import UserSerializer, AdminSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, PermissionSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, DBAccountSerializer, SimpleTeacherEditionSerializer
 from .models import User, Admin, Teacher, Student, Role, Permission, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
 
 class UserViewSet(ModelViewSet):
@@ -132,12 +132,14 @@ class SemesterViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'start_year', 'winter', 'active', 'editions']
 
-    # def get_queryset(self):
-    #     if self.request.query_params.get('basic') == "true":
-    #         self.serializer_class = BasicSemesterSerializer
-    #     else:
-    #         self.serializer_class = SemesterSerializer
-
+class SimpleSemesterViewSet(ModelViewSet):
+    """
+    A simple ViewSet for listing, retrieving and posting semesters.
+    """
+    serializer_class = BasicSemesterSerializer
+    queryset = Semester.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['id', 'start_year', 'winter', 'active']
 
 class EditionViewSet(ModelViewSet):
     """
@@ -194,6 +196,19 @@ class TeacherEditionViewSet(ModelViewSet):
         'teacher__first_name',
         'teacher__last_name',
     ]
+
+class SimpleTeacherEditionViewSet(ModelViewSet):
+    """
+    A simple ViewSet for listing, retrieving and posting teachers in editions.
+    """
+    serializer_class = SimpleTeacherEditionSerializer
+    queryset = TeacherEdition.objects.select_related('teacher').only('id', 'teacher_id')
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = [
+        'id',
+        'teacher__first_name',
+    ]
+
 
 
 class GroupViewSet(ModelViewSet):

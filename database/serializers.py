@@ -59,6 +59,15 @@ class BasicTeacherSerializer(ModelSerializer):
             'password',
         ]
 
+class SimpleTeacherSerializer(ModelSerializer):
+    class Meta:
+        model = Teacher
+        fields = [
+            'id',
+            'first_name',
+            'last_name',
+        ]
+
 
 class StudentSerializer(ModelSerializer):
     class Meta:
@@ -321,17 +330,17 @@ class TeacherEditionSerializer(ModelSerializer):
         self.fields['edition'] = EditionSerializerForTeacherEdition(many=False, read_only=True)
         return super(TeacherEditionSerializer, self).to_representation(instance)
 
-# class BasicTeacherEdition(ModelSerializer):
-#     class Meta:
-#         model = TeacherEdition
-#         fields = [
-#             'id',
-#             'teacher',
-#         ]
+class SimpleTeacherEditionSerializer(ModelSerializer):
+    class Meta:
+        model = TeacherEdition
+        fields = [
+            'id',
+            'teacher',
+        ]
     
-#     def to_representation(self, instance):
-#         self.fields['teacher'] = BasicTeacherSerializer(many=False, read_only=True)
-#         return super(TeacherEditionSerializer, self).to_representation(instance)
+    def to_representation(self, instance):
+        self.fields['teacher'] = SimpleTeacherSerializer(many=False, read_only=True)
+        return super(SimpleTeacherEditionSerializer, self).to_representation(instance)
 
 
 class GroupSerializer(ModelSerializer):
