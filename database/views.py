@@ -545,62 +545,55 @@ class LoadStudentsFromCSV(ViewSet):
         students_list = list(csv_reader)
 
         created_students = []
-        added_accounts = []
 
-        added_students_log = []
-        added_students_in_group_log = []
-        existing_students_in_group_log = []
-        created_students_log = []
-        existing_students_log = []
-
-        created_accounts_log = []
-        existing_accounts_log = []
+        students_info = []
 
         if 'first_name' not in students_list[0] or 'last_name' not in students_list[0] or 'email' not in students_list[0] or 'password' not in students_list[0] or 'student_id' not in students_list[0]:
             print("Bad request. Invalid CSV file.")
             return HttpResponseBadRequest('Invalid CSV file.', status=400)
 
         try:
+            available_editionServers = EditionServer.objects.filter(edition__teacheredition__group=group_to_add.id)
+            if len(available_editionServers) == 0:
+                return HttpResponseBadRequest('No edition servers available for this group.', status=400)
+
+            group_to_add = Group.objects.get(id=group_id)
+            if group_to_add is None:
+                print('Group not found.')
+                return HttpResponseBadRequest('Group not found.', status=400)
+
             for student in students_list:
                 added_student, created = Student.objects.get_or_create(
                     first_name=student['first_name'],
                     last_name=student['last_name'],
                     email=student['email'],
-                    password=student['password'],
+                    password=student['password'], # TODO: generate password
                     student_id=student['student_id'])
                 
+                students_info.append({
+                    'first_name': student['first_name'],
+                    'last_name': student['last_name'],
+                    'email': student['email'],
+                    'password': student['password'],
+                    'student_id': student['student_id']})
+                
                 if not created:
+                    students_info[-1]['student_created'] = False
                     print(f"Student {added_student.first_name} {added_student.last_name} already exists.")
-                    existing_students_log.append(f"{added_student.first_name} {added_student.last_name} {added_student.student_id}")
                 else:
+                    students_info[-1]['student_created'] = True
                     print(f"Student {added_student.first_name} {added_student.last_name} created.")
-                    created_students_log.append(f"{added_student.first_name} {added_student.last_name} {added_student.student_id}")
                 created_students.append(added_student)
-        except Exception as error:
-            print(error)
-            return HttpResponseBadRequest(str(error), status=400)
-        try:
-            group_to_add = Group.objects.get(id=group_id)
-        except Exception as error:
-            print(error)
-            return HttpResponseBadRequest('Group with this ID does not exist.', status=400)
 
-        try:
-            for added_student in created_students:
                 if added_student in group_to_add.students.all():
                     print(f"Student {added_student.first_name} {added_student.last_name} already exists in group {group_to_add.name}.")
-                    existing_students_in_group_log.append(f"{added_student.first_name} {added_student.last_name} {added_student.student_id}")
+                    students_info[-1]['added_to_group'] = False # TODO: check if this works
                 else:
                     group_to_add.students.add(added_student)
                     print(f"Student {added_student.first_name} {added_student.last_name} added to group {group_to_add.name}.")
-                    added_students_in_group_log.append(f"{added_student.first_name} {added_student.last_name} {added_student.student_id}")
-                group_to_add.save()
+                    students_info[-1]['added_to_group'] = True
 
-            available_editionServers = EditionServer.objects.filter(edition__teacheredition__group=group_to_add.id)
-            
-            for editionServer in available_editionServers:
-                for student in created_students:
-
+                for editionServer in available_editionServers:
                     username_to_add = editionServer.username_template.lower().replace(
                         r'{imie}', student.first_name.lower()).replace(
                         r'{imię}', student.first_name.lower()).replace(
@@ -615,28 +608,23 @@ class LoadStudentsFromCSV(ViewSet):
                     added_account, created = DBAccount.objects.get_or_create(
                         username=username_to_add, password=student.last_name + '-dbpassword', is_moved=False, student=student, editionServer=editionServer
                     )
-                    added_accounts.append(f"{added_student.first_name} {added_student.last_name} {added_student.student_id}")
                     if not created:
-                        existing_accounts_log.append(f"{added_account.username} {added_account.editionServer.server.name} {added_account.editionServer.server.provider}")
+                        students_info[-1]['account_created'][editionServer.provider] = False
                         print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server already exists.")
                     else:
-                        created_accounts_log.append(f"{added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server created.")
+                        students_info[-1]['account_created'][editionServer.provider] = True
                         print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server.")
+            
+            group_to_add.save()
 
-            return JsonResponse({
-                "added_students": added_students_log,
-                "created_students": created_students_log,
-                "existing_students": existing_students_log,
-                "added_students_in_group": added_students_in_group_log,
-                "existing_students_in_group": existing_students_in_group_log,
-                "created_accounts": created_accounts_log,
-                "existing_accounts": existing_accounts_log
-                }, status=200)
 
         except Exception as error:
-            print(error)
-            return HttpResponseBadRequest(error, status=400)
-
+            print(f"Error: {error}")
+            return HttpResponseBadRequest(str(error), status=400)
+            
+        return JsonResponse({
+            "students_info": students_info
+            }, status=200)
 
 class ChangeActiveSemester(ViewSet):
 
