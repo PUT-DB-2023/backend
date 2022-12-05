@@ -648,3 +648,45 @@ class ChangeActiveSemester(ViewSet):
         except Exception as error:
             print(error)
             return HttpResponseBadRequest(error, status=400)
+
+class AddStudentToGroup(ViewSet):
+
+    @action (methods=['post'], detail=False)
+    def add_student_to_group(self, request, format=None):
+        data = request.data
+        print('Request log:', data)
+
+        if 'group_id' not in data:
+            print('Error: group_id not found in request data.')
+            return HttpResponseBadRequest('Group_id not found in request data.')
+
+        if 'students' not in data:
+            print('Error: students not found in request data.')
+            return HttpResponseBadRequest('Students not found in request data.')
+
+        group_id = data['group_id']
+        students = data['students']
+
+        added_students = []
+
+        try:
+            group_to_add = Group.objects.get(id=group_id)
+        except Exception as error:
+            print(error)
+            return HttpResponseBadRequest('Group with this ID does not exist.', status=400)
+
+        try:
+            for student_id in students:
+                student_to_add = Student.objects.get(id=student_id)
+                if student_to_add in group_to_add.students.all():
+                    print(f"Student {student_to_add.first_name} {student_to_add.last_name} already exists in group {group_to_add.name}.")
+                else:
+                    group_to_add.students.add(student_to_add)
+                    print(f"Student {student_to_add.first_name} {student_to_add.last_name} added to group {group_to_add.name}.")
+                    added_students.append(student_to_add.student_id)
+                group_to_add.save()
+                print('Added students: ', added_students)
+            return JsonResponse({'added_students': added_students}, status=200)
+        except Exception as error:
+            print(error)
+            return HttpResponseBadRequest(error, status=400)
