@@ -695,10 +695,10 @@ class AddStudentToGroup(ViewSet):
                 else:
                     group_to_add.students.add(student_to_add)
                     print(f"Student {student_to_add.first_name} {student_to_add.last_name} added to group {group_to_add.name}.")
-                    added_students.append(student_to_add.id)
+                    added_students.append(student_to_add.student_id)
                 group_to_add.save()
                 print('Added students: ', added_students)
-            return HttpResponse(added_students, status=200)
+            return JsonResponse({'added_students': added_students}, status=200)
         except Exception as error:
             print(error)
             return HttpResponseBadRequest(error, status=400)
