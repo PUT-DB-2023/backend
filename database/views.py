@@ -10,6 +10,7 @@ import oracledb
 from pymongo import MongoClient
 import csv
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
+from django.db import IntegrityError
 
 
 import MySQLdb as mdb
@@ -131,6 +132,16 @@ class SemesterViewSet(ModelViewSet):
     queryset = Semester.objects.prefetch_related('editions')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'start_year', 'winter', 'active', 'editions']
+
+    def create(self, request, *args, **kwargs):
+        # if request.data.get('active') == True:
+        #     Semester.objects.all().update(active=False)
+        try:
+            return super().create(request, *args, **kwargs)
+        except IntegrityError as e:
+            if "unique_semester" in str(e):
+                return HttpResponseBadRequest("Semester already exists")
+            return HttpResponseBadRequest("Unknown error: ", e)
 
 class SimpleSemesterViewSet(ModelViewSet):
     """
@@ -553,14 +564,17 @@ class LoadStudentsFromCSV(ViewSet):
             return HttpResponseBadRequest('Invalid CSV file.', status=400)
 
         try:
-            available_editionServers = EditionServer.objects.filter(edition__teacheredition__group=group_to_add.id)
-            if len(available_editionServers) == 0:
-                return HttpResponseBadRequest('No edition servers available for this group.', status=400)
-
+            print(group_id)
             group_to_add = Group.objects.get(id=group_id)
+            print(f'Group to add: {group_to_add.name}')
             if group_to_add is None:
                 print('Group not found.')
                 return HttpResponseBadRequest('Group not found.', status=400)
+            
+            available_editionServers = EditionServer.objects.filter(edition__teacheredition__group=group_to_add.id)
+            if len(available_editionServers) == 0:
+                print("No available edition servers.")
+                return HttpResponseBadRequest('No edition servers available for this group.', status=400)
 
             for student in students_list:
                 added_student, created = Student.objects.get_or_create(
