@@ -47,16 +47,17 @@ class Course(models.Model):
     active = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
+        print(f"Saving course {self.name}")
         # check if self.editions.all() is empty
         if self.editions.all():
             print(f"Editions: {self.editions.all()}")
             for edition in self.editions.all():
                 if edition.semester.active:
-                    print(f"Found active semester: {edition.semester}")
+                    print(f"Found an active semester: {edition.semester}")
                     self.active = True
                     break
                 else:
-                    print(f"Found inactive semester: {edition.semester}")
+                    print(f"Found an inactive semester: {edition.semester}")
                     self.active = False
         else:
             print(f"No editions found for course: {self}")
@@ -78,8 +79,18 @@ class Semester(models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         for course in Course.objects.all():
+            print(f"Checking course: {course}")
             course.save()
-
+    
+    # override delete method to disallow deletion of an active semester
+    def delete(self, *args, **kwargs):
+        print("self.active: ", self.active)
+        if self.active:
+            print(f"Cannot delete active semester: {self}")
+            raise Exception("Cannot delete an active semester")
+        else:
+            print(f"Deleting semester: {self}")
+            super().delete(*args, **kwargs)
 
 class Edition(models.Model):
     description = models.CharField(max_length=255, blank=True, default='')

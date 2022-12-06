@@ -142,6 +142,27 @@ class SemesterViewSet(ModelViewSet):
             if "unique_semester" in str(e):
                 return HttpResponseBadRequest("Semester already exists")
             return HttpResponseBadRequest("Unknown error: ", e)
+    
+    # def destroy(self, request, *args, **kwargs):
+    #     if self.get_object().active:
+    #         print("Cannot delete active semester")
+    #         return HttpResponseBadRequest("Cannot delete active semester")
+    #     print("Deleting semester")
+    #     return super().delete(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        if request.data.get('active') == True:
+            Semester.objects.all().update(active=False)
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        semester = self.get_object()
+        if semester.active:
+            return HttpResponseBadRequest("Cannot delete active semester")
+        if semester.editions.count() > 0:
+            return HttpResponseBadRequest("Cannot delete semester with editions")
+        return super().destroy(request, *args, **kwargs)
+
 
 class SimpleSemesterViewSet(ModelViewSet):
     """
@@ -151,6 +172,7 @@ class SimpleSemesterViewSet(ModelViewSet):
     queryset = Semester.objects.all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'start_year', 'winter', 'active', 'editions']
+
 
 class EditionViewSet(ModelViewSet):
     """
@@ -207,6 +229,7 @@ class TeacherEditionViewSet(ModelViewSet):
         'teacher__first_name',
         'teacher__last_name',
     ]
+
 
 class SimpleTeacherEditionViewSet(ModelViewSet):
     """
@@ -535,7 +558,6 @@ class RemoveUserFromExternalDB(ViewSet):
         return HttpResponse('Unknown provider.', status=400)
 
 
-
 class LoadStudentsFromCSV(ViewSet):
 
     @action (methods=['post'], detail=False)
@@ -589,8 +611,11 @@ class LoadStudentsFromCSV(ViewSet):
                     'last_name': student['last_name'],
                     'email': student['email'],
                     'password': student['password'],
-                    'student_id': student['student_id']})
-                
+                    'student_id': student['student_id'],
+                    'student_created': '',
+                    'added_to_group': '',
+                    'account_created': {},})
+                    
                 if not created:
                     students_info[-1]['student_created'] = False
                     print(f"Student {added_student.first_name} {added_student.last_name} already exists.")
@@ -609,24 +634,24 @@ class LoadStudentsFromCSV(ViewSet):
 
                 for editionServer in available_editionServers:
                     username_to_add = editionServer.username_template.lower().replace(
-                        r'{imie}', student.first_name.lower()).replace(
-                        r'{imię}', student.first_name.lower()).replace(
-                        r'{nazwisko}', student.last_name.lower()).replace(
-                        r'{nr_indeksu}', student.student_id.lower()).replace(
-                        r'{numer_indeksu}', student.student_id.lower()).replace(
-                        r'{nr_ind}', student.student_id.lower()).replace(
-                        r'{indeks}', student.student_id.lower()).replace(
-                        r'{email}', student.email.lower()
+                        r'{imie}', added_student.first_name.lower()).replace(
+                        r'{imię}', added_student.first_name.lower()).replace(
+                        r'{nazwisko}', added_student.last_name.lower()).replace(
+                        r'{nr_indeksu}', added_student.student_id.lower()).replace(
+                        r'{numer_indeksu}', added_student.student_id.lower()).replace(
+                        r'{nr_ind}', added_student.student_id.lower()).replace(
+                        r'{indeks}', added_student.student_id.lower()).replace(
+                        r'{email}', added_student.email.lower()
                         )
 
                     added_account, created = DBAccount.objects.get_or_create(
-                        username=username_to_add, password=student.last_name + '-dbpassword', is_moved=False, student=student, editionServer=editionServer
+                        username=username_to_add, password=added_student.last_name + '-dbpassword', is_moved=False, student=added_student, editionServer=editionServer
                     )
                     if not created:
-                        students_info[-1]['account_created'][editionServer.provider] = False
+                        students_info[-1]['account_created'][editionServer.server.provider] = False
                         print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server already exists.")
                     else:
-                        students_info[-1]['account_created'][editionServer.provider] = True
+                        students_info[-1]['account_created'][editionServer.server.provider] = True
                         print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server.")
             
             group_to_add.save()
@@ -639,6 +664,7 @@ class LoadStudentsFromCSV(ViewSet):
         return JsonResponse({
             "students_info": students_info
             }, status=200)
+
 
 class ChangeActiveSemester(ViewSet):
 
@@ -662,6 +688,7 @@ class ChangeActiveSemester(ViewSet):
         except Exception as error:
             print(error)
             return HttpResponseBadRequest(error, status=400)
+
 
 class AddStudentToGroup(ViewSet):
 
