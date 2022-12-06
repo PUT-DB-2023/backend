@@ -615,7 +615,7 @@ class LoadStudentsFromCSV(ViewSet):
                     'student_created': '',
                     'added_to_group': '',
                     'account_created': {},})
-                    
+
                 if not created:
                     students_info[-1]['student_created'] = False
                     print(f"Student {added_student.first_name} {added_student.last_name} already exists.")
@@ -681,6 +681,9 @@ class ChangeActiveSemester(ViewSet):
 
         try:
             semester_to_change = Semester.objects.get(id=semester_id)
+            if semester_to_change.active:
+                print('Semester is already active.')
+                return HttpResponseBadRequest('Semester is already active.', status=400)
             Semester.objects.update(active=False)
             semester_to_change.active = True
             semester_to_change.save()

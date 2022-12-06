@@ -82,6 +82,15 @@ class Semester(models.Model):
             print(f"Checking course: {course}")
             course.save()
     
+    # override update method to check if it can be activated
+    # def update(self, *args, **kwargs):
+    #     print(f"Updating semester: {self}, {self.active}")
+    #     if Semester.objects.filter(active=True).count() == 0:
+    #         print(f"No active semester found, activating semester: {self}")
+    #         self.active = True
+
+    #     super().update(*args, **kwargs)
+    
     # override delete method to disallow deletion of an active semester
     def delete(self, *args, **kwargs):
         print("self.active: ", self.active)
@@ -91,6 +100,9 @@ class Semester(models.Model):
         else:
             print(f"Deleting semester: {self}")
             super().delete(*args, **kwargs)
+        for course in Course.objects.all():
+            print(f"Checking course: {course}")
+            course.save()
 
 class Edition(models.Model):
     description = models.CharField(max_length=255, blank=True, default='')
