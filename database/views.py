@@ -310,8 +310,6 @@ class GroupViewSet(ModelViewSet):
                     break
             if all_accounts_moved == False:
                 break
-        # serializer.data.update(('all_accounts_moved', all_accounts_moved),)
-        # print(serializer.data['all_accounts_moved'])
         resp = serializer.data
         resp['all_accounts_moved'] = all_accounts_moved
         return Response(resp)
