@@ -138,8 +138,8 @@ class SemesterViewSet(ModelViewSet):
             return super().create(request, *args, **kwargs)
         except IntegrityError as error:
             if "unique_semester" in str(error):
-                return HttpResponseBadRequest("Semester already exists")
-            return HttpResponseBadRequest("Unknown error: ", error)
+                return HttpResponseBadRequest("Semestr już istnieje.")
+            return HttpResponseBadRequest("Nieznany błąd: ", error)
 
     def update(self, request, *args, **kwargs):
         if request.data.get('active') == True:
@@ -149,9 +149,9 @@ class SemesterViewSet(ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         semester = self.get_object()
         if semester.active:
-            return HttpResponseBadRequest("Cannot delete active semester")
+            return HttpResponseBadRequest("Nie można usunąć aktywnego semestru.")
         if semester.editions.count() > 0:
-            return HttpResponseBadRequest("Cannot delete semester with editions")
+            return HttpResponseBadRequest("Nie można usunąć semestru, który ma przypisane edycje.")
         return super().destroy(request, *args, **kwargs)
 
 
@@ -219,8 +219,8 @@ class EditionViewSet(ModelViewSet):
             # super().create(request, *args, **kwargs)
         except IntegrityError as error:
             if "unique_edition" in str(error):
-                return HttpResponseBadRequest("Edition already exists")
-            return HttpResponseBadRequest("Unknown error: ", error)
+                return HttpResponseBadRequest("Edycja już istnieje.")
+            return HttpResponseBadRequest("Nieznany błąd: ", error)
         # except Exception as error:
         #     return HttpResponseBadRequest("Unknown error: ", error)
 
@@ -602,7 +602,7 @@ class LoadStudentsFromCSV(ViewSet):
 
         if 'group_id' not in accounts_data or 'students_csv' not in accounts_data:
             print('Error: group_id or students_csv not found in request data.')
-            return HttpResponseBadRequest('Group_id or students_csv not found in request data.')
+            return HttpResponseBadRequest('Brak group_id lub students_csv w danych żądania.')
             
         group_id = accounts_data['group_id']
         students_csv = accounts_data['students_csv']
@@ -610,8 +610,8 @@ class LoadStudentsFromCSV(ViewSet):
         try:
             students_csv = students_csv.read().decode('utf-8-sig')
         except:
-            print('Bledny plik csv.')
-            return HttpResponseBadRequest('Bledny plik csv.')
+            print('Błędny plik csv.')
+            return HttpResponseBadRequest('Błędny plik csv.')
 
         csv_reader = csv.DictReader(students_csv.splitlines(), delimiter=',')
         students_list = list(csv_reader)
@@ -621,8 +621,8 @@ class LoadStudentsFromCSV(ViewSet):
         students_info = []
 
         if 'first_name' not in students_list[0] or 'last_name' not in students_list[0] or 'email' not in students_list[0] or 'password' not in students_list[0] or 'student_id' not in students_list[0]:
-            print("Bad request. Bledny plik csv.")
-            return HttpResponseBadRequest('Bledny plik csv.', status=400)
+            print("Bad request. Błędny plik csv.")
+            return HttpResponseBadRequest('Błędny plik csv.', status=400)
 
         try:
             print(group_id)
@@ -630,21 +630,14 @@ class LoadStudentsFromCSV(ViewSet):
             print(f'Group to add: {group_to_add.name}')
             if group_to_add is None:
                 print('Group not found.')
-                return HttpResponseBadRequest('Group not found.', status=400)
+                return HttpResponseBadRequest('Grupa nie znaleziona', status=400)
             
             available_editionServers = EditionServer.objects.filter(edition__teacheredition__group=group_to_add.id)
             if len(available_editionServers) == 0:
                 print("No available edition servers.")
-                return HttpResponseBadRequest('No edition servers available for this group.', status=400)
+                return HttpResponseBadRequest('Brak edycji dla wybranej grupy', status=400)
 
             for student in students_list:
-                added_student, created = Student.objects.get_or_create(
-                    first_name=student['first_name'],
-                    last_name=student['last_name'],
-                    email=student['email'],
-                    password=student['password'], # TODO: generate password
-                    student_id=student['student_id'])
-                
                 students_info.append({
                     'first_name': student['first_name'],
                     'last_name': student['last_name'],
@@ -653,23 +646,38 @@ class LoadStudentsFromCSV(ViewSet):
                     'student_id': student['student_id'],
                     'student_created': '',
                     'added_to_group': '',
-                    'account_created': {},})
+                    'account_created': {f"{editionServer.server.name} ({editionServer.server.provider})": {} for editionServer in available_editionServers}
+                })
+
+            for student in students_list:
+
+                student_info_index = next((i for i, student_info in enumerate(students_info) if student_info['student_id'] == student['student_id']), None)
+
+                added_student, created = Student.objects.get_or_create(
+                    first_name=student['first_name'],
+                    last_name=student['last_name'],
+                    email=student['email'],
+                    password=student['password'], # TODO: generate password
+                    student_id=student['student_id'])
 
                 if not created:
-                    students_info[-1]['student_created'] = False
+                    students_info[student_info_index]['student_created'] = False
                     print(f"Student {added_student.first_name} {added_student.last_name} already exists.")
                 else:
-                    students_info[-1]['student_created'] = True
+                    students_info[student_info_index]['student_created'] = True
                     print(f"Student {added_student.first_name} {added_student.last_name} created.")
                 created_students.append(added_student)
 
                 if added_student in group_to_add.students.all():
                     print(f"Student {added_student.first_name} {added_student.last_name} already exists in group {group_to_add.name}.")
-                    students_info[-1]['added_to_group'] = False # TODO: check if this works
+                    students_info[student_info_index]['added_to_group'] = False # TODO: check if this works
                 else:
                     group_to_add.students.add(added_student)
                     print(f"Student {added_student.first_name} {added_student.last_name} added to group {group_to_add.name}.")
-                    students_info[-1]['added_to_group'] = True
+                    students_info[student_info_index]['added_to_group'] = True
+
+                if student['first_name'] == 'Michał':
+                    break
 
                 for editionServer in available_editionServers:
                     username_to_add = editionServer.username_template.lower().replace(
@@ -681,21 +689,19 @@ class LoadStudentsFromCSV(ViewSet):
                         r'{nr_ind}', added_student.student_id.lower()).replace(
                         r'{indeks}', added_student.student_id.lower()).replace(
                         r'{email}', added_student.email.lower()
-                        )
+                    )
 
                     added_account, created = DBAccount.objects.get_or_create(
                         username=username_to_add, password=added_student.last_name + '-dbpassword', is_moved=False, student=added_student, editionServer=editionServer
                     )
                     if not created:
-                        students_info[-1]['account_created'][f"{editionServer.server.name} ({editionServer.server.provider})"] = False
+                        students_info[student_info_index]['account_created'][f"{editionServer.server.name} ({editionServer.server.provider})"] = False
                         print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server already exists.")
                     else:
-                        students_info[-1]['account_created'][f"{editionServer.server.name} ({editionServer.server.provider})"] = True
+                        students_info[student_info_index]['account_created'][f"{editionServer.server.name} ({editionServer.server.provider})"] = True
                         print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server.")
             
             group_to_add.save()
-
-
         except Exception as error:
             print(f"Error: {error}")
             return HttpResponseBadRequest(str(error), status=400)
@@ -714,7 +720,7 @@ class ChangeActiveSemester(ViewSet):
 
         if 'semester_id' not in data:
             print('Error: semester_id not found in request data.')
-            return HttpResponseBadRequest('Semester_id not found in request data.')
+            return HttpResponseBadRequest('Brak semester_id w danych żądania.')
 
         semester_id = data['semester_id']
 
@@ -722,7 +728,7 @@ class ChangeActiveSemester(ViewSet):
             semester_to_change = Semester.objects.get(id=semester_id)
             if semester_to_change.active:
                 print('Semester is already active.')
-                return HttpResponseBadRequest('Semester is already active.', status=400)
+                return HttpResponseBadRequest('Semestr jest już aktywny', status=400)
             Semester.objects.update(active=False)
             semester_to_change.active = True
             semester_to_change.save()
@@ -741,11 +747,11 @@ class AddStudentToGroup(ViewSet):
 
         if 'group_id' not in data:
             print('Error: group_id not found in request data.')
-            return HttpResponseBadRequest('Group_id not found in request data.')
+            return HttpResponseBadRequest('Brak pola group_id w danych żądania.')
 
         if 'students' not in data:
             print('Error: students not found in request data.')
-            return HttpResponseBadRequest('Students not found in request data.')
+            return HttpResponseBadRequest('Brak pola students w danych żądania.')
 
         group_id = data['group_id']
         students = data['students']
@@ -756,7 +762,7 @@ class AddStudentToGroup(ViewSet):
             group_to_add = Group.objects.get(id=group_id)
         except Exception as error:
             print(error)
-            return HttpResponseBadRequest('Group with this ID does not exist.', status=400)
+            return HttpResponseBadRequest('Grupa o takim ID nie istnieje', status=400)
 
         try:
             for student_id in students:
@@ -784,11 +790,11 @@ class RemoveStudentFromGroup(ViewSet):
 
         if 'group_id' not in data:
             print('Error: group_id not found in request data.')
-            return HttpResponseBadRequest('Group_id not found in request data.')
+            return HttpResponseBadRequest('Brak group_id w danych żądania.')
 
         if 'student_id' not in data:
             print('Error: students not found in request data.')
-            return HttpResponseBadRequest('Students not found in request data.')
+            return HttpResponseBadRequest('Brak student_id w danych żądania.')
 
         group_id = data['group_id']
         student_id = data['student_id']
@@ -797,7 +803,7 @@ class RemoveStudentFromGroup(ViewSet):
             group_to_remove = Group.objects.get(id=group_id)
         except Exception as error:
             print(error)
-            return HttpResponseBadRequest('Group with this ID does not exist.', status=400)
+            return HttpResponseBadRequest('Grupa o takim ID nie istnieje', status=400)
 
         try:
             student_to_remove = Student.objects.get(id=student_id)
@@ -808,7 +814,7 @@ class RemoveStudentFromGroup(ViewSet):
                 return JsonResponse({'removed student: ': student_to_remove.student_id}, status=200)
             else:
                 print(f"Student {student_to_remove.first_name} {student_to_remove.last_name} does not exist in group {group_to_remove.name}.")
-                return HttpResponseBadRequest('Student does not exist in group.', status=400)
+                return HttpResponseBadRequest('Taki student nie istnieje w tej grupie.', status=400)
         except Exception as error:
             print(error)
             return HttpResponseBadRequest(error, status=400)
