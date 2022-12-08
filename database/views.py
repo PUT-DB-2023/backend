@@ -640,13 +640,6 @@ class LoadStudentsFromCSV(ViewSet):
                 return HttpResponseBadRequest('Brak edycji dla wybranej grupy', status=400)
 
             for student in students_list:
-                added_student, created = Student.objects.get_or_create(
-                    first_name=student['first_name'],
-                    last_name=student['last_name'],
-                    email=student['email'],
-                    password=student['password'], # TODO: generate password
-                    student_id=student['student_id'])
-                
                 students_info.append({
                     'first_name': student['first_name'],
                     'last_name': student['last_name'],
@@ -655,23 +648,38 @@ class LoadStudentsFromCSV(ViewSet):
                     'student_id': student['student_id'],
                     'student_created': '',
                     'added_to_group': '',
-                    'account_created': {},})
+                    'account_created': {f"{editionServer.server.name} ({editionServer.server.provider})": {} for editionServer in available_editionServers}
+                })
+
+            for student in students_list:
+
+                student_info_index = next((i for i, student_info in enumerate(students_info) if student_info['student_id'] == student['student_id']), None)
+
+                added_student, created = Student.objects.get_or_create(
+                    first_name=student['first_name'],
+                    last_name=student['last_name'],
+                    email=student['email'],
+                    password=student['password'], # TODO: generate password
+                    student_id=student['student_id'])
 
                 if not created:
-                    students_info[-1]['student_created'] = False
+                    students_info[student_info_index]['student_created'] = False
                     print(f"Student {added_student.first_name} {added_student.last_name} already exists.")
                 else:
-                    students_info[-1]['student_created'] = True
+                    students_info[student_info_index]['student_created'] = True
                     print(f"Student {added_student.first_name} {added_student.last_name} created.")
                 created_students.append(added_student)
 
                 if added_student in group_to_add.students.all():
                     print(f"Student {added_student.first_name} {added_student.last_name} already exists in group {group_to_add.name}.")
-                    students_info[-1]['added_to_group'] = False # TODO: check if this works
+                    students_info[student_info_index]['added_to_group'] = False # TODO: check if this works
                 else:
                     group_to_add.students.add(added_student)
                     print(f"Student {added_student.first_name} {added_student.last_name} added to group {group_to_add.name}.")
-                    students_info[-1]['added_to_group'] = True
+                    students_info[student_info_index]['added_to_group'] = True
+
+                if student['first_name'] == 'Michał':
+                    break
 
                 for editionServer in available_editionServers:
                     username_to_add = editionServer.username_template.lower().replace(
@@ -683,16 +691,16 @@ class LoadStudentsFromCSV(ViewSet):
                         r'{nr_ind}', added_student.student_id.lower()).replace(
                         r'{indeks}', added_student.student_id.lower()).replace(
                         r'{email}', added_student.email.lower()
-                        )
+                    )
 
                     added_account, created = DBAccount.objects.get_or_create(
                         username=username_to_add, password=added_student.last_name + '-dbpassword', is_moved=False, student=added_student, editionServer=editionServer
                     )
                     if not created:
-                        students_info[-1]['account_created'][f"{editionServer.server.name} ({editionServer.server.provider})"] = False
+                        students_info[student_info_index]['account_created'][f"{editionServer.server.name} ({editionServer.server.provider})"] = False
                         print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server already exists.")
                     else:
-                        students_info[-1]['account_created'][f"{editionServer.server.name} ({editionServer.server.provider})"] = True
+                        students_info[student_info_index]['account_created'][f"{editionServer.server.name} ({editionServer.server.provider})"] = True
                         print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server.")
             
             group_to_add.save()
