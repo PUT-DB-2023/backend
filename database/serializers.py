@@ -246,6 +246,14 @@ class EditionSerializer(ModelSerializer):
             'servers',
         ]
     
+    # def create(self, validated_data):
+    #     print(validated_data)
+    #     teachers = validated_data.pop('teachers')
+    #     edition = Edition.objects.create(**validated_data)
+    #     for teacher in teachers:
+    #         TeacherEdition.objects.create(teacher=teacher, edition=edition)
+    #     return edition
+
     def to_representation(self, instance):
         self.fields['course'] = CourseSerializer(many=False, read_only=True)
         self.fields['semester'] = BasicSemesterSerializer(many=False, read_only=True)

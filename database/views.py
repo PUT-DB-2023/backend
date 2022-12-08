@@ -134,21 +134,12 @@ class SemesterViewSet(ModelViewSet):
     filterset_fields = ['id', 'start_year', 'winter', 'active', 'editions']
 
     def create(self, request, *args, **kwargs):
-        # if request.data.get('active') == True:
-        #     Semester.objects.all().update(active=False)
         try:
             return super().create(request, *args, **kwargs)
-        except IntegrityError as e:
-            if "unique_semester" in str(e):
+        except IntegrityError as error:
+            if "unique_semester" in str(error):
                 return HttpResponseBadRequest("Semester already exists")
-            return HttpResponseBadRequest("Unknown error: ", e)
-    
-    # def destroy(self, request, *args, **kwargs):
-    #     if self.get_object().active:
-    #         print("Cannot delete active semester")
-    #         return HttpResponseBadRequest("Cannot delete active semester")
-    #     print("Deleting semester")
-    #     return super().delete(request, *args, **kwargs)
+            return HttpResponseBadRequest("Unknown error: ", error)
 
     def update(self, request, *args, **kwargs):
         if request.data.get('active') == True:
@@ -198,11 +189,40 @@ class EditionViewSet(ModelViewSet):
         'teachers__last_name',
     ]
 
-    def get_queryset(self):
-        if self.request.query_params.get('basic') == "true":
-            return Edition.objects.only('id', 'course_id', 'semester_id')
-        else:
-            return Edition.objects.prefetch_related('teachers', 'servers').select_related('course', 'semester')
+    def create(self, request, *args, **kwargs):
+        print(request.data)
+        teachers = request.data['teachers']
+        servers = request.data['servers']
+
+        try:
+            print("Creating edition")
+            edition = Edition.objects.create(
+                course=Course.objects.get(id=request.data['course']),
+                semester=Semester.objects.get(id=request.data['semester']),
+                description=request.data['description'],
+                date_opened=request.data['date_opened'],
+                date_closed=request.data['date_closed'],
+            )
+            print(f"Edition created: {edition}")
+
+            TeacherEdition.objects.bulk_create([
+                TeacherEdition(teacher=Teacher.objects.get(id=teacher), edition=edition)
+                for teacher in teachers
+            ])
+            print(f"Teachers added: {teachers}")
+            EditionServer.objects.bulk_create([
+                EditionServer(server=Server.objects.get(id=server), edition=edition)
+                for server in servers
+            ])
+            print(f"Servers added: {servers}")
+            return Response(EditionSerializer(edition).data)
+            # super().create(request, *args, **kwargs)
+        except IntegrityError as error:
+            if "unique_edition" in str(error):
+                return HttpResponseBadRequest("Edition already exists")
+            return HttpResponseBadRequest("Unknown error: ", error)
+        # except Exception as error:
+        #     return HttpResponseBadRequest("Unknown error: ", error)
 
 
 class TeacherEditionViewSet(ModelViewSet):
@@ -278,6 +298,23 @@ class GroupViewSet(ModelViewSet):
         'teacherEdition__teacher__first_name', 
         'teacherEdition__teacher__last_name',
     ]
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        all_accounts_moved = True
+        for student in instance.students.all():
+            for db_account in student.db_accounts.all():
+                if db_account.is_moved == False:
+                    all_accounts_moved = False
+                    break
+            if all_accounts_moved == False:
+                break
+        # serializer.data.update(('all_accounts_moved', all_accounts_moved),)
+        # print(serializer.data['all_accounts_moved'])
+        resp = serializer.data
+        resp['all_accounts_moved'] = all_accounts_moved
+        return Response(resp)
 
 
 class ServerViewSet(ModelViewSet):
@@ -648,10 +685,10 @@ class LoadStudentsFromCSV(ViewSet):
                         username=username_to_add, password=added_student.last_name + '-dbpassword', is_moved=False, student=added_student, editionServer=editionServer
                     )
                     if not created:
-                        students_info[-1]['account_created'][editionServer.server.provider] = False
+                        students_info[-1]['account_created'][f"{editionServer.server.name} ({editionServer.server.provider})"] = False
                         print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server already exists.")
                     else:
-                        students_info[-1]['account_created'][editionServer.server.provider] = True
+                        students_info[-1]['account_created'][f"{editionServer.server.name} ({editionServer.server.provider})"] = True
                         print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server.")
             
             group_to_add.save()

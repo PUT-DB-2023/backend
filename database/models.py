@@ -112,6 +112,11 @@ class Edition(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='editions')
     teachers = models.ManyToManyField(Teacher, through='TeacherEdition', blank=True, related_name='editions')
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['course', 'semester'], name='unique_edition'),
+        ]
+
     def save(self, *args, **kwargs):
         print(f"Course: {self.course}, Course active: {self.course.active}, semester active: {self.semester.active}")
         super().save(*args, **kwargs)
