@@ -145,7 +145,7 @@ class Group(models.Model):
     day = models.CharField(max_length=30, blank=True, default='')
     hour = models.CharField(max_length=30, blank=True, default='')
     room = models.CharField(max_length=30, blank=True, default='')
-    teacherEdition = models.ForeignKey(TeacherEdition, on_delete=models.SET_NULL, default=None, null=True)
+    teacherEdition = models.ForeignKey(TeacherEdition, on_delete=models.CASCADE, default=None, null=True)
     students = models.ManyToManyField(Student, blank=True, related_name='groups')
 
 
