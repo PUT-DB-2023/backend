@@ -605,12 +605,16 @@ class LoadStudentsFromCSV(ViewSet):
         if 'group_id' not in accounts_data or 'students_csv' not in accounts_data:
             print('Error: group_id or students_csv not found in request data.')
             return HttpResponseBadRequest('Group_id or students_csv not found in request data.')
-
             
         group_id = accounts_data['group_id']
         students_csv = accounts_data['students_csv']
 
-        students_csv = students_csv.read().decode('utf-8-sig')
+        try:
+            students_csv = students_csv.read().decode('utf-8-sig')
+        except:
+            print('Bledny plik csv.')
+            return HttpResponseBadRequest('Bledny plik csv.')
+
         csv_reader = csv.DictReader(students_csv.splitlines(), delimiter=',')
         students_list = list(csv_reader)
 
@@ -619,8 +623,8 @@ class LoadStudentsFromCSV(ViewSet):
         students_info = []
 
         if 'first_name' not in students_list[0] or 'last_name' not in students_list[0] or 'email' not in students_list[0] or 'password' not in students_list[0] or 'student_id' not in students_list[0]:
-            print("Bad request. Invalid CSV file.")
-            return HttpResponseBadRequest('Invalid CSV file.', status=400)
+            print("Bad request. Bledny plik csv.")
+            return HttpResponseBadRequest('Bledny plik csv.', status=400)
 
         try:
             print(group_id)
