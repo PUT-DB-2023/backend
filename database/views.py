@@ -771,3 +771,42 @@ class AddStudentToGroup(ViewSet):
         except Exception as error:
             print(error)
             return HttpResponseBadRequest(error, status=400)
+
+
+class RemoveStudentFromGroup(ViewSet):
+
+    @action (methods=['post'], detail=False)
+    def remove_student_from_group(self, request, format=None):
+        data = request.data
+        print('Request log:', data)
+
+        if 'group_id' not in data:
+            print('Error: group_id not found in request data.')
+            return HttpResponseBadRequest('Group_id not found in request data.')
+
+        if 'student_id' not in data:
+            print('Error: students not found in request data.')
+            return HttpResponseBadRequest('Students not found in request data.')
+
+        group_id = data['group_id']
+        student_id = data['student_id']
+
+        try:
+            group_to_remove = Group.objects.get(id=group_id)
+        except Exception as error:
+            print(error)
+            return HttpResponseBadRequest('Group with this ID does not exist.', status=400)
+
+        try:
+            student_to_remove = Student.objects.get(id=student_id)
+            if student_to_remove in group_to_remove.students.all():
+                group_to_remove.students.remove(student_to_remove)
+                group_to_remove.save()
+                print(f"Student {student_to_remove.first_name} {student_to_remove.last_name} removed from group {group_to_remove.name}.")
+                return JsonResponse({'removed student: ': student_to_remove.student_id}, status=200)
+            else:
+                print(f"Student {student_to_remove.first_name} {student_to_remove.last_name} does not exist in group {group_to_remove.name}.")
+                return HttpResponseBadRequest('Student does not exist in group.', status=400)
+        except Exception as error:
+            print(error)
+            return HttpResponseBadRequest(error, status=400)

@@ -90,8 +90,8 @@ def forwards_func(apps, schema_editor):
             name=course_names[i], description=course_descriptions[i], active=course_active[i], major=course_major[i]
     )
 
-    semester_years = ['2021', '2022', '2023']
-    semester_winters = [True, True, True]
+    semester_years = ['2022', '2022', '2023']
+    semester_winters = [False, True, False]
     semester_actives = [False, True, False]
 
     for i in range(len(semester_years)):
