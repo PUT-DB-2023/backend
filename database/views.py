@@ -224,6 +224,51 @@ class EditionViewSet(ModelViewSet):
         # except Exception as error:
         #     return HttpResponseBadRequest("Unknown error: ", error)
 
+    def update(self, request, *args, **kwargs):
+        teachers = request.data['teachers']
+        servers = request.data['servers']
+
+        try:
+            print("Updating edition")
+            edition = Edition.objects.get(id=request.data['id'])
+            edition.course = Course.objects.get(id=request.data['course'])
+            edition.semester = Semester.objects.get(id=request.data['semester'])
+            edition.description = request.data['description']
+            edition.date_opened = request.data['date_opened']
+            edition.date_closed = request.data['date_closed']
+            edition.save()
+            print(f"Edition updated: {edition}")
+
+            # TeacherEdition.objects.filter(edition=edition).delete()
+            # TeacherEdition.objects.bulk_create([
+            #     TeacherEdition(teacher=Teacher.objects.get(id=teacher), edition=edition)
+            #     for teacher in teachers
+            # ])
+            for teacher in teachers:
+                teacher_edition = TeacherEdition.objects.get(edition=edition, teacher=teacher)
+                teacher_edition.teacher = Teacher.objects.get(id=teacher)
+                teacher_edition.save()
+            print(f"Teachers added: {teachers}")
+
+            for server in servers:
+                edition_server = EditionServer.objects.get(edition=edition, server=server)
+                edition_server.server = Server.objects.get(id=server)
+                edition_server.save()
+            # EditionServer.objects.filter(edition=edition).delete()
+            # EditionServer.objects.bulk_create([
+            #     EditionServer(server=Server.objects.get(id=server), edition=edition)
+            #     for server in servers
+            # ])
+            print(f"Servers added: {servers}")
+            return Response(EditionSerializer(edition).data)
+            # super().update(request, *args, **kwargs)
+        except IntegrityError as error:
+            if "unique_edition" in str(error):
+                return HttpResponseBadRequest("Edycja już istnieje.")
+            return HttpResponseBadRequest("Nieznany błąd: ", error)
+        # except Exception as error:
+        #     return HttpResponseBadRequest("Unknown error: ", error)
+
 
 class TeacherEditionViewSet(ModelViewSet):
     """
@@ -676,19 +721,19 @@ class LoadStudentsFromCSV(ViewSet):
                     print(f"Student {added_student.first_name} {added_student.last_name} added to group {group_to_add.name}.")
                     students_info[student_info_index]['added_to_group'] = True
 
-                if student['first_name'] == 'Michał':
-                    break
+                # if student['first_name'] == 'Michał':
+                #     break
 
                 for editionServer in available_editionServers:
-                    username_to_add = editionServer.username_template.lower().replace(
-                        r'{imie}', added_student.first_name.lower()).replace(
-                        r'{imię}', added_student.first_name.lower()).replace(
-                        r'{nazwisko}', added_student.last_name.lower()).replace(
-                        r'{nr_indeksu}', added_student.student_id.lower()).replace(
-                        r'{numer_indeksu}', added_student.student_id.lower()).replace(
-                        r'{nr_ind}', added_student.student_id.lower()).replace(
-                        r'{indeks}', added_student.student_id.lower()).replace(
-                        r'{email}', added_student.email.lower()
+                    username_to_add = editionServer.server.username_template.lower().replace(
+                        r'{imie}', added_student.server.first_name.lower()).replace(
+                        r'{imię}', added_student.server.first_name.lower()).replace(
+                        r'{nazwisko}', added_student.server.last_name.lower()).replace(
+                        r'{nr_indeksu}', added_student.server.student_id.lower()).replace(
+                        r'{numer_indeksu}', added_student.server.student_id.lower()).replace(
+                        r'{nr_ind}', added_student.server.student_id.lower()).replace(
+                        r'{indeks}', added_student.server.student_id.lower()).replace(
+                        r'{email}', added_student.server.email.lower()
                     )
 
                     added_account, created = DBAccount.objects.get_or_create(

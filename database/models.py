@@ -168,13 +168,14 @@ class Server(models.Model):
     create_user_template = models.CharField(max_length=255, blank=True, default='')
     modify_user_template = models.CharField(max_length=255, blank=True, default='')
     delete_user_template = models.CharField(max_length=255, blank=True, default='')
+    username_template = models.CharField(max_length=255, null=True)
 
 class EditionServer(models.Model):
     edition = models.ForeignKey(Edition, on_delete=models.CASCADE)
     server = models.ForeignKey(Server, on_delete=models.CASCADE)
     additional_info = models.CharField(max_length=255, blank=True, default='')
-    username_template = models.CharField(max_length=255, null=True)
-    passwd_template = models.CharField(max_length=255, null=True)
+    # username_template = models.CharField(max_length=255, null=True)
+    # passwd_template = models.CharField(max_length=255, null=True)
 
 class DBAccount(models.Model):
     username = models.CharField(max_length=30)

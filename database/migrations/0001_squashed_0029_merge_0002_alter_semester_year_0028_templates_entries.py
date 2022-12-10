@@ -65,11 +65,14 @@ def forwards_func(apps, schema_editor):
     server_create_user_templates = ["CREATE USER IF NOT EXISTS \"%s\"@'%%' IDENTIFIED BY '%s'", "", "CREATE USER \"%s\" WITH PASSWORD \'%s\';", '"createUser" : %s, "pwd" : %s, "customData" : {}, "roles" : []', ""]
     server_modify_user_templates = ["ALTER USER %s@'localhost' IDENTIFIED BY %s;", "", "ALTER USER \"%s\" WITH PASSWORD \'%s\';", "", ""]
     server_delete_user_templates = ["DROP USER IF EXISTS \"%s\"@'%%';", "", "DROP USER IF EXISTS \"%s\";", "", ""]
+    server_username_templates = [
+        "INF_{NR_INDEKSU}", "{IMIE}_{NAZWISKO}", "{NAZWISKO}_{NR_INDEKSU}", "STUDENT_{NR_INDEKSU}", "INF_{NR_INDEKSU}"
+    ]
 
     for i in range(len(server_names)):
         Server.objects.using(db_alias).create(
         name=server_names[i], ip=server_ipss[i], port=server_ports[i], date_created=server_date_createds, database=server_databases[i], password=server_passwords[i], provider=server_providers[i], user=server_users[i], create_user_template=server_create_user_templates[i],
-        modify_user_template=server_modify_user_templates[i], delete_user_template=server_delete_user_templates[i]
+        modify_user_template=server_modify_user_templates[i], delete_user_template=server_delete_user_templates[i], username_template=server_username_templates[i]
     )
 
     major_names = ['Informatyka', 'Automatyka i Robotyka']
@@ -146,13 +149,13 @@ def forwards_func(apps, schema_editor):
 
     edition_server_add_info = ['Additional info about EditionServer' for _ in range(8)]
 
-    edition_server_username_templates = [
-        "INF_{NR_INDEKSU}", '{IMIE} + {NAZWISKO}', '{NAZWISKO}_{NR_INDEKSU}', 'STUDENT_{NR_INDEKSU}', "INF_{NR_INDEKSU}", '{IMIE} + {NAZWISKO}', '{NAZWISKO}_{NR_INDEKSU}', 'STUDENT_{NR_INDEKSU}'
-    ]
+    # edition_server_username_templates = [
+    #     "INF_{NR_INDEKSU}", '{IMIE} + {NAZWISKO}', '{NAZWISKO}_{NR_INDEKSU}', 'STUDENT_{NR_INDEKSU}', "INF_{NR_INDEKSU}", '{IMIE} + {NAZWISKO}', '{NAZWISKO}_{NR_INDEKSU}', 'STUDENT_{NR_INDEKSU}'
+    # ]
 
-    edition_server_passwd_templates = [
-        "blank", "default_passwd", "123", "inf{NR_INDEKSU}", "blank", "default_passwd", "123", "inf{NR_INDEKSU}"
-    ]
+    # edition_server_passwd_templates = [
+    #     "blank", "default_passwd", "123", "inf{NR_INDEKSU}", "blank", "default_passwd", "123", "inf{NR_INDEKSU}"
+    # ]
 
     editions = Edition.objects.all().values_list('id', flat=True)
     servers = Server.objects.all().values_list('id', flat=True)
@@ -162,12 +165,14 @@ def forwards_func(apps, schema_editor):
 
     for i in range(len(edition_server_add_info)):
         EditionServer.objects.using(db_alias).create(
-            additional_info=edition_server_add_info[i], edition_id=edition_server_edition_ids[i], server_id=edition_server_server_ids[i], username_template=edition_server_username_templates[i], passwd_template=edition_server_passwd_templates[i]
+            additional_info=edition_server_add_info[i], edition_id=edition_server_edition_ids[i], server_id=edition_server_server_ids[i], 
+            # username_template=edition_server_username_templates[i], passwd_template=edition_server_passwd_templates[i]
     )
 
     # special edition server so that one edition has two servers
     EditionServer.objects.using(db_alias).create(
-        additional_info='Additional info about EditionServer', edition_id=editions[0], server_id=servers[0], username_template='INF_{NR_INDEKSU}', passwd_template='blank'
+        additional_info='Additional info about EditionServer', edition_id=editions[0], server_id=servers[0],
+        # username_template='INF_{NR_INDEKSU}', passwd_template='blank'
     )
 
     teachers = Teacher.objects.all().values_list('id', flat=True)
@@ -304,6 +309,7 @@ class Migration(migrations.Migration):
                 ('create_user_template', models.CharField(blank=True, default="", max_length=255)),
                 ('modify_user_template', models.CharField(blank=True, default="", max_length=255)),
                 ('delete_user_template', models.CharField(blank=True, default="", max_length=255)),
+                ('username_template', models.CharField(max_length=255, null=True)),
             ],
         ),
         migrations.CreateModel(
@@ -358,8 +364,6 @@ class Migration(migrations.Migration):
                 ('additional_info', models.CharField(blank=True, default="", max_length=255)),
                 ('edition', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='database.edition')),
                 ('server', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='database.server')),
-                ('passwd_template', models.CharField(max_length=255, null=True)),
-                ('username_template', models.CharField(max_length=255, null=True)),
             ],
         ),
         migrations.AddField(

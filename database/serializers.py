@@ -399,6 +399,7 @@ class ServerSerializer(ModelSerializer):
             'create_user_template',
             'modify_user_template',
             'delete_user_template',
+            'username_template',
             'active',
         ]
 
@@ -422,8 +423,6 @@ class EditionServerSerializer(ModelSerializer):
             'edition',
             'server',
             'additional_info',
-            'username_template',
-            'passwd_template',
         ]
     
     def to_representation(self, instance):
