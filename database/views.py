@@ -662,7 +662,7 @@ class LoadStudentsFromCSV(ViewSet):
             students_csv = students_csv.read().decode('utf-8-sig')
         except:
             print('Błędny plik csv.')
-            return HttpResponseBadRequest(json.dumps({'name': 'Błędny plik csv.'}))
+            return JsonResponse({'name': 'Błędny plik csv.'}, status=400)
 
         csv_reader = csv.DictReader(students_csv.splitlines(), delimiter=',')
         students_list = list(csv_reader)
@@ -673,7 +673,7 @@ class LoadStudentsFromCSV(ViewSet):
 
         if 'first_name' not in students_list[0] or 'last_name' not in students_list[0] or 'email' not in students_list[0] or 'password' not in students_list[0] or 'student_id' not in students_list[0]:
             print("Bad request. Błędny plik csv.")
-            return HttpResponseBadRequest('Błędny plik csv.', status=400)
+            return HttpResponseBadRequest('Błędny plik csv.')
 
         try:
             print(group_id)
