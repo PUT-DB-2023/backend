@@ -234,14 +234,41 @@ class EditionViewSet(ModelViewSet):
             # print(f"Updating edition {request.data['id']}")
             teachers = request.data['teachers']
             servers = request.data['servers']
+
             edition = Edition.objects.get(id=self.get_object().id)
             edition.course = Course.objects.get(id=request.data['course'])
             edition.semester = Semester.objects.get(id=request.data['semester'])
-            edition.teachers.set(teachers)
-            edition.servers.set(servers)
             edition.description = request.data['description']
             edition.date_opened = request.data['date_opened']
             edition.date_closed = request.data['date_closed']
+
+            current_teachers = [teacher.id for teacher in edition.teachers.all()]
+            # current_servers = [server.id for server in edition.servers.all()]
+
+            # for current_teacher in current_teachers:
+            #     if current_teacher not in teachers:
+            #         if TeacherEdition.objects.filter(teacher=current_teacher, edition=edition).exists():
+            #             TeacherEdition.objects.filter(teacher=current_teacher, edition=edition).delete()
+            #         TeacherEdition.objects.filter(teacher=current_teacher, edition=edition).delete()
+
+            # check if missing teachers do not have any groups in this edition
+            for current_teacher in current_teachers:
+                if current_teacher not in teachers:
+                    teacher_edition = TeacherEdition.objects.get(teacher=current_teacher, edition=edition)
+                    print(f"Teacher edition: {teacher_edition}")
+                    if Group.objects.filter(teacherEdition=teacher_edition).exists():
+                        return HttpResponseBadRequest(json.dumps({'name': 'Nie można usunąć nauczyciela, który ma przypisane grupy.'}), headers={'Content-Type': 'application/json'})
+            
+            # check if missing servers do not have any groups in this edition
+            # for current_server in current_servers:
+            #     if current_server not in servers:
+            #         if Group.objects.filter(server=current_server, edition=edition).exists():
+            #             return HttpResponseBadRequest(json.dumps({'name': 'Nie można usunąć serwera, z którego korzystają grupy.'}), headers={'Content-Type': 'application/json'})
+
+
+            edition.teachers.set(teachers)
+            edition.servers.set(servers)
+
             edition.save()
             print(f"Edition updated: {edition}")
 

@@ -140,6 +140,11 @@ class TeacherEdition(models.Model):
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     edition = models.ForeignKey(Edition, on_delete=models.CASCADE)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['teacher', 'edition'], name='unique_teacher_edition'),
+        ]
+
 
 class Group(models.Model):
     name = models.CharField(max_length=30)
