@@ -7,13 +7,13 @@ class EmailSender:
 
         # return new exception with method not yet implemented
 
-        # return Exception("Method not yet implemented")
+        return Exception("Method not yet implemented")
 
         port = 587  # For starttls
         smtp_server = "poczta.student.put.poznan.pl"
         sender_email = "jakub.p.wrobel@student.put.poznan.pl"
         receiver_email = "jakub.p.wrobel@student.put.poznan.pl"
-        password = "KUBussiek1531"
+        password = ""
         message = """\
         Subject: Hi there
 
