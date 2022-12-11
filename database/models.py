@@ -73,7 +73,7 @@ class Semester(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['start_year', 'winter'], name='unique_semester'),
-            models.CheckConstraint(check=Q(start_year__gte=2020) & Q(start_year__lte=3000), name='start_year_between_2020_and_3000'),
+            models.CheckConstraint(check=Q(start_year__gte=2000) & Q(start_year__lte=3000), name='start_year_between_2020_and_3000'),
         ]
 
     def save(self, *args, **kwargs):

@@ -662,7 +662,7 @@ class LoadStudentsFromCSV(ViewSet):
             students_csv = students_csv.read().decode('utf-8-sig')
         except:
             print('Błędny plik csv.')
-            return HttpResponseBadRequest('Błędny plik csv.')
+            return HttpResponseBadRequest(json.dumps({'name': 'Błędny plik csv.'}))
 
         csv_reader = csv.DictReader(students_csv.splitlines(), delimiter=',')
         students_list = list(csv_reader)
