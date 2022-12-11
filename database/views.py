@@ -686,13 +686,13 @@ class LoadStudentsFromCSV(ViewSet):
             available_editionServers = EditionServer.objects.filter(edition__teacheredition__group=group_to_add.id)
             if len(available_editionServers) == 0:
                 print("No available edition servers.")
-                return HttpResponseBadRequest('Brak edycji dla wybranej grupy', status=400)
+                return HttpResponseBadRequest('Brak serwera w danej edycji', status=400)
 
             for student in students_list:
                 students_info.append({
                     'first_name': student['first_name'],
                     'last_name': student['last_name'],
-                    'email': student['email'],
+                    'email': student['email'], 
                     'password': student['password'],
                     'student_id': student['student_id'],
                     'student_created': '',
@@ -727,9 +727,6 @@ class LoadStudentsFromCSV(ViewSet):
                     print(f"Student {added_student.first_name} {added_student.last_name} added to group {group_to_add.name}.")
                     students_info[student_info_index]['added_to_group'] = True
 
-                # if student['first_name'] == 'Michał':
-                #     break
-
                 for editionServer in available_editionServers:
                     username_to_add = editionServer.server.username_template.lower().replace(
                         r'{imie}', added_student.first_name.lower()).replace(
@@ -755,7 +752,7 @@ class LoadStudentsFromCSV(ViewSet):
             group_to_add.save()
         except Exception as error:
             print(f"Error: {error}")
-            return HttpResponseServerError(json.dumps({'error': str(error), 'students_info': students_info}))
+            return HttpResponseBadRequest({"error": error, "students_info": students_info}, status=400)
             
         return JsonResponse({
             "students_info": students_info
