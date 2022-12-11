@@ -139,8 +139,8 @@ class SemesterViewSet(ModelViewSet):
             return super().create(request, *args, **kwargs)
         except IntegrityError as error:
             if "unique_semester" in str(error):
-                return HttpResponseBadRequest("Semestr już istnieje.")
-            return HttpResponseBadRequest("Nieznany błąd: ", error)
+                return HttpResponseBadRequest(json.dumps({'name': 'Semestr już istnieje.'}), headers={'Content-Type': 'application/json'})
+            return HttpResponseBadRequest(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
 
     def update(self, request, *args, **kwargs):
         if request.data.get('active') == True:
@@ -150,9 +150,9 @@ class SemesterViewSet(ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         semester = self.get_object()
         if semester.active:
-            return HttpResponseBadRequest("Nie można usunąć aktywnego semestru.")
+            return HttpResponseBadRequest(json.dumps({'name': 'Nie można usunąć aktywnego semestru.'}), headers={'Content-Type': 'application/json'})
         if semester.editions.count() > 0:
-            return HttpResponseBadRequest("Nie można usunąć semestru, który ma przypisane edycje.")
+            return HttpResponseBadRequest(json.dumps({'name': 'Nie można usunąć semestru, który ma przypisane edycje.'}), headers={'Content-Type': 'application/json'})
         return super().destroy(request, *args, **kwargs)
 
 
@@ -220,16 +220,16 @@ class EditionViewSet(ModelViewSet):
             # super().create(request, *args, **kwargs)
         except IntegrityError as error:
             if "unique_edition" in str(error):
-                return HttpResponseBadRequest("Edycja już istnieje.")
-            return HttpResponseBadRequest("Nieznany błąd: ", error)
+                return HttpResponseBadRequest(json.dumps({'name': 'Edycja już istnieje.'}), headers={'Content-Type': 'application/json'})
+            return HttpResponseBadRequest(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
         # except Exception as error:
         #     return HttpResponseBadRequest("Unknown error: ", error)
 
     def update(self, request, *args, **kwargs):
         if 'teachers' not in request.data:
-            return HttpResponseBadRequest("Nie podano nauczycieli.")
+            return HttpResponseBadRequest(json.dumps({'name': 'Nie podano nauczycieli.'}), headers={'Content-Type': 'application/json'})
         if 'servers' not in request.data:
-            return HttpResponseBadRequest("Nie podano serwerów.")
+            return HttpResponseBadRequest(json.dumps({'name': 'Nie podano serwerów.'}), headers={'Content-Type': 'application/json'})
         try:
             # print(f"Updating edition {request.data['id']}")
             teachers = request.data['teachers']
@@ -266,12 +266,12 @@ class EditionViewSet(ModelViewSet):
             # #     for server in servers
             # # ])
             # print(f"Servers added: {servers}")
-            return Response(EditionSerializer(edition).data)
+            return Response(EditionSerializer(edition).data, status=200)
             # super().update(request, *args, **kwargs)
         except IntegrityError as error:
             if "unique_edition" in str(error):
-                return HttpResponseBadRequest("Edycja już istnieje.")
-            return HttpResponseBadRequest("Nieznany błąd: ", error)
+                return HttpResponseBadRequest(json.dumps({'name': 'Edycja już istnieje.'}), headers={'Content-Type': 'application/json'})
+            return HttpResponseBadRequest(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
         # except Exception as error:
         #     return HttpResponseBadRequest("Unknown error: ", error)
 
@@ -463,7 +463,7 @@ class AddUserAccountToExternalDB(ViewSet):
 
         if not db_accounts:
             print('No accounts to move')
-            return HttpResponse('No accounts to move.', status=400)
+            return HttpResponseBadRequest(json.dumps({'name': 'No accounts to move.'}), headers={'Content-Type': 'application/json'})
 
         server = Server.objects.get(id=accounts_data['server_id'], active=True)
         moved_accounts = []
@@ -489,7 +489,7 @@ class AddUserAccountToExternalDB(ViewSet):
 
             except (Exception, mdb.DatabaseError) as error:
                 print("error: ", error)
-                return HttpResponse(error, status=500)
+                return HttpResponseServerError(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
 
             # connect to mysql server using odbc driver
 
@@ -533,7 +533,7 @@ class AddUserAccountToExternalDB(ViewSet):
 
             except (Exception, mdb.DatabaseError) as error:
                 print(error)
-                return HttpResponse(error, status=500)
+                return HttpResponseServerError(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
 
         elif server.provider.lower() == 'mongo' or server.provider.lower() == 'mongodb':
             try:
@@ -560,7 +560,7 @@ class AddUserAccountToExternalDB(ViewSet):
                 return JsonResponse({'moved_accounts': moved_accounts}, status=200)
             except (Exception, mdb.DatabaseError) as error:
                 print(error)
-                return HttpResponse(error, status=500)
+                return HttpResponseServerError(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
 
         elif server.provider.lower() == 'oracle' or server.provider.lower() == 'oracledb':
             try:
@@ -574,13 +574,12 @@ class AddUserAccountToExternalDB(ViewSet):
                     print(f"Successfully created user '{account.username}' with '{account.password}' password.")
                 conn.commit()
                 cursor.close()
-                return Response({
-                    'status': 'ok',
+                return Response(json.dumps({
                     'moved_accounts': moved_accounts
-                })
+                }), headers={'Content-Type': 'application/json'}, status=200)
             except (Exception, mdb.DatabaseError) as error:
                 print(error)
-                return HttpResponse(error, status=500)
+                return HttpResponseServerError(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
         else:
             return HttpResponse('Unknown provider.', status=400)
 
@@ -608,7 +607,7 @@ class RemoveUserFromExternalDB(ViewSet):
                 return HttpResponse(f'deleted_account: {db_account.username}', status=200)
             except (Exception, mdb.DatabaseError) as error:
                 print(error)
-                return HttpResponse(error, status=500)
+                return HttpResponseServerError(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
                 
         elif db_account_server_provider.lower() == 'postgres' or db_account_server_provider.lower() == 'postgresql':
             try:
@@ -623,7 +622,7 @@ class RemoveUserFromExternalDB(ViewSet):
                 return HttpResponse(f'deleted_account: {db_account.username}', status=200)
             except (Exception, psycopg2.DatabaseError) as error:
                 print(error)
-                return HttpResponse(error, status=500)
+                return HttpResponseServerError(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
 
 
         elif db_account_server_provider.lower() == 'mongo' or db_account_server_provider.lower() == 'mongodb':
@@ -637,11 +636,11 @@ class RemoveUserFromExternalDB(ViewSet):
                 print(f"Successfully deleted user '{db_account.username}'")
                 return HttpResponse(f'deleted_account: {db_account.username}', status=200)
             except (Exception, mdb.DatabaseError) as error:
-                print(error)
-                return HttpResponse(error, status=500)
+                print(f"Error: {error}")
+                return HttpResponseServerError(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
 
         
-        return HttpResponse('Unknown provider.', status=400)
+        return HttpResponseBadRequest(json.dumps({'name': 'Unknown provider.'}), headers={'Content-Type': 'application/json'})
 
 
 class LoadStudentsFromCSV(ViewSet):
@@ -653,7 +652,7 @@ class LoadStudentsFromCSV(ViewSet):
 
         if 'group_id' not in accounts_data or 'students_csv' not in accounts_data:
             print('Error: group_id or students_csv not found in request data.')
-            return HttpResponseBadRequest('Brak group_id lub students_csv w danych żądania.')
+            return HttpResponseBadRequest(json.dumps({'name': 'Nie podano grupy lub pliku.'}))
             
         group_id = accounts_data['group_id']
         students_csv = accounts_data['students_csv']
@@ -662,7 +661,7 @@ class LoadStudentsFromCSV(ViewSet):
             students_csv = students_csv.read().decode('utf-8-sig')
         except:
             print('Błędny plik csv.')
-            return HttpResponseBadRequest('Błędny plik csv.')
+            return HttpResponseBadRequest(json.dumps({'name': 'Błąd podczas wczytywania pliku csv. Upewnij się czy próbujesz przesłać poprawny plik (z kodowaniem UTF-8).'}), headers={'Content-Type': 'application/json'})
 
         csv_reader = csv.DictReader(students_csv.splitlines(), delimiter=',')
         students_list = list(csv_reader)
@@ -673,7 +672,7 @@ class LoadStudentsFromCSV(ViewSet):
 
         if 'first_name' not in students_list[0] or 'last_name' not in students_list[0] or 'email' not in students_list[0] or 'password' not in students_list[0] or 'student_id' not in students_list[0]:
             print("Bad request. Błędny plik csv.")
-            return HttpResponseBadRequest('Błędny plik csv.', status=400)
+            return HttpResponseBadRequest(json.dumps({'name': 'Błędny plik csv. Upewnij się, że zawiera on następujące kolumny: first_name, last_name, email, password i student_id.'}), headers={'Content-Type': 'application/json'})
 
         try:
             print(group_id)
@@ -681,12 +680,12 @@ class LoadStudentsFromCSV(ViewSet):
             print(f'Group to add: {group_to_add.name}')
             if group_to_add is None:
                 print('Group not found.')
-                return HttpResponseBadRequest('Grupa nie znaleziona', status=400)
+                return HttpResponseBadRequest(json.dumps({'name': 'Grupa nie została znaleziona.'}), headers={'Content-Type': 'application/json'})
             
             available_editionServers = EditionServer.objects.filter(edition__teacheredition__group=group_to_add.id)
             if len(available_editionServers) == 0:
                 print("No available edition servers.")
-                return HttpResponseBadRequest('Brak serwera w danej edycji', status=400)
+                return HttpResponseBadRequest(json.dumps({'name': 'Brak serwera w danej edycji'}), headers={'Content-Type': 'application/json'})
 
             for student in students_list:
                 students_info.append({
@@ -752,7 +751,7 @@ class LoadStudentsFromCSV(ViewSet):
             group_to_add.save()
         except Exception as error:
             print(f"Error: {error}")
-            return HttpResponseBadRequest({"error": error, "students_info": students_info}, status=400)
+            return HttpResponseServerError(json.dumps({"error": error, "students_info": students_info}), headers={'Content-Type': 'application/json'})
             
         return JsonResponse({
             "students_info": students_info
@@ -768,7 +767,7 @@ class ChangeActiveSemester(ViewSet):
 
         if 'semester_id' not in data:
             print('Error: semester_id not found in request data.')
-            return HttpResponseBadRequest('Brak semester_id w danych żądania.')
+            return HttpResponseBadRequest(json.dumps({'name': 'Nie podano semestru.'}), headers={'Content-Type': 'application/json'})
 
         semester_id = data['semester_id']
 
@@ -776,14 +775,14 @@ class ChangeActiveSemester(ViewSet):
             semester_to_change = Semester.objects.get(id=semester_id)
             if semester_to_change.active:
                 print('Semester is already active.')
-                return HttpResponseBadRequest('Semestr jest już aktywny')
+                return HttpResponseBadRequest(json.dumps({'name': 'Semestr jest już aktywny.'}), headers={'Content-Type': 'application/json'})
             Semester.objects.update(active=False)
             semester_to_change.active = True
             semester_to_change.save()
             return HttpResponse(status=200)
         except Exception as error:
             print(error)
-            return HttpResponseServerError(error)
+            return HttpResponseServerError(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
 
 
 class AddStudentToGroup(ViewSet):
@@ -795,11 +794,11 @@ class AddStudentToGroup(ViewSet):
 
         if 'group_id' not in data:
             print('Error: group_id not found in request data.')
-            return HttpResponseBadRequest('Brak pola group_id w danych żądania.')
+            return HttpResponseBadRequest(json.dumps({'name': 'Nie podano grupy.'}), headers={'Content-Type': 'application/json'})
 
         if 'students' not in data:
             print('Error: students not found in request data.')
-            return HttpResponseBadRequest('Brak pola students w danych żądania.')
+            return HttpResponseBadRequest(json.dumps({'name': 'Nie podano studentów.'}), headers={'Content-Type': 'application/json'})
 
         group_id = data['group_id']
         students = data['students']
@@ -810,7 +809,7 @@ class AddStudentToGroup(ViewSet):
             group_to_add = Group.objects.get(id=group_id)
         except Exception as error:
             print(error)
-            return HttpResponseBadRequest('Grupa o takim ID nie istnieje', status=400)
+            return HttpResponseBadRequest(json.dumps({'name': 'Grupa o takim ID nie istnieje'}), headers={'Content-Type': 'application/json'})
 
         try:
             for student_id in students:
@@ -826,7 +825,7 @@ class AddStudentToGroup(ViewSet):
             return JsonResponse({'added_students': added_students}, status=200)
         except Exception as error:
             print(error)
-            return HttpResponseBadRequest(error, status=400)
+            return HttpResponseServerError(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
 
 
 class RemoveStudentFromGroup(ViewSet):
@@ -838,11 +837,11 @@ class RemoveStudentFromGroup(ViewSet):
 
         if 'group_id' not in data:
             print('Error: group_id not found in request data.')
-            return HttpResponseBadRequest('Brak group_id w danych żądania.')
+            return HttpResponseBadRequest(json.dumps({'name': 'Nie podano grupy.'}), headers={'Content-Type': 'application/json'})
 
         if 'student_id' not in data:
             print('Error: students not found in request data.')
-            return HttpResponseBadRequest('Brak student_id w danych żądania.')
+            return HttpResponseBadRequest(json.dumps({'name': 'Nie podano studenta.'}), headers={'Content-Type': 'application/json'})
 
         group_id = data['group_id']
         student_id = data['student_id']
@@ -851,7 +850,7 @@ class RemoveStudentFromGroup(ViewSet):
             group_to_remove = Group.objects.get(id=group_id)
         except Exception as error:
             print(error)
-            return HttpResponseBadRequest('Grupa o takim ID nie istnieje', status=400)
+            return HttpResponseBadRequest(json.dumps({'name': 'Grupa o takim ID nie istnieje.'}), headers={'Content-Type': 'application/json'})
 
         try:
             student_to_remove = Student.objects.get(id=student_id)
@@ -862,7 +861,7 @@ class RemoveStudentFromGroup(ViewSet):
                 return JsonResponse({'removed student: ': student_to_remove.student_id}, status=200)
             else:
                 print(f"Student {student_to_remove.first_name} {student_to_remove.last_name} does not exist in group {group_to_remove.name}.")
-                return HttpResponseBadRequest('Taki student nie istnieje w tej grupie.', status=400)
+                return HttpResponseBadRequest(json.dumps({'name': 'Student nie należy do tej grupy.'}), headers={'Content-Type': 'application/json'})
         except Exception as error:
             print(error)
-            return HttpResponseBadRequest(error, status=400)
+            return HttpResponseServerError(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})

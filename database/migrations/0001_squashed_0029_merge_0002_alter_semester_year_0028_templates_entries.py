@@ -421,7 +421,7 @@ class Migration(migrations.Migration):
                 ('day', models.CharField(blank=True, default="", max_length=30)),
                 ('hour', models.CharField(blank=True, default="", max_length=30)),
                 ('room', models.CharField(blank=True, default="", max_length=30)),
-                ('teacherEdition', models.ForeignKey(default=None, null=True, on_delete=django.db.models.deletion.SET_NULL, to='database.teacheredition')),
+                ('teacherEdition', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='database.teacheredition')),
                 ('students', models.ManyToManyField(related_name='groups', to='database.student')),
             ],
         ),

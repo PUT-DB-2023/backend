@@ -73,7 +73,7 @@ class Semester(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['start_year', 'winter'], name='unique_semester'),
-            models.CheckConstraint(check=Q(start_year__gte=2020) & Q(start_year__lte=3000), name='start_year_between_2020_and_3000'),
+            models.CheckConstraint(check=Q(start_year__gte=2000) & Q(start_year__lte=3000), name='start_year_between_2020_and_3000'),
         ]
 
     def save(self, *args, **kwargs):
@@ -146,7 +146,7 @@ class Group(models.Model):
     day = models.CharField(max_length=30, blank=True, default='')
     hour = models.CharField(max_length=30, blank=True, default='')
     room = models.CharField(max_length=30, blank=True, default='')
-    teacherEdition = models.ForeignKey(TeacherEdition, on_delete=models.CASCADE, default=None, null=True)
+    teacherEdition = models.ForeignKey(TeacherEdition, on_delete=models.CASCADE)
     students = models.ManyToManyField(Student, blank=True, related_name='groups')
 
 
