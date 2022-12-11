@@ -227,12 +227,14 @@ class EditionViewSet(ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         try:
-            print(f"Updating edition {request.data['id']}")
+            # print(f"Updating edition {request.data['id']}")
             teachers = request.data['teachers']
             servers = request.data['servers']
-            edition = Edition.objects.get(id=request.data['id'])
+            edition = Edition.objects.get(id=self.get_object().id)
             edition.course = Course.objects.get(id=request.data['course'])
             edition.semester = Semester.objects.get(id=request.data['semester'])
+            edition.teachers.set(teachers)
+            edition.servers.set(servers)
             edition.description = request.data['description']
             edition.date_opened = request.data['date_opened']
             edition.date_closed = request.data['date_closed']
@@ -244,22 +246,22 @@ class EditionViewSet(ModelViewSet):
             #     TeacherEdition(teacher=Teacher.objects.get(id=teacher), edition=edition)
             #     for teacher in teachers
             # ])
-            for teacher in teachers:
-                teacher_edition = TeacherEdition.objects.get_or_create(edition=edition, teacher=teacher)
-                teacher_edition.teacher = Teacher.objects.get(id=teacher)
-                teacher_edition.save()
-            print(f"Teachers added: {teachers}")
+            # for teacher in teachers:
+            #     teacher_edition = TeacherEdition.objects.get_or_create(edition=edition, teacher=teacher)
+            #     teacher_edition.teacher = Teacher.objects.get(id=teacher)
+            #     teacher_edition.save()
+            # print(f"Teachers added: {teachers}")
 
-            for server in servers:
-                edition_server = EditionServer.objects.get_or_create(edition=edition, server=server)
-                edition_server.server = Server.objects.get(id=server)
-                edition_server.save()
-            # EditionServer.objects.filter(edition=edition).delete()
-            # EditionServer.objects.bulk_create([
-            #     EditionServer(server=Server.objects.get(id=server), edition=edition)
-            #     for server in servers
-            # ])
-            print(f"Servers added: {servers}")
+            # for server in servers:
+            #     edition_server = EditionServer.objects.get_or_create(edition=edition, server=server)
+            #     edition_server.server = Server.objects.get(id=server)
+            #     edition_server.save()
+            # # EditionServer.objects.filter(edition=edition).delete()
+            # # EditionServer.objects.bulk_create([
+            # #     EditionServer(server=Server.objects.get(id=server), edition=edition)
+            # #     for server in servers
+            # # ])
+            # print(f"Servers added: {servers}")
             return Response(EditionSerializer(edition).data)
             # super().update(request, *args, **kwargs)
         except IntegrityError as error:

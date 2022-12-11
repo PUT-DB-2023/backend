@@ -396,6 +396,7 @@ class ServerSerializer(ModelSerializer):
             'password',
             'database',
             'date_created',
+            'editions',
             'create_user_template',
             'modify_user_template',
             'delete_user_template',

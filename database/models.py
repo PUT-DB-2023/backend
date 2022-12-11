@@ -111,6 +111,7 @@ class Edition(models.Model):
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE, related_name='editions')
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='editions')
     teachers = models.ManyToManyField(Teacher, through='TeacherEdition', blank=True, related_name='editions')
+    # servers = models.ManyToManyField('Server', through='EditionServer', blank=True, related_name='editions')
 
     class Meta:
         constraints = [
@@ -164,7 +165,7 @@ class Server(models.Model):
     database = models.CharField(max_length=30)
     date_created = models.DateField(auto_now_add=True)
     active = models.BooleanField(default=True)
-    edition = models.ManyToManyField(Edition, through='EditionServer', related_name='servers')
+    editions = models.ManyToManyField(Edition, through='EditionServer', related_name='servers')
     create_user_template = models.CharField(max_length=255, blank=True, default='')
     modify_user_template = models.CharField(max_length=255, blank=True, default='')
     delete_user_template = models.CharField(max_length=255, blank=True, default='')
