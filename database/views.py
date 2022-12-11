@@ -226,6 +226,10 @@ class EditionViewSet(ModelViewSet):
         #     return HttpResponseBadRequest("Unknown error: ", error)
 
     def update(self, request, *args, **kwargs):
+        if 'teachers' not in request.data:
+            return HttpResponseBadRequest("Nie podano nauczycieli.")
+        if 'servers' not in request.data:
+            return HttpResponseBadRequest("Nie podano serwerów.")
         try:
             # print(f"Updating edition {request.data['id']}")
             teachers = request.data['teachers']
@@ -376,17 +380,17 @@ class ServerViewSet(ModelViewSet):
         'port', 
         'date_created', 
         'active',
-        'edition', 
-        'edition__description', 
-        'edition__date_opened', 
-        'edition__date_closed', 
-        'edition__semester', 
-        'edition__semester__start_year', 
-        'edition__semester__winter', 
-        'edition__semester__active',
-        'edition__course',
-        'edition__course__name', 
-        'edition__course__description',
+        'editions', 
+        'editions__description', 
+        'editions__date_opened', 
+        'editions__date_closed', 
+        'editions__semester', 
+        'editions__semester__start_year', 
+        'editions__semester__winter', 
+        'editions__semester__active',
+        'editions__course',
+        'editions__course__name', 
+        'editions__course__description',
     ]
 
 

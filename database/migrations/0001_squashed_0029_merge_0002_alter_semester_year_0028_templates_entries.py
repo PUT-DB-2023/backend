@@ -404,7 +404,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='server',
-            name='edition',
+            name='editions',
             field=models.ManyToManyField(related_name='servers', through='database.EditionServer', to='database.edition'),
         ),
         migrations.AlterField(

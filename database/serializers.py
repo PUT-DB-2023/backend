@@ -396,7 +396,7 @@ class ServerSerializer(ModelSerializer):
             'password',
             'database',
             'date_created',
-            'editions',
+            # 'editions',
             'create_user_template',
             'modify_user_template',
             'delete_user_template',
@@ -404,6 +404,9 @@ class ServerSerializer(ModelSerializer):
             'active',
         ]
 
+    # def to_representation(self, instance):
+    #     self.fields['editions'] = BasicEditionSerializer(many=True, read_only=True)
+    #     return super(ServerSerializer, self).to_representation(instance)
 
 class BasicServerSerializer(ModelSerializer):
     class Meta:
