@@ -9,8 +9,9 @@ import oracledb
 # import pyodbc
 from pymongo import MongoClient
 import csv
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse, HttpResponseServerError
 from django.db import IntegrityError
+import json
 
 
 import MySQLdb as mdb
@@ -225,11 +226,10 @@ class EditionViewSet(ModelViewSet):
         #     return HttpResponseBadRequest("Unknown error: ", error)
 
     def update(self, request, *args, **kwargs):
-        teachers = request.data['teachers']
-        servers = request.data['servers']
-
         try:
-            print("Updating edition")
+            print(f"Updating edition {request.data['id']}")
+            teachers = request.data['teachers']
+            servers = request.data['servers']
             edition = Edition.objects.get(id=request.data['id'])
             edition.course = Course.objects.get(id=request.data['course'])
             edition.semester = Semester.objects.get(id=request.data['semester'])
@@ -245,13 +245,13 @@ class EditionViewSet(ModelViewSet):
             #     for teacher in teachers
             # ])
             for teacher in teachers:
-                teacher_edition = TeacherEdition.objects.get(edition=edition, teacher=teacher)
+                teacher_edition = TeacherEdition.objects.get_or_create(edition=edition, teacher=teacher)
                 teacher_edition.teacher = Teacher.objects.get(id=teacher)
                 teacher_edition.save()
             print(f"Teachers added: {teachers}")
 
             for server in servers:
-                edition_server = EditionServer.objects.get(edition=edition, server=server)
+                edition_server = EditionServer.objects.get_or_create(edition=edition, server=server)
                 edition_server.server = Server.objects.get(id=server)
                 edition_server.save()
             # EditionServer.objects.filter(edition=edition).delete()
@@ -726,14 +726,14 @@ class LoadStudentsFromCSV(ViewSet):
 
                 for editionServer in available_editionServers:
                     username_to_add = editionServer.server.username_template.lower().replace(
-                        r'{imie}', added_student.server.first_name.lower()).replace(
-                        r'{imię}', added_student.server.first_name.lower()).replace(
-                        r'{nazwisko}', added_student.server.last_name.lower()).replace(
-                        r'{nr_indeksu}', added_student.server.student_id.lower()).replace(
-                        r'{numer_indeksu}', added_student.server.student_id.lower()).replace(
-                        r'{nr_ind}', added_student.server.student_id.lower()).replace(
-                        r'{indeks}', added_student.server.student_id.lower()).replace(
-                        r'{email}', added_student.server.email.lower()
+                        r'{imie}', added_student.first_name.lower()).replace(
+                        r'{imię}', added_student.first_name.lower()).replace(
+                        r'{nazwisko}', added_student.last_name.lower()).replace(
+                        r'{nr_indeksu}', added_student.student_id.lower()).replace(
+                        r'{numer_indeksu}', added_student.student_id.lower()).replace(
+                        r'{nr_ind}', added_student.student_id.lower()).replace(
+                        r'{indeks}', added_student.student_id.lower()).replace(
+                        r'{email}', added_student.email.lower()
                     )
 
                     added_account, created = DBAccount.objects.get_or_create(
@@ -749,7 +749,7 @@ class LoadStudentsFromCSV(ViewSet):
             group_to_add.save()
         except Exception as error:
             print(f"Error: {error}")
-            return HttpResponseBadRequest(str(error), status=400)
+            return HttpResponseServerError(json.dumps({'error': str(error), 'students_info': students_info}))
             
         return JsonResponse({
             "students_info": students_info
@@ -773,14 +773,14 @@ class ChangeActiveSemester(ViewSet):
             semester_to_change = Semester.objects.get(id=semester_id)
             if semester_to_change.active:
                 print('Semester is already active.')
-                return HttpResponseBadRequest('Semestr jest już aktywny', status=400)
+                return HttpResponseBadRequest('Semestr jest już aktywny')
             Semester.objects.update(active=False)
             semester_to_change.active = True
             semester_to_change.save()
             return HttpResponse(status=200)
         except Exception as error:
             print(error)
-            return HttpResponseBadRequest(error, status=400)
+            return HttpResponseServerError(error)
 
 
 class AddStudentToGroup(ViewSet):
