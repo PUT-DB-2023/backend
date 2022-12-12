@@ -140,7 +140,7 @@ class SemesterViewSet(ModelViewSet):
         except IntegrityError as error:
             if "unique_semester" in str(error):
                 return HttpResponseBadRequest(json.dumps({'name': 'Semestr już istnieje.'}), headers={'Content-Type': 'application/json'})
-            return HttpResponseBadRequest(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
+            return HttpResponseBadRequest(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
     def update(self, request, *args, **kwargs):
         if request.data.get('active') == True:
@@ -221,7 +221,7 @@ class EditionViewSet(ModelViewSet):
         except IntegrityError as error:
             if "unique_edition" in str(error):
                 return HttpResponseBadRequest(json.dumps({'name': 'Edycja już istnieje.'}), headers={'Content-Type': 'application/json'})
-            return HttpResponseBadRequest(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
+            return HttpResponseBadRequest(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
         # except Exception as error:
         #     return HttpResponseBadRequest("Unknown error: ", error)
 
@@ -298,7 +298,7 @@ class EditionViewSet(ModelViewSet):
         except IntegrityError as error:
             if "unique_edition" in str(error):
                 return HttpResponseBadRequest(json.dumps({'name': 'Edycja już istnieje.'}), headers={'Content-Type': 'application/json'})
-            return HttpResponseBadRequest(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
+            return HttpResponseBadRequest(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
         # except Exception as error:
         #     return HttpResponseBadRequest("Unknown error: ", error)
 
@@ -390,7 +390,7 @@ class GroupViewSet(ModelViewSet):
                 break
         resp = serializer.data
         resp['all_accounts_moved'] = all_accounts_moved
-        return Response(resp)
+        return Response(resp, status=200)
 
 
 class ServerViewSet(ModelViewSet):
@@ -516,7 +516,7 @@ class AddUserAccountToExternalDB(ViewSet):
 
             except (Exception, mdb.DatabaseError) as error:
                 print("error: ", error)
-                return HttpResponseServerError(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
+                return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
             # connect to mysql server using odbc driver
 
@@ -560,7 +560,7 @@ class AddUserAccountToExternalDB(ViewSet):
 
             except (Exception, mdb.DatabaseError) as error:
                 print(error)
-                return HttpResponseServerError(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
+                return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
         elif server.provider.lower() == 'mongo' or server.provider.lower() == 'mongodb':
             try:
@@ -587,7 +587,7 @@ class AddUserAccountToExternalDB(ViewSet):
                 return JsonResponse({'moved_accounts': moved_accounts}, status=200)
             except (Exception, mdb.DatabaseError) as error:
                 print(error)
-                return HttpResponseServerError(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
+                return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
         elif server.provider.lower() == 'oracle' or server.provider.lower() == 'oracledb':
             try:
@@ -606,7 +606,7 @@ class AddUserAccountToExternalDB(ViewSet):
                 }), headers={'Content-Type': 'application/json'}, status=200)
             except (Exception, mdb.DatabaseError) as error:
                 print(error)
-                return HttpResponseServerError(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
+                return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
         else:
             return HttpResponse('Unknown provider.', status=400)
 
@@ -634,7 +634,7 @@ class RemoveUserFromExternalDB(ViewSet):
                 return HttpResponse(f'deleted_account: {db_account.username}', status=200)
             except (Exception, mdb.DatabaseError) as error:
                 print(error)
-                return HttpResponseServerError(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
+                return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
                 
         elif db_account_server_provider.lower() == 'postgres' or db_account_server_provider.lower() == 'postgresql':
             try:
@@ -649,7 +649,7 @@ class RemoveUserFromExternalDB(ViewSet):
                 return HttpResponse(f'deleted_account: {db_account.username}', status=200)
             except (Exception, psycopg2.DatabaseError) as error:
                 print(error)
-                return HttpResponseServerError(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
+                return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
 
         elif db_account_server_provider.lower() == 'mongo' or db_account_server_provider.lower() == 'mongodb':
@@ -664,7 +664,7 @@ class RemoveUserFromExternalDB(ViewSet):
                 return HttpResponse(f'deleted_account: {db_account.username}', status=200)
             except (Exception, mdb.DatabaseError) as error:
                 print(f"Error: {error}")
-                return HttpResponseServerError(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
+                return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
         
         return HttpResponseBadRequest(json.dumps({'name': 'Unknown provider.'}), headers={'Content-Type': 'application/json'})
@@ -809,7 +809,7 @@ class ChangeActiveSemester(ViewSet):
             return HttpResponse(status=200)
         except Exception as error:
             print(error)
-            return HttpResponseServerError(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
+            return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
 
 class AddStudentToGroup(ViewSet):
@@ -852,7 +852,7 @@ class AddStudentToGroup(ViewSet):
             return JsonResponse({'added_students': added_students}, status=200)
         except Exception as error:
             print(error)
-            return HttpResponseServerError(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
+            return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
 
 class RemoveStudentFromGroup(ViewSet):
@@ -891,4 +891,4 @@ class RemoveStudentFromGroup(ViewSet):
                 return HttpResponseBadRequest(json.dumps({'name': 'Student nie należy do tej grupy.'}), headers={'Content-Type': 'application/json'})
         except Exception as error:
             print(error)
-            return HttpResponseServerError(json.dumps({'name': error}), headers={'Content-Type': 'application/json'})
+            return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
