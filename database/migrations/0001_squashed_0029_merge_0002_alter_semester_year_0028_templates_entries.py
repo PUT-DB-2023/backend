@@ -218,38 +218,38 @@ def forwards_func(apps, schema_editor):
     for i in range(4, len(users_names)):
         if 4 <= i <= 27: # GRUPY 1-3
                 DBAccount.objects.using(db_alias).create(
-                    username=f"{students_all[i-4].last_name}_{students_all[i-4].student_id}", password=passwordGenerator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[1]
+                    username=f"{students_all[i-4].last_name.lower()}_{students_all[i-4].student_id}", password=passwordGenerator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[1]
             )
         if 28 <= i <= 51: # GRUPY 4-6
                 DBAccount.objects.using(db_alias).create(
-                    username=f"{students_all[i-4].last_name}_{students_all[i-4].student_id}", password=passwordGenerator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[0]
+                    username=f"{students_all[i-4].last_name.lower()}_{students_all[i-4].student_id}", password=passwordGenerator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[0]
             )
                 DBAccount.objects.using(db_alias).create(
-                    username=f"{students_all[i-4].last_name}_{students_all[i-4].student_id}", password=passwordGenerator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[8]
+                    username=f"{students_all[i-4].last_name.lower()}_{students_all[i-4].student_id}", password=passwordGenerator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[8]
             )
         if 52 <= i <= 75: # GRUPY 7-9
                 DBAccount.objects.using(db_alias).create(
-                    username=f"{students_all[i-4].last_name}_{students_all[i-4].student_id}", password=passwordGenerator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[2]
+                    username=f"{students_all[i-4].last_name.lower()}_{students_all[i-4].student_id}", password=passwordGenerator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[2]
             )
         if 76 <= i <= 99: # GRUPY 10-12
                 DBAccount.objects.using(db_alias).create(
-                    username=f"{students_all[i-4].last_name}_{students_all[i-4].student_id}", password=passwordGenerator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[3]
+                    username=f"{students_all[i-4].last_name.lower()}_{students_all[i-4].student_id}", password=passwordGenerator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[3]
         )
         if 100 <= i <= 123: # GRUPY 13-15
                 DBAccount.objects.using(db_alias).create(
-                    username=f"{students_all[i-4].last_name}_{students_all[i-4].student_id}", password=passwordGenerator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[4]
+                    username=f"{students_all[i-4].last_name.lower()}_{students_all[i-4].student_id}", password=passwordGenerator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[4]
             )
         if 124 <= i <= 147: # GRUPY 16-18
                 DBAccount.objects.using(db_alias).create(
-                    username=f"{students_all[i-4].last_name}_{students_all[i-4].student_id}", password=passwordGenerator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[5]
+                    username=f"{students_all[i-4].last_name.lower()}_{students_all[i-4].student_id}", password=passwordGenerator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[5]
             )
         if 148 <= i <= 171: # GRUPY 19-21
                 DBAccount.objects.using(db_alias).create(
-                    username=f"{students_all[i-4].last_name}_{students_all[i-4].student_id}", password=passwordGenerator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[6]
+                    username=f"{students_all[i-4].last_name.lower()}_{students_all[i-4].student_id}", password=passwordGenerator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[6]
             )
         if 172 <= i <= 195: # GRUPY 22-24
                 DBAccount.objects.using(db_alias).create(
-                    username=f"{students_all[i-4].last_name}_{students_all[i-4].student_id}", password=passwordGenerator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[7]
+                    username=f"{students_all[i-4].last_name.lower()}_{students_all[i-4].student_id}", password=passwordGenerator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[7]
             )
         
 class Migration(migrations.Migration):

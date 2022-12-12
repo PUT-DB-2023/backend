@@ -904,18 +904,25 @@ class AddStudentsToGroup(ViewSet):
                         r'{email}', student_to_add.email.lower()
                     )
 
-                    if DBAccount.objects.filter(username=username_to_add, editionServer=edition_server).exists():
-                        added_account = DBAccount.objects.get(username=username_to_add, editionServer=edition_server)
+                    if DBAccount.objects.filter(student=student_to_add, editionServer__server=edition_server.server).exists():
+                        added_account = DBAccount.objects.get(student=student_to_add, editionServer__server=edition_server.server)
+                        print(added_account)
                         print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server already exists.")
+                        print("After if, before else")
                     else:
-                        added_account = DBAccount.objects.create(
-                            username=username_to_add, password=passwordGenerator.generate_password(), student=student_to_add, editionServer=edition_server, is_moved=False
-                        )
-                        added_accounts.append(added_account.username)
-                        print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server.")
+                        print("After else, before create")
+                        if not DBAccount.objects.filter(username=username_to_add, editionServer=edition_server).exists():
+                            added_account = DBAccount.objects.create(
+                                username=username_to_add, password=passwordGenerator.generate_password(), student=student_to_add, editionServer=edition_server, is_moved=False
+                            )
+                            print("After create")
+                            added_accounts.append(added_account.username)
+                            print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server.")                
             
+            print("before save")
             group_to_add.save()
             print('Added students: ', added_students)
+            print('Added accounts: ', added_accounts)
 
             return JsonResponse({
                 'added_students': added_students,
