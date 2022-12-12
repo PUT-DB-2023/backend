@@ -190,3 +190,8 @@ class DBAccount(models.Model):
     is_moved = models.BooleanField(default=False)
     student = models.ForeignKey(Student, on_delete=models.CASCADE, null=True, related_name='db_accounts')
     editionServer = models.ForeignKey(EditionServer, on_delete=models.SET_NULL, null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['username', 'editionServer'], name='unique_username_editionserver'),
+        ]

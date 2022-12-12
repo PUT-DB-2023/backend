@@ -9,13 +9,13 @@ import oracledb
 # import pyodbc
 from pymongo import MongoClient
 import csv
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse, HttpResponseServerError
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse, HttpResponseServerError, HttpResponseNotFound
 from django.db import IntegrityError
 import json
 
 
 import MySQLdb as mdb
-
+from database.password_generator import PasswordGenerator
 from .serializers import UserSerializer, AdminSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, PermissionSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, DBAccountSerializer, SimpleTeacherEditionSerializer
 from .models import User, Admin, Teacher, Student, Role, Permission, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
 
@@ -298,6 +298,26 @@ class EditionViewSet(ModelViewSet):
         except IntegrityError as error:
             if "unique_edition" in str(error):
                 return HttpResponseBadRequest(json.dumps({'name': 'Edycja już istnieje.'}), headers={'Content-Type': 'application/json'})
+            return HttpResponseBadRequest(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
+        # except Exception as error:
+        #     return HttpResponseBadRequest("Unknown error: ", error)
+    
+    def destroy(self, request, *args, **kwargs):
+        try:
+            print("destroy")
+            teacher_editions = TeacherEdition.objects.filter(edition=self.get_object().id)
+            if teacher_editions.exists():
+                for teacher_edition in teacher_editions:
+                    if Group.objects.filter(teacherEdition=teacher_edition).exists():
+                        return HttpResponseBadRequest(json.dumps({'name': 'Edycja ma przypisane grupy.'}), headers={'Content-Type': 'application/json'})
+            edition = Edition.objects.get(id=self.get_object().id)
+            # serializer = EditionSerializer(edition)
+            print("Callind delete...")
+            edition.delete()
+            print("Deleted!")
+            # return Response(serializer.data, status=204)
+            return Response(status=204)
+        except IntegrityError as error:
             return HttpResponseBadRequest(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
         # except Exception as error:
         #     return HttpResponseBadRequest("Unknown error: ", error)
@@ -690,64 +710,73 @@ class LoadStudentsFromCSV(ViewSet):
 
         try:
             students_csv = students_csv.read().decode('utf-8-sig')
-        except:
-            print('Błędny plik csv.')
-            return HttpResponseBadRequest(json.dumps({'name': 'Błąd podczas wczytywania pliku csv. Upewnij się czy próbujesz przesłać poprawny plik (z kodowaniem UTF-8).'}), headers={'Content-Type': 'application/json'})
-
-        csv_reader = csv.DictReader(students_csv.splitlines(), delimiter=',')
-        students_list = list(csv_reader)
-
-        created_students = []
+            csv_reader = csv.DictReader(students_csv.splitlines(), delimiter=',')
+            students_list = list(csv_reader)
+        except Exception as error:
+            print('Błędny plik csv.', error)
+            return HttpResponseNotFound(json.dumps({'name': 'Błąd podczas wczytywania pliku csv. Upewnij się czy próbujesz przesłać poprawny plik (z kodowaniem UTF-8).'}), headers={'Content-Type': 'application/json'})
 
         students_info = []
 
-        if 'first_name' not in students_list[0] or 'last_name' not in students_list[0] or 'email' not in students_list[0] or 'password' not in students_list[0] or 'student_id' not in students_list[0]:
+        if 'first_name' not in students_list[0] or 'last_name' not in students_list[0] or 'email' not in students_list[0] or 'student_id' not in students_list[0]:
             print("Bad request. Błędny plik csv.")
-            return HttpResponseBadRequest(json.dumps({'name': 'Błędny plik csv. Upewnij się, że zawiera on następujące kolumny: first_name, last_name, email, password i student_id.'}), headers={'Content-Type': 'application/json'})
+            return HttpResponseBadRequest(json.dumps({'name': 'Błędny plik csv. Upewnij się, że zawiera on następujące kolumny: first_name, last_name, email i student_id.'}), headers={'Content-Type': 'application/json'})
 
         try:
             print(group_id)
             group_to_add = Group.objects.get(id=group_id)
             print(f'Group to add: {group_to_add.name}')
+        except Exception as error:
+            print(error)
+            return HttpResponseBadRequest(json.dumps({'name': 'Nie znaleziono grupy.'}), headers={'Content-Type': 'application/json'})
+
+
+        try:
+            passwordGenerator = PasswordGenerator(8)
             if group_to_add is None:
                 print('Group not found.')
                 return HttpResponseBadRequest(json.dumps({'name': 'Grupa nie została znaleziona.'}), headers={'Content-Type': 'application/json'})
             
-            available_editionServers = EditionServer.objects.filter(edition__teacheredition__group=group_to_add.id)
-            if len(available_editionServers) == 0:
+            available_edition_servers = EditionServer.objects.filter(edition__teacheredition__group=group_to_add.id)
+            if len(available_edition_servers) == 0:
                 print("No available edition servers.")
                 return HttpResponseBadRequest(json.dumps({'name': 'Brak serwera w danej edycji'}), headers={'Content-Type': 'application/json'})
 
+            students_passwords = []
+
             for student in students_list:
+                student_password = passwordGenerator.generate_password()
+                students_passwords.append(student_password)
+
                 students_info.append({
                     'first_name': student['first_name'],
                     'last_name': student['last_name'],
                     'email': student['email'], 
-                    'password': student['password'],
+                    'password': student_password,
                     'student_id': student['student_id'],
                     'student_created': '',
                     'added_to_group': '',
-                    'account_created': {f"{editionServer.server.name} ({editionServer.server.provider})": {} for editionServer in available_editionServers}
+                    'account_created': {f"{editionServer.server.name} ({editionServer.server.provider})": {} for editionServer in available_edition_servers}
                 })
 
-            for student in students_list:
+            for j, student in enumerate(students_list):
 
                 student_info_index = next((i for i, student_info in enumerate(students_info) if student_info['student_id'] == student['student_id']), None)
 
-                added_student, created = Student.objects.get_or_create(
-                    first_name=student['first_name'],
-                    last_name=student['last_name'],
-                    email=student['email'],
-                    password=student['password'], # TODO: generate password
-                    student_id=student['student_id'])
-
-                if not created:
+                if Student.objects.filter(student_id=student['student_id']).exists():
+                    added_student = Student.objects.get(student_id=student['student_id'])
                     students_info[student_info_index]['student_created'] = False
-                    print(f"Student {added_student.first_name} {added_student.last_name} already exists.")
+                    print(f"Student {added_student.first_name} {added_student.last_name} - {added_student.student_id} already exists.")
                 else:
+                    added_student = Student.objects.create(
+                        first_name=student['first_name'],
+                        last_name=student['last_name'],
+                        email=student['email'],
+                        password=students_passwords[j],
+                        student_id=student['student_id'])
+
                     students_info[student_info_index]['student_created'] = True
                     print(f"Student {added_student.first_name} {added_student.last_name} created.")
-                created_students.append(added_student)
 
                 if added_student in group_to_add.students.all():
                     print(f"Student {added_student.first_name} {added_student.last_name} already exists in group {group_to_add.name}.")
@@ -757,8 +786,8 @@ class LoadStudentsFromCSV(ViewSet):
                     print(f"Student {added_student.first_name} {added_student.last_name} added to group {group_to_add.name}.")
                     students_info[student_info_index]['added_to_group'] = True
 
-                for editionServer in available_editionServers:
-                    username_to_add = editionServer.server.username_template.lower().replace(
+                for edition_server in available_edition_servers:
+                    username_to_add = edition_server.server.username_template.lower().replace(
                         r'{imie}', added_student.first_name.lower()).replace(
                         r'{imię}', added_student.first_name.lower()).replace(
                         r'{nazwisko}', added_student.last_name.lower()).replace(
@@ -769,20 +798,22 @@ class LoadStudentsFromCSV(ViewSet):
                         r'{email}', added_student.email.lower()
                     )
 
-                    added_account, created = DBAccount.objects.get_or_create(
-                        username=username_to_add, password=added_student.last_name + '-dbpassword', is_moved=False, student=added_student, editionServer=editionServer
-                    )
-                    if not created:
-                        students_info[student_info_index]['account_created'][f"{editionServer.server.name} ({editionServer.server.provider})"] = False
+                    if DBAccount.objects.filter(username=username_to_add, editionServer=edition_server).exists():
+                        added_account = DBAccount.objects.get(username=username_to_add, editionServer=edition_server)
+                        students_info[student_info_index]['account_created'][f"{edition_server.server.name} ({edition_server.server.provider})"] = False
                         print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server already exists.")
                     else:
-                        students_info[student_info_index]['account_created'][f"{editionServer.server.name} ({editionServer.server.provider})"] = True
+                        added_account = DBAccount.objects.create(
+                            username=username_to_add, password=passwordGenerator.generate_password(), student=added_student, editionServer=edition_server
+                        )
+                        students_info[student_info_index]['account_created'][f"{edition_server.server.name} ({edition_server.server.provider})"] = True
                         print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server.")
             
             group_to_add.save()
+
         except Exception as error:
             print(f"Error: {error}")
-            return HttpResponseServerError(json.dumps({"error": error, "students_info": students_info}), headers={'Content-Type': 'application/json'})
+            return HttpResponseServerError(json.dumps({"name": str(error), "students_info": students_info}), headers={'Content-Type': 'application/json'})
             
         return JsonResponse({
             "students_info": students_info
