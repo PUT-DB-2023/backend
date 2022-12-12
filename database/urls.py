@@ -28,6 +28,6 @@ urlpatterns = [
     path('api/delete_db_account', views.RemoveUserFromExternalDB.as_view({'post': 'delete_db_account'})),
     path('api/load_students_csv', views.LoadStudentsFromCSV.as_view({'post': 'load_students_csv'})),
     path('api/change_active_semester', views.ChangeActiveSemester.as_view({'post': 'change_active_semester'})),
-    path('api/add_student_to_group', views.AddStudentToGroup.as_view({'post': 'add_student_to_group'})),
+    path('api/add_students_to_group', views.AddStudentsToGroup.as_view({'post': 'add_students_to_group'})),
     path('api/remove_student_from_group', views.RemoveStudentFromGroup.as_view({'post': 'remove_student_from_group'})),
 ]

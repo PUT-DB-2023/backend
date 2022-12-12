@@ -114,12 +114,12 @@ def forwards_func(apps, schema_editor):
 
     for i in range(4):
         Teacher.objects.using(db_alias).create(
-            first_name=users_names[i].split()[0], last_name=users_names[i].split()[1], email=users_names[i].split()[0] + '.' + users_names[i].split()[1] + '@cs.put.poznan.pl' , password=passwordGenerator.generate_password(), polymorphic_ctype_id=teacher_ct.id
+            first_name=users_names[i].split()[0], last_name=users_names[i].split()[1], email=f"{users_names[i].split()[0].lower()}.{users_names[i].split()[1].lower()}@cs.put.poznan.pl", password=passwordGenerator.generate_password(), polymorphic_ctype_id=teacher_ct.id
         )
 
     for i in range(4, len(users_names)):
         Student.objects.using(db_alias).create(
-            first_name=users_names[i].split()[0], last_name=users_names[i].split()[1], email=users_names[i].split()[0] + '.' + users_names[i].split()[1] + '@student.put.poznan.pl' , password=passwordGenerator.generate_password(), student_id=str(100000+i), polymorphic_ctype_id=student_ct.id
+            first_name=users_names[i].split()[0], last_name=users_names[i].split()[1], email=f"{users_names[i].split()[0].lower()}.{users_names[i].split()[1].lower()}@student.put.poznan.pl", password=passwordGenerator.generate_password(), student_id=str(100000+i), polymorphic_ctype_id=student_ct.id
         )
 
     edition_descriptions = [

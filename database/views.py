@@ -847,12 +847,17 @@ class ChangeActiveSemester(ViewSet):
             return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
 
-class AddStudentToGroup(ViewSet):
+class AddStudentsToGroup(ViewSet):
 
     @action (methods=['post'], detail=False)
-    def add_student_to_group(self, request, format=None):
+    def add_students_to_group(self, request, format=None):
         data = request.data
         print('Request log:', data)
+        group_id = data['group_id']
+        students = data['students']
+
+        added_students = []
+        added_accounts = []
 
         if 'group_id' not in data:
             print('Error: group_id not found in request data.')
@@ -861,17 +866,21 @@ class AddStudentToGroup(ViewSet):
         if 'students' not in data:
             print('Error: students not found in request data.')
             return HttpResponseBadRequest(json.dumps({'name': 'Nie podano studentów.'}), headers={'Content-Type': 'application/json'})
-
-        group_id = data['group_id']
-        students = data['students']
-
-        added_students = []
-
+        
         try:
             group_to_add = Group.objects.get(id=group_id)
         except Exception as error:
             print(error)
             return HttpResponseBadRequest(json.dumps({'name': 'Grupa o takim ID nie istnieje'}), headers={'Content-Type': 'application/json'})
+
+        available_edition_servers = EditionServer.objects.filter(edition__teacheredition__group=group_to_add.id)
+        print(available_edition_servers)
+        
+        if len(available_edition_servers) == 0:
+            print("No available edition servers.")
+            return HttpResponseBadRequest(json.dumps({'name': 'Brak serwera w danej edycji'}), headers={'Content-Type': 'application/json'})
+
+        passwordGenerator = PasswordGenerator(8)
 
         try:
             for student_id in students:
@@ -881,10 +890,38 @@ class AddStudentToGroup(ViewSet):
                 else:
                     group_to_add.students.add(student_to_add)
                     print(f"Student {student_to_add.first_name} {student_to_add.last_name} added to group {group_to_add.name}.")
-                    added_students.append(student_to_add.student_id)
-                group_to_add.save()
-                print('Added students: ', added_students)
-            return JsonResponse({'added_students': added_students}, status=200)
+                    added_students.append(F"{student_to_add.first_name} {student_to_add.last_name} - {student_to_add.student_id}")
+
+                for edition_server in available_edition_servers:
+                    username_to_add = edition_server.server.username_template.lower().replace(
+                        r'{imie}', student_to_add.first_name.lower()).replace(
+                        r'{imię}', student_to_add.first_name.lower()).replace(
+                        r'{nazwisko}', student_to_add.last_name.lower()).replace(
+                        r'{nr_indeksu}', student_to_add.student_id.lower()).replace(
+                        r'{numer_indeksu}', student_to_add.student_id.lower()).replace(
+                        r'{nr_ind}', student_to_add.student_id.lower()).replace(
+                        r'{indeks}', student_to_add.student_id.lower()).replace(
+                        r'{email}', student_to_add.email.lower()
+                    )
+
+                    if DBAccount.objects.filter(username=username_to_add, editionServer=edition_server).exists():
+                        added_account = DBAccount.objects.get(username=username_to_add, editionServer=edition_server)
+                        print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server already exists.")
+                    else:
+                        added_account = DBAccount.objects.create(
+                            username=username_to_add, password=passwordGenerator.generate_password(), student=student_to_add, editionServer=edition_server, is_moved=False
+                        )
+                        added_accounts.append(added_account.username)
+                        print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server.")
+            
+            group_to_add.save()
+            print('Added students: ', added_students)
+
+            return JsonResponse({
+                'added_students': added_students,
+                'added_accounts': added_accounts
+                }, status=200)
+
         except Exception as error:
             print(error)
             return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
