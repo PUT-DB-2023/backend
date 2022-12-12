@@ -490,7 +490,8 @@ class AddUserAccountToExternalDB(ViewSet):
 
         if not db_accounts:
             print('No accounts to move')
-            return HttpResponseBadRequest(json.dumps({'name': 'No accounts to move.'}), headers={'Content-Type': 'application/json'})
+            server = Server.objects.get(id=accounts_data['server_id'])
+            return HttpResponseBadRequest(json.dumps({'name': f"Wszystkie konta w grupie zostały już utworzone w zewnętrznej bazie danych ({server.name} - {server.provider})."}), headers={'Content-Type': 'application/json'})
 
         server = Server.objects.get(id=accounts_data['server_id'], active=True)
         moved_accounts = []
@@ -516,6 +517,8 @@ class AddUserAccountToExternalDB(ViewSet):
 
             except (Exception, mdb.DatabaseError) as error:
                 print("error: ", error)
+                if error.args[0] == 2002:
+                    return HttpResponseBadRequest(json.dumps({'name': f"Nie udało się połączyć z serwerem baz danych ({server.name} - {server.provider})."}), headers={'Content-Type': 'application/json'})
                 return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
             # connect to mysql server using odbc driver
@@ -548,7 +551,7 @@ class AddUserAccountToExternalDB(ViewSet):
                 cursor = conn_postgres.cursor()
                 for account in db_accounts:
                     print(account.username)
-                    cursor.execute('DROP ROLE IF EXISTS "%s";' % (account.username))
+                    cursor.execute('DROP ROLE IF EXISTS "%s";' % (account.username)) # TODO: implement checking if user exists
                     cursor.execute(server.create_user_template % (account.username, account.password))
                     moved_accounts.append(account.username)
                     DBAccount.objects.filter(id=account.id).update(is_moved=True)
@@ -558,8 +561,9 @@ class AddUserAccountToExternalDB(ViewSet):
                 conn_postgres.close()
                 return JsonResponse({'moved_accounts': moved_accounts}, status=200)
 
-            except (Exception, mdb.DatabaseError) as error:
+            except (Exception) as error:
                 print(error)
+                # if error.
                 return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
         elif server.provider.lower() == 'mongo' or server.provider.lower() == 'mongodb':
@@ -577,7 +581,7 @@ class AddUserAccountToExternalDB(ViewSet):
                             exists = True
 
                     if exists:
-                        continue
+                        DBAccount.objects.filter(id=account.id).update(is_moved=True)
                     else:
                         db.command('createUser', account.username, pwd=account.password, roles=[{'role': 'readWrite', 'db': server.database}])
                         moved_accounts.append(account.username)
@@ -585,7 +589,7 @@ class AddUserAccountToExternalDB(ViewSet):
                         print(f"Successfully created user '{account.username}' with '{account.password}' password.")
                 conn.close()
                 return JsonResponse({'moved_accounts': moved_accounts}, status=200)
-            except (Exception, mdb.DatabaseError) as error:
+            except (Exception) as error:
                 print(error)
                 return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
@@ -604,11 +608,11 @@ class AddUserAccountToExternalDB(ViewSet):
                 return Response(json.dumps({
                     'moved_accounts': moved_accounts
                 }), headers={'Content-Type': 'application/json'}, status=200)
-            except (Exception, mdb.DatabaseError) as error:
+            except (Exception) as error:
                 print(error)
                 return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
         else:
-            return HttpResponse('Unknown provider.', status=400)
+            return HttpResponseBadRequest(json.dumps({'name': 'Unknown provider.'}), headers={'Content-Type': 'application/json'})
 
 
 class RemoveUserFromExternalDB(ViewSet):
