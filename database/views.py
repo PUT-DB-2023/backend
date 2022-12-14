@@ -1,4 +1,6 @@
 import psycopg2
+from django.contrib.auth import authenticate, login, logout
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.viewsets import ModelViewSet, ViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -500,6 +502,36 @@ class DBAccountViewSet(ModelViewSet):
         'student__student_id',
     ]
 
+
+# permission_classes = [AllowAny]
+class LoginView(ViewSet):
+    def get_permissions(self):
+        if self.action == 'login':
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
+    @action (methods=['post'], detail=False)
+    def login_user(self, request, format=None):
+        login_data = request.data
+        print('Request log:', login_data)
+        user = authenticate(username=login_data['username'], password=login_data['password'])
+        if user is not None:
+            login(request, user)
+            return Response({'message': 'Logged in successfully', 'user': str(user)}, status=200)
+        else:
+            return HttpResponseBadRequest(json.dumps({'message': 'Invalid credentials'}), headers={'Content-Type': 'application/json'})
+
+class LogoutView(ViewSet):
+    def get_permissions(self):
+        if self.action == 'logout':
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
+    @action (methods=['post'], detail=False)
+    def logout_user(self, request, format=None):
+        # q: what do i need to provide in the request to logout?  (request.user, request.session, request.data, request.auth)
+        logout(request)
+        return Response({'message': 'Logged out successfully'}, status=200)
 
 class AddUserAccountToExternalDB(ViewSet):
     @action (methods=['post'], detail=False)
