@@ -506,7 +506,7 @@ class DBAccountViewSet(ModelViewSet):
 # permission_classes = [AllowAny]
 class LoginView(ViewSet):
     def get_permissions(self):
-        if self.action == 'login':
+        if self.action == 'login_user':
             return [AllowAny()]
         return [IsAuthenticated()]
 
@@ -514,6 +514,7 @@ class LoginView(ViewSet):
     def login_user(self, request, format=None):
         login_data = request.data
         print('Request log:', login_data)
+        print('Request headers:', request.headers)
         user = authenticate(username=login_data['username'], password=login_data['password'])
         if user is not None:
             login(request, user)
@@ -523,7 +524,7 @@ class LoginView(ViewSet):
 
 class LogoutView(ViewSet):
     def get_permissions(self):
-        if self.action == 'logout':
+        if self.action == 'logout_user':
             return [AllowAny()]
         return [IsAuthenticated()]
 
