@@ -506,7 +506,7 @@ class DBAccountViewSet(ModelViewSet):
 # permission_classes = [AllowAny]
 class LoginView(ViewSet):
     def get_permissions(self):
-        if self.action == 'login':
+        if self.action == 'login_user':
             return [AllowAny()]
         return [IsAuthenticated()]
 
@@ -523,7 +523,7 @@ class LoginView(ViewSet):
 
 class LogoutView(ViewSet):
     def get_permissions(self):
-        if self.action == 'logout':
+        if self.action == 'logout_user':
             return [AllowAny()]
         return [IsAuthenticated()]
 
