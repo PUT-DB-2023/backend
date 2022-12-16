@@ -1,5 +1,5 @@
 from rest_framework.serializers import ModelSerializer
-from .models import User, Admin, Teacher, Student, Role, Permission, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
+from .models import User, Teacher, Student, Role, Permission, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
 
 
 class UserSerializer(ModelSerializer):
@@ -17,18 +17,6 @@ class UserSerializer(ModelSerializer):
     def to_representation(self, instance):
         self.fields['roles'] = BasicRoleSerializer(many=True, read_only=True)
         return super(UserSerializer, self).to_representation(instance)
-
-
-class AdminSerializer(ModelSerializer):
-    class Meta:
-        model = Admin
-        fields = [
-            'id',
-            'first_name',
-            'last_name',
-            'email',
-            'password',
-        ]
 
 
 class TeacherSerializer(ModelSerializer):

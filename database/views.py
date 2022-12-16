@@ -18,8 +18,8 @@ import json
 
 import MySQLdb as mdb
 from database.password_generator import PasswordGenerator
-from .serializers import UserSerializer, AdminSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, PermissionSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, DBAccountSerializer, SimpleTeacherEditionSerializer
-from .models import User, Admin, Teacher, Student, Role, Permission, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
+from .serializers import UserSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, PermissionSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, DBAccountSerializer, SimpleTeacherEditionSerializer
+from .models import User, Teacher, Student, Role, Permission, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
 
 class UserViewSet(ModelViewSet):
     """
@@ -27,16 +27,6 @@ class UserViewSet(ModelViewSet):
     """
     serializer_class = UserSerializer
     queryset = User.objects.prefetch_related('roles')
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'roles',]
-
-
-class AdminViewSet(ModelViewSet):
-    """
-    A simple ViewSet for listing, retrieving and posting admins.
-    """
-    serializer_class = AdminSerializer
-    queryset = Admin.objects.all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'roles',]
 
@@ -514,8 +504,8 @@ class LoginView(ViewSet):
     def login_user(self, request, format=None):
         login_data = request.data
         print('Request log:', login_data)
-        print('Request headers:', request.headers)
-        user = authenticate(username=login_data['username'], password=login_data['password'])
+        # print('Request headers:', request.headers)
+        user = authenticate(email=login_data['email'], password=login_data['password'])
         if user is not None:
             login(request, user)
             return Response({'message': 'Logged in successfully', 'user': str(user)}, status=200)

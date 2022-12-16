@@ -3,25 +3,27 @@ from enum import unique
 from polymorphic.models import PolymorphicModel
 from django.db import models
 from django.db.models import CheckConstraint, Q, F
+from django.contrib.auth.models import AbstractUser
 
 
-class User(PolymorphicModel):
-    first_name = models.CharField(max_length=30, blank=False)
-    last_name = models.CharField(max_length=30, blank=False)
-    email = models.EmailField(max_length=50, unique=True)
-    password = models.CharField(max_length=30)
+class User(AbstractUser):
+    username = None
+    email = models.EmailField(unique=True)
+    is_student = models.BooleanField(default=False)
+    is_teacher = models.BooleanField(default=False)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['first_name', 'last_name']
 
 
-class Admin(User):
-    pass
+class Teacher(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='teacher')
 
 
-class Teacher(User):
-    pass
-
-
-class Student(User):
+class Student(models.Model):
     student_id = models.CharField(max_length=6, unique=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student')
+    major = models.ForeignKey('Major', on_delete=models.SET_NULL, blank=True, null=True, related_name='students')
 
 
 class Permission(models.Model):
