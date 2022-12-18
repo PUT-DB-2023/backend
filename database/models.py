@@ -8,7 +8,7 @@ from django.db.models import CheckConstraint, Q, F
 class User(PolymorphicModel):
     first_name = models.CharField(max_length=30, blank=False)
     last_name = models.CharField(max_length=30, blank=False)
-    email = models.EmailField(max_length=50, unique=True)
+    email = models.EmailField(max_length=70, unique=True)
     password = models.CharField(max_length=30)
 
 
@@ -25,23 +25,23 @@ class Student(User):
 
 
 class Permission(models.Model):
-    name = models.CharField(max_length=30, unique=True)
+    name = models.CharField(max_length=50, unique=True)
     description = models.CharField(max_length=255, blank=True, default='')
 
 
 class Role(models.Model):
-    name = models.CharField(max_length=30, unique=True)
+    name = models.CharField(max_length=50, unique=True)
     description = models.CharField(max_length=255, blank=True, default='')
     permissions = models.ManyToManyField(Permission, blank=True, related_name='roles')
     users = models.ManyToManyField(User, related_name='roles', blank=True)
 
 
 class Major(models.Model):
-    name = models.CharField(max_length=30, unique=True)
+    name = models.CharField(max_length=50, unique=True)
     description = models.CharField(max_length=255, blank=True, default='')
 
 class Course(models.Model):
-    name = models.CharField(max_length=30, unique=True)
+    name = models.CharField(max_length=50, unique=True)
     major = models.ForeignKey(Major, on_delete=models.SET_NULL, blank=True, null=True, related_name='courses')
     description = models.CharField(max_length=255, blank=True, default='')
     active = models.BooleanField(default=False)
@@ -147,12 +147,17 @@ class TeacherEdition(models.Model):
 
 
 class Group(models.Model):
-    name = models.CharField(max_length=30)
+    name = models.CharField(max_length=50)
     day = models.CharField(max_length=30, blank=True, default='')
     hour = models.CharField(max_length=30, blank=True, default='')
     room = models.CharField(max_length=30, blank=True, default='')
     teacherEdition = models.ForeignKey(TeacherEdition, on_delete=models.CASCADE)
     students = models.ManyToManyField(Student, blank=True, related_name='groups')
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['teacherEdition', 'name'], name='unique_group'),
+        ]
 
 
 # class DBProvider(models.Model):
@@ -160,9 +165,9 @@ class Group(models.Model):
 #     description = models.CharField(max_length=255, blank=True, default='')
 
 class Server(models.Model):
-    name = models.CharField(max_length=30)
+    name = models.CharField(max_length=50)
     ip = models.CharField(max_length=30)
-    port = models.CharField(max_length=10)
+    port = models.CharField(max_length=30)
     provider = models.CharField(max_length=30)
     # provider = models.ForeignKey(DBProvider, on_delete=models.SET_NULL, null=True, related_name='servers')
     user = models.CharField(max_length=30)
