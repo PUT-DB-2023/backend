@@ -28,7 +28,7 @@ class UserViewSet(ModelViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.prefetch_related('roles')
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'roles',]
+    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'roles', 'is_student', 'is_teacher', 'is_staff', 'is_superuser', 'is_active']
 
 
 class TeacherViewSet(ModelViewSet):
@@ -336,8 +336,8 @@ class TeacherEditionViewSet(ModelViewSet):
         'edition__semester__active',
         'edition__course__name',
         'teacher',
-        'teacher__first_name',
-        'teacher__last_name',
+        'teacher__user__first_name',
+        'teacher__user__last_name',
     ]
 
 
@@ -351,8 +351,8 @@ class SimpleTeacherEditionViewSet(ModelViewSet):
     filterset_fields = [
         'id',
         'teacher',
-        'teacher__first_name',
-        'teacher__last_name',
+        'teacher__user__first_name',
+        'teacher__user__last_name',
         'edition',
     ]
 
@@ -385,8 +385,8 @@ class GroupViewSet(ModelViewSet):
         'teacherEdition__edition__servers__port',
         'teacherEdition__edition__servers__active',
         'teacherEdition__teacher', 
-        'teacherEdition__teacher__first_name', 
-        'teacherEdition__teacher__last_name',
+        'teacherEdition__teacher__user__first_name', 
+        'teacherEdition__teacher__user__last_name',
     ]
 
     def retrieve(self, request, *args, **kwargs):
@@ -487,9 +487,9 @@ class DBAccountViewSet(ModelViewSet):
         'editionServer__server__name',
         'editionServer__server__active',
         'student',
-        'student__first_name',
-        'student__last_name',
-        'student__student_id',
+        'student__user__first_name',
+        'student__user__last_name',
+        'student__user__student_id',
     ]
 
 

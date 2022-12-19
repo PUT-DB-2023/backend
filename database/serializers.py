@@ -12,6 +12,10 @@ class UserSerializer(ModelSerializer):
             'email',
             'password',
             'roles',
+            'is_student',
+            'is_teacher',
+            'is_active',
+            'is_superuser',
         ]
     
     def to_representation(self, instance):
