@@ -39,7 +39,13 @@ class TeacherViewSet(ModelViewSet):
     queryset = Teacher.objects.prefetch_related('editions__semester', 'editions__course')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
-        'id', 'password', 'email', 'first_name', 'last_name', 'roles',
+        'id',
+        'user__id',
+        # 'user__password',
+        'user__email',
+        'user__first_name',
+        'user__last_name',
+        'user__roles',
         'editions__semester',
         'editions__semester__start_year',
         'editions__semester__winter',
@@ -57,8 +63,16 @@ class StudentViewSet(ModelViewSet):
     queryset = Student.objects.prefetch_related('groups', 'db_accounts')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
-        'id', 'password', 'email', 'first_name', 'last_name', 'student_id',
-        'groups', 'groups__name', 'db_accounts__editionServer__server', 'db_accounts__editionServer__server__name',
+        'id',
+        # 'password',
+        'user__email',
+        'user__first_name',
+        'user__last_name',
+        'student_id',
+        'groups',
+        'groups__name',
+        'db_accounts__editionServer__server',
+        'db_accounts__editionServer__server__name',
     ]
 
 

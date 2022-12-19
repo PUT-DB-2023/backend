@@ -8,9 +8,12 @@ from django.contrib.auth.models import AbstractUser, UserManager
 
 
 class UserManager(UserManager):
-    def create_user(self, email, password=None, **extra_fields):
+    def create_user(self, email, password, **extra_fields):
+        extra_fields.setdefault('is_active', True)
         if not email:
             raise ValueError('Users must have an email address')
+        if not password:
+            raise ValueError('Users must have a password')
         user = self.model(email=self.normalize_email(email), **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -46,7 +49,7 @@ class Teacher(models.Model):
 
 class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student')
-    
+
     student_id = models.CharField(max_length=6, unique=True)
     major = models.ForeignKey('Major', on_delete=models.SET_NULL, blank=True, null=True, related_name='students')
 

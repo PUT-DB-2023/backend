@@ -28,10 +28,10 @@ class TeacherSerializer(ModelSerializer):
         model = Teacher
         fields = [
             'id',
-            'first_name',
-            'last_name',
-            'email',
-            'password',
+            'user__first_name',
+            'user__last_name',
+            'user__email',
+            'user__password',
             'editions',
         ]
 
