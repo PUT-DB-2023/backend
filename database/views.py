@@ -521,6 +521,7 @@ class LogoutView(ViewSet):
     @action (methods=['post'], detail=False)
     def logout_user(self, request, format=None):
         # q: what do i need to provide in the request to logout?  (request.user, request.session, request.data, request.auth)
+        print('logout', request)
         logout(request)
         return Response({'message': 'Logged out successfully'}, status=200)
 
