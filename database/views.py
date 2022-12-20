@@ -11,7 +11,10 @@ from pymongo import MongoClient
 import csv
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse, HttpResponseServerError, HttpResponseNotFound
 from django.db import IntegrityError
+from django.core.exceptions import ValidationError
+from django.core.validators import EmailValidator
 import json
+import re
 
 
 import MySQLdb as mdb
@@ -712,6 +715,7 @@ class LoadStudentsFromCSV(ViewSet):
             students_csv = students_csv.read().decode('utf-8-sig')
             csv_reader = csv.DictReader(students_csv.splitlines(), delimiter=',')
             students_list = list(csv_reader)
+            print('students_list: ', students_list)
         except Exception as error:
             print('Błędny plik csv.', error)
             return HttpResponseNotFound(json.dumps({'name': 'Błąd podczas wczytywania pliku csv. Upewnij się czy próbujesz przesłać poprawny plik (z kodowaniem UTF-8).'}), headers={'Content-Type': 'application/json'})
@@ -721,6 +725,19 @@ class LoadStudentsFromCSV(ViewSet):
         if 'first_name' not in students_list[0] or 'last_name' not in students_list[0] or 'email' not in students_list[0] or 'student_id' not in students_list[0]:
             print("Bad request. Błędny plik csv.")
             return HttpResponseBadRequest(json.dumps({'name': 'Błędny plik csv. Upewnij się, że zawiera on następujące kolumny: first_name, last_name, email i student_id.'}), headers={'Content-Type': 'application/json'})
+
+        # checking if all columns have appropriate values
+        email_validator = EmailValidator(allowlist=['cs.put.poznan.pl', 'student.put.poznan.pl', 'put.poznan.pl'])
+        for student in students_list:
+            if student['first_name'] is None or student['last_name'] is None or student['email'] is None or student['student_id'] is None:
+                print("Bad request. Nie wszystkie kolumny zawierają wartości.")
+                return HttpResponseBadRequest(json.dumps({'name': 'Nie wszystkie kolumny zawierają wartości.'}), headers={'Content-Type': 'application/json'})
+            try:
+                email_validator(student['email'])
+            except ValidationError as error:
+                print("Bad request. Błędny adres email.")
+                return HttpResponseBadRequest(json.dumps({'name': 'Sprawdź poprawność wszystkich adresów email.'}), headers={'Content-Type': 'application/json'})
+        
 
         try:
             print(group_id)
@@ -732,7 +749,7 @@ class LoadStudentsFromCSV(ViewSet):
 
 
         try:
-            passwordGenerator = PasswordGenerator(8)
+            password_generator = PasswordGenerator(10)
             if group_to_add is None:
                 print('Group not found.')
                 return HttpResponseBadRequest(json.dumps({'name': 'Grupa nie została znaleziona.'}), headers={'Content-Type': 'application/json'})
@@ -745,7 +762,7 @@ class LoadStudentsFromCSV(ViewSet):
             students_passwords = []
 
             for student in students_list:
-                student_password = passwordGenerator.generate_password()
+                student_password = password_generator.generate_password()
                 students_passwords.append(student_password)
 
                 students_info.append({
@@ -804,7 +821,7 @@ class LoadStudentsFromCSV(ViewSet):
                         print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server already exists.")
                     else:
                         added_account = DBAccount.objects.create(
-                            username=username_to_add, password=passwordGenerator.generate_password(), student=added_student, editionServer=edition_server
+                            username=username_to_add, password=password_generator.generate_password(), student=added_student, editionServer=edition_server
                         )
                         students_info[student_info_index]['account_created'][f"{edition_server.server.name} ({edition_server.server.provider})"] = True
                         print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server.")
