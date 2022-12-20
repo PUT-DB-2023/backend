@@ -227,9 +227,9 @@ class EditionViewSet(ModelViewSet):
         except IntegrityError as error:
             if "unique_edition" in str(error):
                 return HttpResponseBadRequest(json.dumps({'name': 'Edycja już istnieje.'}), headers={'Content-Type': 'application/json'})
+        except Exception as error:
             return HttpResponseBadRequest(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
-        # except Exception as error:
-        #     return HttpResponseBadRequest("Unknown error: ", error)
+
 
     def update(self, request, *args, **kwargs):
         if 'teachers' not in request.data:
@@ -249,13 +249,6 @@ class EditionViewSet(ModelViewSet):
             edition.date_closed = request.data['date_closed']
 
             current_teachers = [teacher.id for teacher in edition.teachers.all()]
-            # current_servers = [server.id for server in edition.servers.all()]
-
-            # for current_teacher in current_teachers:
-            #     if current_teacher not in teachers:
-            #         if TeacherEdition.objects.filter(teacher=current_teacher, edition=edition).exists():
-            #             TeacherEdition.objects.filter(teacher=current_teacher, edition=edition).delete()
-            #         TeacherEdition.objects.filter(teacher=current_teacher, edition=edition).delete()
 
             # check if missing teachers do not have any groups in this edition
             for current_teacher in current_teachers:
@@ -264,12 +257,6 @@ class EditionViewSet(ModelViewSet):
                     print(f"Teacher edition: {teacher_edition}")
                     if Group.objects.filter(teacherEdition=teacher_edition).exists():
                         return HttpResponseBadRequest(json.dumps({'name': 'Nie można usunąć nauczyciela, który ma przypisane grupy.'}), headers={'Content-Type': 'application/json'})
-            
-            # check if missing servers do not have any groups in this edition
-            # for current_server in current_servers:
-            #     if current_server not in servers:
-            #         if Group.objects.filter(server=current_server, edition=edition).exists():
-            #             return HttpResponseBadRequest(json.dumps({'name': 'Nie można usunąć serwera, z którego korzystają grupy.'}), headers={'Content-Type': 'application/json'})
 
 
             edition.teachers.set(teachers)
@@ -278,35 +265,13 @@ class EditionViewSet(ModelViewSet):
             edition.save()
             print(f"Edition updated: {edition}")
 
-            # TeacherEdition.objects.filter(edition=edition).delete()
-            # TeacherEdition.objects.bulk_create([
-            #     TeacherEdition(teacher=Teacher.objects.get(id=teacher), edition=edition)
-            #     for teacher in teachers
-            # ])
-            # for teacher in teachers:
-            #     teacher_edition = TeacherEdition.objects.get_or_create(edition=edition, teacher=teacher)
-            #     teacher_edition.teacher = Teacher.objects.get(id=teacher)
-            #     teacher_edition.save()
-            # print(f"Teachers added: {teachers}")
-
-            # for server in servers:
-            #     edition_server = EditionServer.objects.get_or_create(edition=edition, server=server)
-            #     edition_server.server = Server.objects.get(id=server)
-            #     edition_server.save()
-            # # EditionServer.objects.filter(edition=edition).delete()
-            # # EditionServer.objects.bulk_create([
-            # #     EditionServer(server=Server.objects.get(id=server), edition=edition)
-            # #     for server in servers
-            # # ])
-            # print(f"Servers added: {servers}")
             return Response(EditionSerializer(edition).data, status=200)
             # super().update(request, *args, **kwargs)
         except IntegrityError as error:
             if "unique_edition" in str(error):
                 return HttpResponseBadRequest(json.dumps({'name': 'Edycja już istnieje.'}), headers={'Content-Type': 'application/json'})
             return HttpResponseBadRequest(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
-        # except Exception as error:
-        #     return HttpResponseBadRequest("Unknown error: ", error)
+
     
     def destroy(self, request, *args, **kwargs):
         try:
@@ -534,7 +499,6 @@ class LogoutView(ViewSet):
 
     @action (methods=['post'], detail=False)
     def logout_user(self, request, format=None):
-        # q: what do i need to provide in the request to logout?  (request.user, request.session, request.data, request.auth)
         print('logout', request)
         logout(request)
         return Response({'message': 'Logged out successfully'}, status=200)
@@ -621,7 +585,6 @@ class AddUserAccountToExternalDB(ViewSet):
 
             except (Exception) as error:
                 print(error)
-                # if error.
                 return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
         elif server.provider.lower() == 'mongo' or server.provider.lower() == 'mongodb':
