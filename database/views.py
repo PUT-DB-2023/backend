@@ -12,9 +12,8 @@ import csv
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse, HttpResponseServerError, HttpResponseNotFound
 from django.db import IntegrityError
 from django.core.exceptions import ValidationError
-from django.core.validators import EmailValidator
+from django.core.validators import validate_email
 import json
-import re
 
 
 import MySQLdb as mdb
@@ -118,14 +117,6 @@ class CourseViewSet(ModelViewSet):
     queryset = Course.objects.prefetch_related('editions').order_by('id')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'major', 'active', 'description', 'editions']
-
-    # def get_queryset(self):
-    #     if self.request.query_params.get('active') == "true":
-    #         return Course.objects.prefetch_related('editions').filter(editions__semester__active=True).distinct().order_by('id')
-    #     elif self.request.query_params.get('active') == "false":
-    #         return Course.objects.prefetch_related('editions').exclude(editions__semester__active=True).distinct().order_by('id')
-    #     else:
-    #         return Course.objects.prefetch_related('editions').order_by('id')
 
 
 class SemesterViewSet(ModelViewSet):
@@ -727,13 +718,12 @@ class LoadStudentsFromCSV(ViewSet):
             return HttpResponseBadRequest(json.dumps({'name': 'Błędny plik csv. Upewnij się, że zawiera on następujące kolumny: first_name, last_name, email i student_id.'}), headers={'Content-Type': 'application/json'})
 
         # checking if all columns have appropriate values
-        email_validator = EmailValidator(allowlist=['cs.put.poznan.pl', 'student.put.poznan.pl', 'put.poznan.pl'])
         for student in students_list:
             if student['first_name'] is None or student['last_name'] is None or student['email'] is None or student['student_id'] is None:
                 print("Bad request. Nie wszystkie kolumny zawierają wartości.")
                 return HttpResponseBadRequest(json.dumps({'name': 'Nie wszystkie kolumny zawierają wartości.'}), headers={'Content-Type': 'application/json'})
             try:
-                email_validator(student['email'])
+                validate_email(student['email'])
             except ValidationError as error:
                 print("Bad request. Błędny adres email.")
                 return HttpResponseBadRequest(json.dumps({'name': 'Sprawdź poprawność wszystkich adresów email.'}), headers={'Content-Type': 'application/json'})
