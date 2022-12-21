@@ -500,6 +500,11 @@ class AddUserAccountToExternalDB(ViewSet):
     def add_db_account(self, request, format=None):
         accounts_data = request.data
         print('Request log:', accounts_data)
+
+        server = Server.objects.get(id=accounts_data['server_id'])
+        if not server.active:
+            return HttpResponseBadRequest(json.dumps({'name': f"Serwer ({server.name}) nie jest aktywny."}), headers={'Content-Type': 'application/json'})
+
         db_accounts = DBAccount.objects.filter(is_moved=False, editionServer__server__active=True, editionServer__server__id=accounts_data['server_id'], student__groups__id=accounts_data['group_id'])
 
         if not db_accounts:
@@ -519,10 +524,17 @@ class AddUserAccountToExternalDB(ViewSet):
                 cursor = conn_mysql.cursor()
                 for account in db_accounts:
                     print(server.create_user_template)
-                    cursor.execute(server.create_user_template % (account.username, account.password))
-                    moved_accounts.append(account.username)
-                    DBAccount.objects.filter(id=account.id).update(is_moved=True)
-                    print(f"Successfully created user '{account.username}' with '{account.password}' password.")
+                    cursor.execute("SELECT user FROM mysql.user WHERE user = '%s'" % (account.username))
+                    user_exists = cursor.fetchone()
+                    if user_exists:
+                        print(f"User '{account.username}' already exists in database.")
+                        DBAccount.objects.filter(id=account.id).update(is_moved=True)
+                        continue
+                    else:
+                        cursor.execute(server.create_user_template % (account.username, account.password))
+                        moved_accounts.append(account.username)
+                        DBAccount.objects.filter(id=account.id).update(is_moved=True)
+                        print(f"Successfully created user '{account.username}' with '{account.password}' password.")
                 conn_mysql.commit()
                 cursor.close()
                 conn_mysql.close()
@@ -565,11 +577,17 @@ class AddUserAccountToExternalDB(ViewSet):
                 cursor = conn_postgres.cursor()
                 for account in db_accounts:
                     print(account.username)
-                    cursor.execute('DROP ROLE IF EXISTS "%s";' % (account.username)) # TODO: implement checking if user exists
-                    cursor.execute(server.create_user_template % (account.username, account.password))
-                    moved_accounts.append(account.username)
-                    DBAccount.objects.filter(id=account.id).update(is_moved=True)
-                    print(f"Successfully created user '{account.username}' with '{account.password}' password.")
+                    cursor.execute('SELECT rolname FROM pg_roles WHERE rolname = %s', (account.username,))
+                    user_exists = cursor.fetchone()
+                    if user_exists:
+                        print(f"User '{account.username}' already exists in database.")
+                        DBAccount.objects.filter(id=account.id).update(is_moved=True)
+                        continue
+                    else:
+                        cursor.execute(server.create_user_template % (account.username, account.password))
+                        moved_accounts.append(account.username)
+                        DBAccount.objects.filter(id=account.id).update(is_moved=True)
+                        print(f"Successfully created user '{account.username}' with '{account.password}' password.")
                 conn_postgres.commit()
                 cursor.close()
                 conn_postgres.close()
