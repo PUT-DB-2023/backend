@@ -501,7 +501,18 @@ class LoginView(ViewSet):
         user = authenticate(email=login_data['email'], password=login_data['password'])
         if user is not None:
             login(request, user)
-            return Response({'message': 'Logged in successfully', 'user': str(user)}, status=200)
+            return JsonResponse(
+                {
+                    'name': 'Logged in successfully',
+                    'user': {
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'email': user.email,
+                        'is_student': user.is_student,
+                        'is_teacher': user.is_teacher,
+                        'is_superuser': user.is_superuser,
+                    }
+                }, status=200)
         else:
             return HttpResponseBadRequest(json.dumps({'message': 'Invalid credentials'}), headers={'Content-Type': 'application/json'})
 
