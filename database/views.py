@@ -1,22 +1,24 @@
-import psycopg2
 from django.contrib.auth import authenticate, login, logout
+from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse, HttpResponseServerError, HttpResponseNotFound
+from django.db import IntegrityError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.viewsets import ModelViewSet, ViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Q
+
+import MySQLdb as mdb
+import psycopg2
 import cx_Oracle
 import oracledb
 # import pyodbc
 from pymongo import MongoClient
+
 import csv
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse, HttpResponseServerError, HttpResponseNotFound
-from django.db import IntegrityError
 import json
 
-
-import MySQLdb as mdb
 from database.password_generator import PasswordGenerator
 from .serializers import UserSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, PermissionSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, DBAccountSerializer, SimpleTeacherEditionSerializer
 from .models import User, Teacher, Student, Role, Permission, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
@@ -122,13 +124,19 @@ class CourseViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'major', 'active', 'description', 'editions']
 
-    # def get_queryset(self):
-    #     if self.request.query_params.get('active') == "true":
-    #         return Course.objects.prefetch_related('editions').filter(editions__semester__active=True).distinct().order_by('id')
-    #     elif self.request.query_params.get('active') == "false":
-    #         return Course.objects.prefetch_related('editions').exclude(editions__semester__active=True).distinct().order_by('id')
-    #     else:
-    #         return Course.objects.prefetch_related('editions').order_by('id')
+    # filter against current user
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return Course.objects.prefetch_related('editions').order_by('id')
+        elif user.is_teacher:
+            teacher = get_object_or_404(Teacher, user=self.request.user)
+            return Course.objects.prefetch_related('editions').filter(editions__teachers=teacher).order_by('id').distinct()
+        elif user.is_student:
+            student = get_object_or_404(Student, user=self.request.user)
+            return Course.objects.prefetch_related('editions').filter(editions__teacheredition__groups__students=student).order_by('id').distinct()
+        else:
+            return Course.objects.none()
 
 
 class SemesterViewSet(ModelViewSet):

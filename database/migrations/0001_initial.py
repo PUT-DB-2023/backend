@@ -120,7 +120,7 @@ def forwards_func(apps, schema_editor):
             first_name=users_names[i].split()[0],
             last_name=users_names[i].split()[1],
             email=f"{users_names[i].split()[0].lower()}.{users_names[i].split()[1].lower()}@cs.put.poznan.pl",
-            password=password_generator.generate_password(),
+            password="teacher_password",
             is_teacher=True
         )
         user.save()
@@ -132,7 +132,7 @@ def forwards_func(apps, schema_editor):
             first_name=users_names[i].split()[0],
             last_name=users_names[i].split()[1],
             email=f"{users_names[i].split()[0].lower()}.{users_names[i].split()[1].lower()}@student.put.poznan.pl",
-            password=password_generator.generate_password(),
+            password="student_password",
             is_student=True
         )
         # user.save()
