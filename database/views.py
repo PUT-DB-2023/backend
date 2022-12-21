@@ -506,6 +506,11 @@ class AddUserAccountToExternalDB(ViewSet):
     def add_db_account(self, request, format=None):
         accounts_data = request.data
         print('Request log:', accounts_data)
+
+        server = Server.objects.get(id=accounts_data['server_id'])
+        if not server.active:
+            return HttpResponseBadRequest(json.dumps({'name': f"Serwer ({server.name}) nie jest aktywny."}), headers={'Content-Type': 'application/json'})
+
         db_accounts = DBAccount.objects.filter(is_moved=False, editionServer__server__active=True, editionServer__server__id=accounts_data['server_id'], student__groups__id=accounts_data['group_id'])
 
         if not db_accounts:
