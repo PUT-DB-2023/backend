@@ -56,11 +56,6 @@ SESSION_COOKIE_HTTPONLY = False
 CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
 CORS_ALLOW_CREDENTIALS = True
 
-# CORS_EXPOSE_HEADERS = [
-#     "Access-Control-Allow-Origin",
-#     "Access-Control-Allow-Headers",
-# ]
-
 # Application definition
 
 INSTALLED_APPS = [

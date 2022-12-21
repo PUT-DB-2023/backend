@@ -4,10 +4,13 @@ from polymorphic.models import PolymorphicModel
 from django.db import models
 from django.db.models import CheckConstraint, Q, F
 from django.contrib.auth.models import AbstractUser, UserManager
+from django.contrib.auth.hashers import make_password
 
 
+class CustomUserManager(UserManager):
 
-class UserManager(UserManager):
+    use_in_migrations = True
+
     def create_user(self, email, password, **extra_fields):
         extra_fields.setdefault('is_active', True)
         if not email:
@@ -15,7 +18,7 @@ class UserManager(UserManager):
         if not password:
             raise ValueError('Users must have a password')
         user = self.model(email=self.normalize_email(email), **extra_fields)
-        user.set_password(password)
+        user.password = make_password(password)
         user.save(using=self._db)
         return user
 
@@ -37,7 +40,7 @@ class User(AbstractUser):
     is_student = models.BooleanField(default=False)
     is_teacher = models.BooleanField(default=False)
 
-    objects = UserManager()
+    objects = CustomUserManager()
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name']

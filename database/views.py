@@ -198,8 +198,8 @@ class EditionViewSet(ModelViewSet):
         'course__name',
         'course__description',
         'teachers',
-        'teachers__first_name',
-        'teachers__last_name',
+        'teachers__user__first_name',
+        'teachers__user__last_name',
     ]
 
     def create(self, request, *args, **kwargs):
