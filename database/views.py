@@ -302,10 +302,22 @@ class EditionViewSet(ModelViewSet):
             print("Deleted!")
             # return Response(serializer.data, status=204)
             return Response(status=204)
-        except IntegrityError as error:
+        except Exception as error:
             return HttpResponseBadRequest(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
-        # except Exception as error:
-        #     return HttpResponseBadRequest("Unknown error: ", error)
+    
+    # filter against current user
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return Edition.objects.order_by('id')
+        elif user.is_teacher:
+            teacher = get_object_or_404(Teacher, user=self.request.user)
+            return Edition.objects.filter(teachers=teacher).order_by('id').distinct()
+        elif user.is_student:
+            student = get_object_or_404(Student, user=self.request.user)
+            return Edition.objects.filter(teacheredition__groups__students=student).order_by('id').distinct()
+        else:
+            return Edition.objects.none()
 
 
 class TeacherEditionViewSet(ModelViewSet):
@@ -396,6 +408,20 @@ class GroupViewSet(ModelViewSet):
         resp = serializer.data
         resp['all_accounts_moved'] = all_accounts_moved
         return Response(resp, status=200)
+    
+    # filter against current user
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return Group.objects.order_by('id')
+        elif user.is_teacher:
+            teacher = get_object_or_404(Teacher, user=self.request.user)
+            return Group.objects.filter(teacherEdition__teacher=teacher).order_by('id').distinct()
+        elif user.is_student:
+            student = get_object_or_404(Student, user=self.request.user)
+            return Group.objects.filter(students=student).order_by('id').distinct()
+        else:
+            return Group.objects.none()
 
 
 class ServerViewSet(ModelViewSet):
@@ -505,6 +531,7 @@ class LoginView(ViewSet):
                 {
                     'name': 'Logged in successfully',
                     'user': {
+                        'id': user.id,
                         'first_name': user.first_name,
                         'last_name': user.last_name,
                         'email': user.email,
