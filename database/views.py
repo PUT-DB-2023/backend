@@ -56,6 +56,20 @@ class TeacherViewSet(ModelViewSet):
         'editions__course__name',
     ]
 
+    # filter against current user
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return Teacher.objects.prefetch_related('editions__semester', 'editions__course')
+        elif user.is_teacher:
+            teacher = get_object_or_404(Teacher, user=self.request.user)
+            return Teacher.objects.prefetch_related('editions__semester', 'editions__course').filter(id=teacher.id)
+        elif user.is_student:
+            student = get_object_or_404(Student, user=self.request.user)
+            return Teacher.objects.prefetch_related('editions__semester', 'editions__course').filter(teacheredition__groups__students=student).distinct()
+        else:
+            return Teacher.objects.none()
+
 
 class StudentViewSet(ModelViewSet):
     """
@@ -76,7 +90,20 @@ class StudentViewSet(ModelViewSet):
         'db_accounts__editionServer__server',
         'db_accounts__editionServer__server__name',
     ]
-
+    
+    # filter against current user
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_superuser:
+            return Student.objects.prefetch_related('groups', 'db_accounts')
+        elif user.is_teacher:
+            teacher = get_object_or_404(Teacher, user=self.request.user)
+            return Student.objects.prefetch_related('groups', 'db_accounts').filter(groups__edition__teachers=teacher).distinct()
+        elif user.is_student:
+            student = get_object_or_404(Student, user=self.request.user)
+            return Student.objects.prefetch_related('groups', 'db_accounts').filter(id=student.id)
+        else:
+            return Student.objects.none()
 
 class RoleViewSet(ModelViewSet):
     """
@@ -508,7 +535,7 @@ class DBAccountViewSet(ModelViewSet):
         'student',
         'student__user__first_name',
         'student__user__last_name',
-        'student__user__student_id',
+        'student__student_id',
     ]
 
 
@@ -926,8 +953,12 @@ class AddStudentsToGroup(ViewSet):
             print(error)
             return HttpResponseBadRequest(json.dumps({'name': 'Grupa o takim ID nie istnieje'}), headers={'Content-Type': 'application/json'})
 
-        available_edition_servers = EditionServer.objects.filter(edition__teacheredition__group=group_to_add.id)
-        print(available_edition_servers)
+        try:
+            available_edition_servers = EditionServer.objects.filter(edition__teacheredition__groups=group_to_add.id)
+            print(available_edition_servers)
+        except Exception as error:
+            print(error)
+            return HttpResponseBadRequest(json.dumps({'name': 'Nie znaleziono serwera dla danej edycji'}), headers={'Content-Type': 'application/json'})
         
         if len(available_edition_servers) == 0:
             print("No available edition servers.")
@@ -939,22 +970,22 @@ class AddStudentsToGroup(ViewSet):
             for student_id in students:
                 student_to_add = Student.objects.get(id=student_id)
                 if student_to_add in group_to_add.students.all():
-                    print(f"Student {student_to_add.first_name} {student_to_add.last_name} already exists in group {group_to_add.name}.")
+                    print(f"Student {student_to_add.user.first_name} {student_to_add.user.last_name} already exists in group {group_to_add.name}.")
                 else:
                     group_to_add.students.add(student_to_add)
-                    print(f"Student {student_to_add.first_name} {student_to_add.last_name} added to group {group_to_add.name}.")
-                    added_students.append(F"{student_to_add.first_name} {student_to_add.last_name} - {student_to_add.student_id}")
+                    print(f"Student {student_to_add.user.first_name} {student_to_add.user.last_name} added to group {group_to_add.name}.")
+                    added_students.append(F"{student_to_add.user.first_name} {student_to_add.user.last_name} - {student_to_add.student_id}")
 
                 for edition_server in available_edition_servers:
                     username_to_add = edition_server.server.username_template.lower().replace(
-                        r'{imie}', student_to_add.first_name.lower()).replace(
-                        r'{imię}', student_to_add.first_name.lower()).replace(
-                        r'{nazwisko}', student_to_add.last_name.lower()).replace(
+                        r'{imie}', student_to_add.user.first_name.lower()).replace(
+                        r'{imię}', student_to_add.user.first_name.lower()).replace(
+                        r'{nazwisko}', student_to_add.user.last_name.lower()).replace(
                         r'{nr_indeksu}', student_to_add.student_id.lower()).replace(
                         r'{numer_indeksu}', student_to_add.student_id.lower()).replace(
                         r'{nr_ind}', student_to_add.student_id.lower()).replace(
                         r'{indeks}', student_to_add.student_id.lower()).replace(
-                        r'{email}', student_to_add.email.lower()
+                        r'{email}', student_to_add.user.email.lower()
                     )
 
                     if DBAccount.objects.filter(student=student_to_add, editionServer__server=edition_server.server).exists():
