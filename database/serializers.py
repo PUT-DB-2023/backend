@@ -266,7 +266,7 @@ class EditionSerializer(ModelSerializer):
         self.fields['course'] = CourseSerializer(many=False, read_only=True)
         self.fields['semester'] = BasicSemesterSerializer(many=False, read_only=True)
         self.fields['teachers'] = BasicTeacherSerializer(many=True, read_only=True)
-        self.fields['servers'] = ServerSerializer(many=True, read_only=True)
+        self.fields['servers'] = BasicServerSerializer(many=True, read_only=True)
         return super(EditionSerializer, self).to_representation(instance)
 
 

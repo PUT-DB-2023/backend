@@ -5,6 +5,7 @@ from django.db import models
 from django.db.models import CheckConstraint, Q, F
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth.models import PermissionsMixin
 
 
 class CustomUserManager(UserManager):
@@ -34,7 +35,7 @@ class CustomUserManager(UserManager):
         return self.create_user(email, password, **extra_fields)
 
 
-class User(AbstractUser):
+class User(AbstractUser, PermissionsMixin):
     username = None
     email = models.EmailField(unique=True)
     is_student = models.BooleanField(default=False)
