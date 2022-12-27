@@ -817,7 +817,7 @@ class LoadStudentsFromCSV(ViewSet):
                 print('Group not found.')
                 return HttpResponseBadRequest(json.dumps({'name': 'Grupa nie została znaleziona.'}), headers={'Content-Type': 'application/json'})
             
-            available_edition_servers = EditionServer.objects.filter(edition__teacheredition__group=group_to_add.id)
+            available_edition_servers = EditionServer.objects.filter(edition__teacheredition__groups=group_to_add.id)
             if len(available_edition_servers) == 0:
                 print("No available edition servers.")
                 return HttpResponseBadRequest(json.dumps({'name': 'Brak serwera w danej edycji'}), headers={'Content-Type': 'application/json'})
@@ -845,37 +845,45 @@ class LoadStudentsFromCSV(ViewSet):
 
                 if Student.objects.filter(student_id=student['student_id']).exists():
                     added_student = Student.objects.get(student_id=student['student_id'])
+                    added_user = added_student.user
                     students_info[student_info_index]['student_created'] = False
-                    print(f"Student {added_student.first_name} {added_student.last_name} - {added_student.student_id} already exists.")
+                    print(f"Student {added_student.user.first_name} {added_student.user.last_name} - {added_student.student_id} already exists.")
                 else:
-                    added_student = Student.objects.create(
+                    added_user = User.objects.create_user(
                         first_name=student['first_name'],
                         last_name=student['last_name'],
                         email=student['email'],
                         password=students_passwords[j],
-                        student_id=student['student_id'])
+                        is_active=True,
+                        is_student=True
+                    )
+
+                    added_student = Student.objects.create(
+                        user=added_user,
+                        student_id=student['student_id']
+                    )
 
                     students_info[student_info_index]['student_created'] = True
-                    print(f"Student {added_student.first_name} {added_student.last_name} created.")
+                    print(f"Student {added_user.first_name} {added_user.last_name} created.")
 
                 if added_student in group_to_add.students.all():
-                    print(f"Student {added_student.first_name} {added_student.last_name} already exists in group {group_to_add.name}.")
+                    print(f"Student {added_user.first_name} {added_user.last_name} already exists in group {group_to_add.name}.")
                     students_info[student_info_index]['added_to_group'] = False # TODO: check if this works
                 else:
                     group_to_add.students.add(added_student)
-                    print(f"Student {added_student.first_name} {added_student.last_name} added to group {group_to_add.name}.")
+                    print(f"Student {added_user.first_name} {added_user.last_name} added to group {group_to_add.name}.")
                     students_info[student_info_index]['added_to_group'] = True
 
                 for edition_server in available_edition_servers:
                     username_to_add = edition_server.server.username_template.lower().replace(
-                        r'{imie}', added_student.first_name.lower()).replace(
-                        r'{imię}', added_student.first_name.lower()).replace(
-                        r'{nazwisko}', added_student.last_name.lower()).replace(
+                        r'{imie}', added_user.first_name.lower()).replace(
+                        r'{imię}', added_user.first_name.lower()).replace(
+                        r'{nazwisko}', added_user.last_name.lower()).replace(
                         r'{nr_indeksu}', added_student.student_id.lower()).replace(
                         r'{numer_indeksu}', added_student.student_id.lower()).replace(
                         r'{nr_ind}', added_student.student_id.lower()).replace(
                         r'{indeks}', added_student.student_id.lower()).replace(
-                        r'{email}', added_student.email.lower()
+                        r'{email}', added_user.email.lower()
                     )
 
                     if DBAccount.objects.filter(username=username_to_add, editionServer=edition_server).exists():
