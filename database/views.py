@@ -8,8 +8,6 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.viewsets import ModelViewSet, ViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from .permissions import IsStudent, IsTeacher
-from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 
 import MySQLdb as mdb
@@ -159,7 +157,7 @@ class StudentViewSet(ModelViewSet):
             return Student.objects.prefetch_related('groups', 'db_accounts').filter(id=student.id)
         else:
             return Student.objects.none()
-            
+
     def create(self, request, *args, **kwargs):
         user = request.user
         if not user.get_permission('database.add_student'):
