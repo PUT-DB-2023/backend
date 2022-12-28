@@ -827,6 +827,7 @@ class LoginView(ViewSet):
         print('Request log:', login_data)
         # print('Request headers:', request.headers)
         user = authenticate(email=login_data['email'], password=login_data['password'])
+        print(user.get_all_permissions())
         if user is not None:
             login(request, user)
             return JsonResponse(
@@ -840,7 +841,7 @@ class LoginView(ViewSet):
                         'is_student': user.is_student,
                         'is_teacher': user.is_teacher,
                         'is_superuser': user.is_superuser,
-                        'permissions': [perm.codename for perm in user.user_permissions.all()],
+                        'permissions': list(user.get_all_permissions()),
                     }
                 }, status=200)
         else:
