@@ -35,18 +35,12 @@ class UserViewSet(ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-
         if not user.has_perm('database.view_user'):
             raise PermissionDenied
-        if user.is_superuser:
+        if user.is_superuser or user.is_teacher:
             return User.objects.all()
-        # elif user.is_teacher:
-        #     teacher = get_object_or_404(Teacher, user=self.request.user)
-        #     return User.objects.filter(id=user.id)
-        # elif user.is_student:
-        #     student = get_object_or_404(Student, user=self.request.user)
-        #     return User.objects.filter(id=user.id)
-        return User.objects.none()
+        elif user.is_student:
+            return User.objects.filter(id=user.id)
 
     def create(self, request, *args, **kwargs):
         user = request.user
@@ -91,10 +85,8 @@ class TeacherViewSet(ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-
         if not user.has_perm('database.view_teacher'):
             raise PermissionDenied
-
         if user.is_superuser:
             return Teacher.objects.prefetch_related('editions__semester', 'editions__course')
         elif user.is_teacher:
@@ -147,11 +139,9 @@ class StudentViewSet(ModelViewSet):
     ]
 
     def get_queryset(self):
-        user = self.request.user
-        
+        user = self.request.user  
         if not user.has_perm('database.view_student'):
             raise PermissionDenied
-
         if user.is_superuser:
             return Student.objects.prefetch_related('groups', 'db_accounts')
         elif user.is_teacher:
