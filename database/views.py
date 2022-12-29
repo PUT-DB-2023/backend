@@ -76,8 +76,7 @@ class TeacherViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id',
-        'user__id',
-        # 'user__password',
+        'user',
         'user__email',
         'user__first_name',
         'user__last_name',
@@ -136,7 +135,7 @@ class StudentViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id',
-        # 'password',
+        'user',
         'user__email',
         'user__first_name',
         'user__last_name',
