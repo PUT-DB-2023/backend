@@ -38,8 +38,15 @@ class UserViewSet(ModelViewSet):
 
         if not user.has_perm('database.view_user'):
             raise PermissionDenied
-
-        return User.objects.filter(id=user.id)
+        if user.is_superuser:
+            return User.objects.all()
+        # elif user.is_teacher:
+        #     teacher = get_object_or_404(Teacher, user=self.request.user)
+        #     return User.objects.filter(id=user.id)
+        # elif user.is_student:
+        #     student = get_object_or_404(Student, user=self.request.user)
+        #     return User.objects.filter(id=user.id)
+        return User.objects.none()
 
     def create(self, request, *args, **kwargs):
         user = request.user
@@ -58,7 +65,6 @@ class UserViewSet(ModelViewSet):
         if not user.get_permission('database.delete_user'):
             raise PermissionDenied()
         return super().destroy(request, *args, **kwargs)
-
 
 
 class TeacherViewSet(ModelViewSet):
@@ -151,7 +157,7 @@ class StudentViewSet(ModelViewSet):
             return Student.objects.prefetch_related('groups', 'db_accounts')
         elif user.is_teacher:
             teacher = get_object_or_404(Teacher, user=self.request.user)
-            return Student.objects.prefetch_related('groups', 'db_accounts').filter(groups__edition__teachers=teacher).distinct()
+            return Student.objects.prefetch_related('groups', 'db_accounts').filter(groups__teacherEdition__teacher=teacher).distinct()
         elif user.is_student:
             student = get_object_or_404(Student, user=self.request.user)
             return Student.objects.prefetch_related('groups', 'db_accounts').filter(id=student.id)
@@ -535,7 +541,6 @@ class TeacherEditionViewSet(ModelViewSet):
 
         if not user.has_perm('database.view_teacheredition'):
             raise PermissionDenied
-
         return super().get_queryset()
 
     def create(self, request, *args, **kwargs):
@@ -543,7 +548,6 @@ class TeacherEditionViewSet(ModelViewSet):
 
         if not user.has_perm('database.add_teacheredition'):
             raise PermissionDenied
-
         return super().create(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
@@ -551,7 +555,6 @@ class TeacherEditionViewSet(ModelViewSet):
 
         if not user.has_perm('database.change_teacheredition'):
             raise PermissionDenied
-
         return super().update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
@@ -559,9 +562,7 @@ class TeacherEditionViewSet(ModelViewSet):
 
         if not user.has_perm('database.delete_teacheredition'):
             raise PermissionDenied
-
         return super().destroy(request, *args, **kwargs)
-
 
 
 class SimpleTeacherEditionViewSet(ModelViewSet):
