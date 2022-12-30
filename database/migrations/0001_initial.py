@@ -639,5 +639,49 @@ class Migration(migrations.Migration):
             model_name='dbaccount',
             constraint=models.UniqueConstraint(fields=('username', 'editionServer'), name='unique_username_editionserver'),
         ),
+        migrations.AlterField(
+            model_name='course',
+            name='name',
+            field=models.CharField(max_length=50, unique=True),
+        ),
+        migrations.AlterField(
+            model_name='group',
+            name='name',
+            field=models.CharField(max_length=50),
+        ),
+        migrations.AlterField(
+            model_name='major',
+            name='name',
+            field=models.CharField(max_length=50, unique=True),
+        ),
+        migrations.AlterField(
+            model_name='permission',
+            name='name',
+            field=models.CharField(max_length=50, unique=True),
+        ),
+        migrations.AlterField(
+            model_name='role',
+            name='name',
+            field=models.CharField(max_length=50, unique=True),
+        ),
+        migrations.AlterField(
+            model_name='server',
+            name='name',
+            field=models.CharField(max_length=50),
+        ),
+        migrations.AlterField(
+            model_name='server',
+            name='port',
+            field=models.CharField(max_length=30),
+        ),
+        migrations.AlterField(
+            model_name='user',
+            name='email',
+            field=models.EmailField(max_length=70, unique=True),
+        ),
+        migrations.AddConstraint(
+            model_name='group',
+            constraint=models.UniqueConstraint(fields=('teacherEdition', 'name'), name='unique_group'),
+        ),
         migrations.RunPython(forwards_func),
     ]
