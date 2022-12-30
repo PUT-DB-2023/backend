@@ -3,25 +3,59 @@ from enum import unique
 from polymorphic.models import PolymorphicModel
 from django.db import models
 from django.db.models import CheckConstraint, Q, F
+from django.contrib.auth.models import AbstractUser, UserManager
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth.models import PermissionsMixin
 
 
-class User(PolymorphicModel):
-    first_name = models.CharField(max_length=30, blank=False)
-    last_name = models.CharField(max_length=30, blank=False)
-    email = models.EmailField(max_length=70, unique=True)
-    password = models.CharField(max_length=30)
+class CustomUserManager(UserManager):
+
+    use_in_migrations = True
+
+    def create_user(self, email, password, **extra_fields):
+        extra_fields.setdefault('is_active', True)
+        if not email:
+            raise ValueError('Users must have an email address')
+        if not password:
+            raise ValueError('Users must have a password')
+        user = self.model(email=self.normalize_email(email), **extra_fields)
+        user.password = make_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+        return self.create_user(email, password, **extra_fields)
 
 
-class Admin(User):
-    pass
+class User(AbstractUser, PermissionsMixin):
+    username = None
+    email = models.EmailField(unique=True)
+    is_student = models.BooleanField(default=False)
+    is_teacher = models.BooleanField(default=False)
+
+    objects = CustomUserManager()
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['first_name', 'last_name']
 
 
-class Teacher(User):
-    pass
+class Teacher(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='teacher')
 
 
-class Student(User):
+class Student(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student')
+
     student_id = models.CharField(max_length=6, unique=True)
+    major = models.ForeignKey('Major', on_delete=models.SET_NULL, blank=True, null=True, related_name='students')
 
 
 class Permission(models.Model):
@@ -151,7 +185,7 @@ class Group(models.Model):
     day = models.CharField(max_length=30, blank=True, default='')
     hour = models.CharField(max_length=30, blank=True, default='')
     room = models.CharField(max_length=30, blank=True, default='')
-    teacherEdition = models.ForeignKey(TeacherEdition, on_delete=models.CASCADE)
+    teacherEdition = models.ForeignKey(TeacherEdition, on_delete=models.CASCADE, related_name='groups')
     students = models.ManyToManyField(Student, blank=True, related_name='groups')
 
     class Meta:
