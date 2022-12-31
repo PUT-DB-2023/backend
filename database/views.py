@@ -25,17 +25,17 @@ from django.core.validators import validate_email
 import json
 
 from database.password_generator import PasswordGenerator
-from .serializers import UserSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, PermissionSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, DBAccountSerializer, SimpleTeacherEditionSerializer
-from .models import User, Teacher, Student, Role, Permission, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
+from .serializers import UserSerializer, TeacherSerializer, StudentSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, DBAccountSerializer, SimpleTeacherEditionSerializer
+from .models import User, Teacher, Student, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
 
 class UserViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting users.
     """
     serializer_class = UserSerializer
-    queryset = User.objects.prefetch_related('roles')
+    queryset = User.objects.all()
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'roles', 'is_student', 'is_teacher', 'is_staff', 'is_superuser', 'is_active']
+    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'is_student', 'is_teacher', 'is_staff', 'is_superuser', 'is_active']
 
     def get_queryset(self):
         user = self.request.user
@@ -70,16 +70,14 @@ class TeacherViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting teachers.
     """
     serializer_class = TeacherSerializer
-    queryset = Teacher.objects.prefetch_related('editions__semester', 'editions__course')
+    queryset = Teacher.objects.all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id',
-        'user__id',
-        # 'user__password',
+        'user',
         'user__email',
         'user__first_name',
         'user__last_name',
-        'user__roles',
         'editions__semester',
         'editions__semester__start_year',
         'editions__semester__winter',
@@ -95,13 +93,13 @@ class TeacherViewSet(ModelViewSet):
             raise PermissionDenied
 
         if user.is_superuser:
-            return Teacher.objects.prefetch_related('editions__semester', 'editions__course')
+            return Teacher.objects.all()
         elif user.is_teacher:
             teacher = get_object_or_404(Teacher, user=self.request.user)
-            return Teacher.objects.prefetch_related('editions__semester', 'editions__course').filter(id=teacher.id)
+            return Teacher.objects.all().filter(id=teacher.id)
         elif user.is_student:
             student = get_object_or_404(Student, user=self.request.user)
-            return Teacher.objects.prefetch_related('editions__semester', 'editions__course').filter(teacheredition__groups__students=student).distinct()
+            return Teacher.objects.all().filter(teacheredition__groups__students=student).distinct()
         else:
             return Teacher.objects.none()
 
@@ -130,11 +128,11 @@ class StudentViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting students.
     """
     serializer_class = StudentSerializer
-    queryset = Student.objects.prefetch_related('groups', 'db_accounts')
+    queryset = Student.objects.all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id',
-        # 'password',
+        'user',
         'user__email',
         'user__first_name',
         'user__last_name',
@@ -152,13 +150,13 @@ class StudentViewSet(ModelViewSet):
             raise PermissionDenied
 
         if user.is_superuser:
-            return Student.objects.prefetch_related('groups', 'db_accounts')
+            return Student.objects.all()
         elif user.is_teacher:
             teacher = get_object_or_404(Teacher, user=self.request.user)
-            return Student.objects.prefetch_related('groups', 'db_accounts').filter(groups__edition__teachers=teacher).distinct()
+            return Student.objects.all().filter(groups__teacherEdition__teacher=teacher).distinct()
         elif user.is_student:
             student = get_object_or_404(Student, user=self.request.user)
-            return Student.objects.prefetch_related('groups', 'db_accounts').filter(id=student.id)
+            return Student.objects.all().filter(id=student.id)
         else:
             return Student.objects.none()
 
@@ -179,33 +177,6 @@ class StudentViewSet(ModelViewSet):
         if not user.get_permission('database.delete_student'):
             raise PermissionDenied()
         return super().destroy(request, *args, **kwargs)
-        
-
-class RoleViewSet(ModelViewSet):
-    """
-    A simple ViewSet for listing, retrieving and posting roles.
-    """
-    serializer_class = RoleSerializer
-    queryset = Role.objects.prefetch_related('permissions', 'users')
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = [
-        'id', 'name', 'description',
-        'permissions', 'permissions__name', 
-        'users', 'users__first_name', 'users__last_name',
-    ]
-
-
-class PermissionViewSet(ModelViewSet):
-    """
-    A simple ViewSet for listing, retrieving and posting permissions.
-    """
-    serializer_class = PermissionSerializer
-    queryset = Permission.objects.all()
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = [
-        'id', 'name', 'description',
-        'roles', 'roles__name', 'roles__users', 'roles__users__first_name', 'roles__users__last_name',
-    ]
 
 
 class MajorViewSet(ModelViewSet):
@@ -213,7 +184,7 @@ class MajorViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting majors.
     """
     serializer_class = MajorSerializer
-    queryset = Major.objects.prefetch_related('courses')
+    queryset = Major.objects.all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'courses', 'courses__name']
 
@@ -247,7 +218,7 @@ class CourseViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting courses.
     """
     serializer_class = CourseSerializer
-    queryset = Course.objects.prefetch_related('editions').order_by('id')
+    queryset = Course.objects.all().order_by('id')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'major', 'active', 'description', 'editions']
 
@@ -276,13 +247,13 @@ class CourseViewSet(ModelViewSet):
             raise PermissionDenied
 
         if user.is_superuser:
-            return Course.objects.prefetch_related('editions').order_by('id')
+            return Course.objects.all().order_by('id')
         elif user.is_teacher:
             teacher = get_object_or_404(Teacher, user=self.request.user)
-            return Course.objects.prefetch_related('editions').filter(editions__teachers=teacher).order_by('id').distinct()
+            return Course.objects.all().filter(editions__teachers=teacher).order_by('id').distinct()
         elif user.is_student:
             student = get_object_or_404(Student, user=self.request.user)
-            return Course.objects.prefetch_related('editions').filter(editions__teacheredition__groups__students=student).order_by('id').distinct()
+            return Course.objects.all().filter(editions__teacheredition__groups__students=student).order_by('id').distinct()
         else:
             return Course.objects.none()
 
@@ -292,7 +263,7 @@ class SemesterViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting semesters.
     """
     serializer_class = SemesterSerializer
-    queryset = Semester.objects.prefetch_related('editions')
+    queryset = Semester.objects.all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'start_year', 'winter', 'active', 'editions']
 
@@ -338,7 +309,7 @@ class SemesterViewSet(ModelViewSet):
         if not user.has_perm('database.view_semester'):
             raise PermissionDenied
 
-        return Semester.objects.prefetch_related('editions')
+        return Semester.objects.all()
 
 
 
@@ -362,7 +333,7 @@ class EditionViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting editions.
     """
     serializer_class = EditionSerializer
-    queryset = Edition.objects.prefetch_related('teachers', 'servers').select_related('course', 'semester')
+    queryset = Edition.objects.all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id', 
@@ -514,7 +485,7 @@ class TeacherEditionViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting teachers in editions.
     """
     serializer_class = TeacherEditionSerializer
-    queryset = TeacherEdition.objects.select_related('teacher', 'edition__semester', 'edition__course').prefetch_related('edition__servers').order_by('id')
+    queryset = TeacherEdition.objects.all().order_by('id')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id',
@@ -539,6 +510,14 @@ class TeacherEditionViewSet(ModelViewSet):
 
         if not user.has_perm('database.view_teacheredition'):
             raise PermissionDenied
+        if user.is_superuser:
+            return super().get_queryset()
+        elif user.is_teacher:
+            teacher = get_object_or_404(Teacher, user=self.request.user)
+            return TeacherEdition.objects.filter(teacher=teacher).order_by('id')
+        elif user.is_student:
+            student = get_object_or_404(Student, user=self.request.user)
+            return TeacherEdition.objects.filter(edition__groups__students=student).order_by('id')
 
         return super().get_queryset()
 
@@ -590,7 +569,7 @@ class GroupViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting groups.
     """
     serializer_class = GroupSerializer
-    queryset = Group.objects.select_related('teacherEdition__teacher', 'teacherEdition__edition__semester', 'teacherEdition__edition__course').prefetch_related('students', 'teacherEdition__edition__servers').order_by('id')
+    queryset = Group.objects.all().order_by('id')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id', 

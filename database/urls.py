@@ -4,11 +4,8 @@ from . import views
 
 router =  routers.DefaultRouter()
 router.register('users', views.UserViewSet, basename='users')
-# router.register('admins', views.AdminViewSet, basename='admins')
 router.register('teachers', views.TeacherViewSet, basename='teachers')
 router.register('students', views.StudentViewSet, basename='students')
-router.register('roles', views.RoleViewSet, basename='roles')
-router.register('permissions', views.PermissionViewSet, basename='permissions')
 router.register('majors', views.MajorViewSet, basename='majors')
 router.register('courses', views.CourseViewSet, basename='courses')
 router.register('semesters', views.SemesterViewSet, basename='semesters')

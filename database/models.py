@@ -58,18 +58,6 @@ class Student(models.Model):
     major = models.ForeignKey('Major', on_delete=models.SET_NULL, blank=True, null=True, related_name='students')
 
 
-class Permission(models.Model):
-    name = models.CharField(max_length=50, unique=True)
-    description = models.CharField(max_length=255, blank=True, default='')
-
-
-class Role(models.Model):
-    name = models.CharField(max_length=50, unique=True)
-    description = models.CharField(max_length=255, blank=True, default='')
-    permissions = models.ManyToManyField(Permission, blank=True, related_name='roles')
-    users = models.ManyToManyField(User, related_name='roles', blank=True)
-
-
 class Major(models.Model):
     name = models.CharField(max_length=50, unique=True)
     description = models.CharField(max_length=255, blank=True, default='')

@@ -1,13 +1,11 @@
 from django.contrib import admin
-from .models import User, Teacher, Student, Role, Permission, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
+from .models import User, Teacher, Student, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
 from django.contrib.auth.admin import UserAdmin
 
 # Register your models here.
 admin.site.register(User)
 admin.site.register(Teacher)
 admin.site.register(Student)
-admin.site.register(Role)
-admin.site.register(Permission)
 admin.site.register(Course)
 admin.site.register(Semester)
 admin.site.register(Edition)
