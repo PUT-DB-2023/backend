@@ -514,6 +514,7 @@ class TeacherEditionViewSet(ModelViewSet):
             return super().get_queryset()
         elif user.is_teacher:
             teacher = get_object_or_404(Teacher, user=self.request.user)
+            print(f"Teacher: {teacher}")
             return TeacherEdition.objects.filter(teacher=teacher).order_by('id')
         elif user.is_student:
             student = get_object_or_404(Student, user=self.request.user)
@@ -1068,7 +1069,7 @@ class LoadStudentsFromCSV(ViewSet):
     def load_students_csv(self, request, format=None):
 
         user = request.user
-        if not user.has_perm('database_accounts.load_from_csv'):
+        if not user.has_perm('database.load_from_csv'):
             raise PermissionDenied
 
         accounts_data = request.data

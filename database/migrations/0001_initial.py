@@ -34,8 +34,8 @@ def forwards_func(apps, schema_editor):
     # student_ct = ContentType.objects.get_for_model(Student)
     # teacher_ct = ContentType.objects.get_for_model(Teacher)
 
-    teacher_group, created = AuthGroup.objects.get_or_create(name='TeacherGroup')
-    student_group, created = AuthGroup.objects.get_or_create(name='StudentGroup')
+    teacher_group, _ = AuthGroup.objects.get_or_create(name='TeacherGroup')
+    student_group, _ = AuthGroup.objects.get_or_create(name='StudentGroup')
 
     db_alias = schema_editor.connection.alias
 
@@ -326,42 +326,44 @@ def forwards_func(apps, schema_editor):
                     username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password_generator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[7]
             )
 
-        view_course_permission, created = AuthPermission.objects.get_or_create(codename='view_course', content_type=ContentType.objects.get_for_model(Course))
+        view_course_permission, _ = AuthPermission.objects.get_or_create(codename='view_course', content_type=ContentType.objects.get_for_model(Course))
 
-        view_edition_permission, created = AuthPermission.objects.get_or_create(codename='view_edition', content_type=ContentType.objects.get_for_model(Edition))
+        view_edition_permission, _ = AuthPermission.objects.get_or_create(codename='view_edition', content_type=ContentType.objects.get_for_model(Edition))
 
-        add_group_permission, created = AuthPermission.objects.get_or_create(codename='add_group', content_type=ContentType.objects.get_for_model(Group))
-        change_group_permission, created = AuthPermission.objects.get_or_create(codename='change_group', content_type=ContentType.objects.get_for_model(Group))
-        view_group_permission, created = AuthPermission.objects.get_or_create(codename='view_group', content_type=ContentType.objects.get_for_model(Group))
-        delete_group_permission, created = AuthPermission.objects.get_or_create(codename='delete_group', content_type=ContentType.objects.get_for_model(Group))
+        add_group_permission, _ = AuthPermission.objects.get_or_create(codename='add_group', content_type=ContentType.objects.get_for_model(Group))
+        change_group_permission, _ = AuthPermission.objects.get_or_create(codename='change_group', content_type=ContentType.objects.get_for_model(Group))
+        view_group_permission, _ = AuthPermission.objects.get_or_create(codename='view_group', content_type=ContentType.objects.get_for_model(Group))
+        delete_group_permission, _ = AuthPermission.objects.get_or_create(codename='delete_group', content_type=ContentType.objects.get_for_model(Group))
 
-        add_user_permission, created = AuthPermission.objects.get_or_create(codename='add_user', content_type=ContentType.objects.get_for_model(User))
-        change_user_permission, created = AuthPermission.objects.get_or_create(codename='change_user', content_type=ContentType.objects.get_for_model(User))
-        view_user_permission, created = AuthPermission.objects.get_or_create(codename='view_user', content_type=ContentType.objects.get_for_model(User))
-        delete_user_permission, created = AuthPermission.objects.get_or_create(codename='delete_user', content_type=ContentType.objects.get_for_model(User))
+        add_user_permission, _ = AuthPermission.objects.get_or_create(codename='add_user', content_type=ContentType.objects.get_for_model(User))
+        change_user_permission, _ = AuthPermission.objects.get_or_create(codename='change_user', content_type=ContentType.objects.get_for_model(User))
+        view_user_permission, _ = AuthPermission.objects.get_or_create(codename='view_user', content_type=ContentType.objects.get_for_model(User))
+        delete_user_permission, _ = AuthPermission.objects.get_or_create(codename='delete_user', content_type=ContentType.objects.get_for_model(User))
 
-        add_student_permission, created = AuthPermission.objects.get_or_create(codename='add_student', content_type=ContentType.objects.get_for_model(Student))
-        change_student_permission, created = AuthPermission.objects.get_or_create(codename='change_student', content_type=ContentType.objects.get_for_model(Student))
-        view_student_permission, created = AuthPermission.objects.get_or_create(codename='view_student', content_type=ContentType.objects.get_for_model(Student))
-        delete_student_permission, created = AuthPermission.objects.get_or_create(codename='delete_student', content_type=ContentType.objects.get_for_model(Student))
+        add_student_permission, _ = AuthPermission.objects.get_or_create(codename='add_student', content_type=ContentType.objects.get_for_model(Student))
+        change_student_permission, _ = AuthPermission.objects.get_or_create(codename='change_student', content_type=ContentType.objects.get_for_model(Student))
+        view_student_permission, _ = AuthPermission.objects.get_or_create(codename='view_student', content_type=ContentType.objects.get_for_model(Student))
+        delete_student_permission, _ = AuthPermission.objects.get_or_create(codename='delete_student', content_type=ContentType.objects.get_for_model(Student))
 
-        add_teacher_permission, created = AuthPermission.objects.get_or_create(codename='add_teacher', content_type=ContentType.objects.get_for_model(Teacher))
-        change_teacher_permission, created = AuthPermission.objects.get_or_create(codename='change_teacher', content_type=ContentType.objects.get_for_model(Teacher))
-        view_teacher_permission, created = AuthPermission.objects.get_or_create(codename='view_teacher', content_type=ContentType.objects.get_for_model(Teacher))
-        delete_teacher_permission, created = AuthPermission.objects.get_or_create(codename='delete_teacher', content_type=ContentType.objects.get_for_model(Teacher))
+        add_teacher_permission, _ = AuthPermission.objects.get_or_create(codename='add_teacher', content_type=ContentType.objects.get_for_model(Teacher))
+        change_teacher_permission, _ = AuthPermission.objects.get_or_create(codename='change_teacher', content_type=ContentType.objects.get_for_model(Teacher))
+        view_teacher_permission, _ = AuthPermission.objects.get_or_create(codename='view_teacher', content_type=ContentType.objects.get_for_model(Teacher))
+        delete_teacher_permission, _ = AuthPermission.objects.get_or_create(codename='delete_teacher', content_type=ContentType.objects.get_for_model(Teacher))
 
-        add_dbaccount_permission, created = AuthPermission.objects.get_or_create(codename='add_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
-        change_dbaccount_permission, created = AuthPermission.objects.get_or_create(codename='change_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
-        delete_dbaccount_permission, created = AuthPermission.objects.get_or_create(codename='delete_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
-        view_dbaccount_permission, created = AuthPermission.objects.get_or_create(codename='view_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
+        add_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='add_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
+        change_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='change_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
+        delete_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='delete_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
+        view_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='view_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
 
-        move_dbaccount_permission, created = AuthPermission.objects.get_or_create(codename='move_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
+        view_teacheredition_permission, _ = AuthPermission.objects.get_or_create(codename='view_teacheredition', content_type=ContentType.objects.get_for_model(TeacherEdition))
 
-        load_from_csv_permission, created = AuthPermission.objects.get_or_create(codename='load_from_csv', content_type=ContentType.objects.get_for_model(Student))
+        move_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='move_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
 
-        AuthPermission.objects.get_or_create(codename='change_active_semester', content_type=ContentType.objects.get_for_model(Semester))
-        AuthPermission.objects.get_or_create(codename='add_students_to_group', content_type=ContentType.objects.get_for_model(Group))
-        AuthPermission.objects.get_or_create(codename='remove_student_from_group', content_type=ContentType.objects.get_for_model(Group))
+        load_from_csv_permission, _ = AuthPermission.objects.get_or_create(codename='load_from_csv', content_type=ContentType.objects.get_for_model(Student))
+
+        change_active_semester_permission, _ = AuthPermission.objects.get_or_create(codename='change_active_semester', content_type=ContentType.objects.get_for_model(Semester))
+        add_students_to_group_permission, _ = AuthPermission.objects.get_or_create(codename='add_students_to_group', content_type=ContentType.objects.get_for_model(Group))
+        remove_student_from_group_permission, _ = AuthPermission.objects.get_or_create(codename='remove_student_from_group', content_type=ContentType.objects.get_for_model(Group))
 
         teacher_group.permissions.add(view_course_permission.pk)
         teacher_group.permissions.add(view_edition_permission.pk)
@@ -384,6 +386,9 @@ def forwards_func(apps, schema_editor):
         teacher_group.permissions.add(view_dbaccount_permission.pk)
         teacher_group.permissions.add(move_dbaccount_permission.pk)
         teacher_group.permissions.add(load_from_csv_permission.pk)
+        teacher_group.permissions.add(view_teacheredition_permission.pk)
+        teacher_group.permissions.add(add_students_to_group_permission.pk)
+        teacher_group.permissions.add(remove_student_from_group_permission.pk)
 
         student_group.permissions.add(view_course_permission.pk)
         student_group.permissions.add(view_edition_permission.pk)
