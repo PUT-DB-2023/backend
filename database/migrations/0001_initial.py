@@ -357,6 +357,8 @@ def forwards_func(apps, schema_editor):
 
         view_teacheredition_permission, _ = AuthPermission.objects.get_or_create(codename='view_teacheredition', content_type=ContentType.objects.get_for_model(TeacherEdition))
 
+        view_semester_permission, _ = AuthPermission.objects.get_or_create(codename='view_semester', content_type=ContentType.objects.get_for_model(Semester))
+
         move_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='move_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
 
         load_from_csv_permission, _ = AuthPermission.objects.get_or_create(codename='load_from_csv', content_type=ContentType.objects.get_for_model(Student))
@@ -389,6 +391,7 @@ def forwards_func(apps, schema_editor):
         teacher_group.permissions.add(view_teacheredition_permission.pk)
         teacher_group.permissions.add(add_students_to_group_permission.pk)
         teacher_group.permissions.add(remove_student_from_group_permission.pk)
+        # teacher_group.permissions.add(view_semester_permission.pk)
 
         student_group.permissions.add(view_course_permission.pk)
         student_group.permissions.add(view_edition_permission.pk)
@@ -397,6 +400,8 @@ def forwards_func(apps, schema_editor):
         student_group.permissions.add(view_teacher_permission.pk)
         student_group.permissions.add(view_user_permission.pk)
         student_group.permissions.add(view_dbaccount_permission.pk)
+        # student_group.permissions.add(view_semester_permission.pk)
+        
 
 class Migration(migrations.Migration):
 

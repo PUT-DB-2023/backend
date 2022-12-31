@@ -153,10 +153,10 @@ class StudentViewSet(ModelViewSet):
             return Student.objects.all()
         elif user.is_teacher:
             teacher = get_object_or_404(Teacher, user=self.request.user)
-            return Student.objects.all().filter(groups__teacherEdition__teacher=teacher).distinct()
+            return Student.objects.filter(groups__teacherEdition__teacher=teacher).distinct()
         elif user.is_student:
             student = get_object_or_404(Student, user=self.request.user)
-            return Student.objects.all().filter(id=student.id)
+            return Student.objects.filter(id=student.id)
         else:
             return Student.objects.none()
 
@@ -558,6 +558,7 @@ class SimpleTeacherEditionViewSet(ModelViewSet):
     filterset_fields = [
         'id',
         'teacher',
+        'teacher__user'
         'teacher__user__first_name',
         'teacher__user__last_name',
         'edition',
@@ -605,13 +606,15 @@ class GroupViewSet(ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         all_accounts_moved = True
-        for student in instance.students.all():
-            for db_account in student.db_accounts.all():
-                if db_account.is_moved == False:
-                    all_accounts_moved = False
+
+        if not user.is_student:
+            for student in instance.students.all():
+                for db_account in student.db_accounts.all():
+                    if db_account.is_moved == False:
+                        all_accounts_moved = False
+                        break
+                if all_accounts_moved == False:
                     break
-            if all_accounts_moved == False:
-                break
         resp = serializer.data
         resp['all_accounts_moved'] = all_accounts_moved
         return Response(resp, status=200)
