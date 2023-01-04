@@ -29,4 +29,6 @@ urlpatterns = [
     path('remove_student_from_group', views.RemoveStudentFromGroup.as_view({'post': 'remove_student_from_group'})),
     path('login', views.LoginView.as_view({'post': 'login_user'})),
     path('logout', views.LogoutView.as_view({'post': 'logout_user'})),
+    path('reset_system_password', views.ResetSystemPassword.as_view({'post': 'reset_system_password'})),
+    path('update_password_after_reset', views.UpdatePasswordAfterReset.as_view({'post': 'update_password_after_reset'})),
 ]

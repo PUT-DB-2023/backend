@@ -367,6 +367,9 @@ def forwards_func(apps, schema_editor):
         add_students_to_group_permission, _ = AuthPermission.objects.get_or_create(codename='add_students_to_group', content_type=ContentType.objects.get_for_model(Group))
         remove_student_from_group_permission, _ = AuthPermission.objects.get_or_create(codename='remove_student_from_group', content_type=ContentType.objects.get_for_model(Group))
 
+        reset_system_password_permission, _ = AuthPermission.objects.get_or_create(codename='reset_system_password', content_type=ContentType.objects.get_for_model(User))
+        update_password_after_reset_permission, _ = AuthPermission.objects.get_or_create(codename='update_password_after_reset', content_type=ContentType.objects.get_for_model(User))
+
         teacher_group.permissions.add(view_course_permission.pk)
         teacher_group.permissions.add(view_edition_permission.pk)
         teacher_group.permissions.add(add_group_permission.pk)
@@ -391,6 +394,8 @@ def forwards_func(apps, schema_editor):
         teacher_group.permissions.add(view_teacheredition_permission.pk)
         teacher_group.permissions.add(add_students_to_group_permission.pk)
         teacher_group.permissions.add(remove_student_from_group_permission.pk)
+        teacher_group.permissions.add(reset_system_password_permission.pk)
+        teacher_group.permissions.add(update_password_after_reset_permission.pk)
         # teacher_group.permissions.add(view_semester_permission.pk)
 
         student_group.permissions.add(view_course_permission.pk)
@@ -400,6 +405,7 @@ def forwards_func(apps, schema_editor):
         student_group.permissions.add(view_teacher_permission.pk)
         student_group.permissions.add(view_user_permission.pk)
         student_group.permissions.add(view_dbaccount_permission.pk)
+        student_group.permissions.add(update_password_after_reset_permission.pk)
         # student_group.permissions.add(view_semester_permission.pk)
         
 

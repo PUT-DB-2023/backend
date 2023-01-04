@@ -9,6 +9,7 @@ from rest_framework.viewsets import ModelViewSet, ViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
+from django.contrib.auth.hashers import check_password
 
 import MySQLdb as mdb
 import psycopg2
@@ -25,6 +26,7 @@ from django.core.validators import validate_email
 import json
 
 from database.password_generator import PasswordGenerator
+from database.sender import EmailSender
 from .serializers import UserSerializer, TeacherSerializer, StudentSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, DBAccountSerializer, SimpleTeacherEditionSerializer
 from .models import User, Teacher, Student, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
 
@@ -1391,3 +1393,86 @@ class RemoveStudentFromGroup(ViewSet):
         except Exception as error:
             print(error)
             return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
+
+class ResetSystemPassword(ViewSet):
+    
+        @action (methods=['post'], detail=False)
+        def reset_system_password(self, request, format=None):
+    
+            user = request.user
+    
+            if not user.has_perm('database.reset_system_password'):
+                raise PermissionDenied
+    
+            data = request.data
+            print('Request log:', data)
+    
+            if 'account_id' not in data:
+                print('Error: account_id not found in request data.')
+                return HttpResponseBadRequest(json.dumps({'name': 'Nie podano konta.'}), headers={'Content-Type': 'application/json'})
+    
+            account_id = data['account_id']
+
+            passwordGenerator = PasswordGenerator()
+            email_sender = EmailSender()
+    
+            try:
+                account_to_reset = User.objects.get(id=account_id)
+                new_password = passwordGenerator.generate_password()
+                account_to_reset.set_password(new_password)
+                account_to_reset.save()
+                print("Password reseted for account: ", account_to_reset.first_name + " " + account_to_reset.last_name)
+                email_sender.send_email_gmail("putdb2023@gmail.com", new_password)
+                return JsonResponse({'name': "Succesfull password reset for account of id: " + str(account_to_reset.id)}, status=200)
+
+            except Exception as error:
+                print(error)
+                return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
+
+class UpdatePasswordAfterReset(ViewSet):
+
+    @action (methods=['post'], detail=False)
+    def update_password_after_reset(self, request, format=None):
+
+        user = request.user
+
+        if not user.has_perm('database.update_password_after_reset'):
+            raise PermissionDenied
+
+        data = request.data
+
+        if 'account_id' not in data:
+            print('Error: account_id not found in request data.')
+            return HttpResponseBadRequest(json.dumps({'name': 'Nie podano konta.'}), headers={'Content-Type': 'application/json'})
+
+        if 'current_password' not in data:
+            print('Error: current_password not found in request data.')
+            return HttpResponseBadRequest(json.dumps({'name': 'Nie podano hasła.'}), headers={'Content-Type': 'application/json'})
+
+        if 'new_password' not in data:
+            print('Error: new_password not found in request data.')
+            return HttpResponseBadRequest(json.dumps({'name': 'Nie podano nowego hasła.'}), headers={'Content-Type': 'application/json'})
+
+
+        account_id = data['account_id']
+        old_password = data['current_password']
+        new_password = data['new_password']
+
+
+        try:
+            account_to_update = User.objects.get(id=account_id)
+            # hash the old_password variable so it matches the hash in the database
+            if check_password(old_password, account_to_update.password):
+                account_to_update.set_password(new_password)
+                account_to_update.save()
+                print("Password updated for account: ", account_to_update.first_name + " " + account_to_update.last_name)
+                return JsonResponse({'name': "Succesfull password update for account of id: " + str(account_to_update.id)}, status=200)
+            else:
+                print("Wrong password for account: ", account_to_update.first_name + " " + account_to_update.last_name)
+                return HttpResponseBadRequest(json.dumps({'name': 'Niepoprawne hasło.'}), headers={'Content-Type': 'application/json'})
+        except Exception as error:
+            print(error)
+            return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
+
+
+        

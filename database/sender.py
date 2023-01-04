@@ -42,8 +42,3 @@ class EmailSender:
         server.login("putdb2023@gmail.com", "zutwbrlimiopqovl")
         server.send_message(msg)
         server.quit()
-
-        
-sender = EmailSender()
-sender.send_email_gmail("test")
-
