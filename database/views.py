@@ -49,19 +49,19 @@ class UserViewSet(ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.add_user'):
+        if not user.has_perm('database.add_user'):
             raise PermissionDenied()
         return super().create(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.change_user'):
+        if not user.has_perm('database.change_user'):
             raise PermissionDenied()
         return super().update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.delete_user'):
+        if not user.has_perm('database.delete_user'):
             raise PermissionDenied()
         return super().destroy(request, *args, **kwargs)
 
@@ -108,19 +108,41 @@ class TeacherViewSet(ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.add_teacher'):
+        if not user.has_perm('database.add_teacher'):
             raise PermissionDenied()
-        return super().create(request, *args, **kwargs)
+        # check if request.data contains fields from user model
+        if 'email' in request.data and 'first_name' in request.data and 'last_name' in request.data:
+            try:
+                user = User.objects.create_user(
+                    email=request.data['email'],
+                    first_name=request.data['first_name'],
+                    last_name=request.data['last_name'],
+                    password = 'password',
+                    # password=PasswordGenerator(10).generate_password(),
+                    is_teacher=True,
+                )
+                teacher = Teacher.objects.create(user=user)
+                # TODO: send email with password
+                return Response(TeacherSerializer(teacher).data)
+            except IntegrityError:
+                return JsonResponse({'name': 'User with this email already exists'}, status=400)
+            except ValidationError:
+                return JsonResponse({'name': 'Invalid email'}, status=400)
+            except Exception as e:
+                return JsonResponse({'name': str(e)}, status=400)
+        else:
+            return JsonResponse({'name': 'Missing fields'}, status=400)
+
 
     def update(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.change_teacher'):
+        if not user.has_perm('database.change_teacher'):
             raise PermissionDenied()
         return super().update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.delete_teacher'):
+        if not user.has_perm('database.delete_teacher'):
             raise PermissionDenied()
         return super().destroy(request, *args, **kwargs)
         
@@ -164,19 +186,40 @@ class StudentViewSet(ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.add_student'):
+        if not user.has_perm('database.add_student'):
             raise PermissionDenied()
-        return super().create(request, *args, **kwargs)
+        
+        # check if request.data contains fields from user model
+        if 'email' in request.data and 'first_name' in request.data and 'last_name' in request.data and 'student_id' in request.data:
+            try:
+                user = User.objects.create_user(
+                    email=request.data['email'],
+                    first_name=request.data['first_name'],
+                    last_name=request.data['last_name'],
+                    password=PasswordGenerator(10).generate_password(),
+                    is_student=True,
+                )
+                student = Student.objects.create(user=user, student_id=request.data['student_id'])
+                # TODO: send email with password
+                return JsonResponse({'name': StudentSerializer(student).data})
+            except IntegrityError:
+                return JsonResponse({'name': 'User with this email already exists'}, status=400)
+            except ValidationError:
+                return JsonResponse({'name': 'Invalid email'}, status=400)
+            except Exception as e:
+                return JsonResponse({'name': str(e)}, status=400)
+        else:
+            return JsonResponse({'name': 'Missing fields'}, status=400)
 
     def update(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.change_student'):
+        if not user.has_perm('database.change_student'):
             raise PermissionDenied()
         return super().update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.delete_student'):
+        if not user.has_perm('database.delete_student'):
             raise PermissionDenied()
         return super().destroy(request, *args, **kwargs)
 
@@ -192,19 +235,19 @@ class MajorViewSet(ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.add_major'):
+        if not user.has_perm('database.add_major'):
             raise PermissionDenied()
         return super().create(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.change_major'):
+        if not user.has_perm('database.change_major'):
             raise PermissionDenied()
         return super().update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.delete_major'):
+        if not user.has_perm('database.delete_major'):
             raise PermissionDenied()
         return super().destroy(request, *args, **kwargs)
 
