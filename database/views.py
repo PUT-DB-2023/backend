@@ -153,18 +153,41 @@ class TeacherViewSet(ModelViewSet):
         else:
             return JsonResponse({'name': 'Missing fields'}, status=400)
 
-
     def update(self, request, *args, **kwargs):
         user = request.user
         if not user.has_perm('database.change_teacher'):
             raise PermissionDenied()
-        return super().update(request, *args, **kwargs)
+        
+        # check if request.data contains fields from user model
+        if 'email' in request.data and 'first_name' in request.data and 'last_name' in request.data:
+            try:
+                teacher = self.get_object()
+                user = teacher.user
+                user.email = request.data['email']
+                user.first_name = request.data['first_name']
+                user.last_name = request.data['last_name']
+                user.save()
+                return Response(TeacherSerializer(teacher).data)
+            except IntegrityError:
+                return JsonResponse({'name': 'User with this email already exists'}, status=400)
+            except ValidationError:
+                return JsonResponse({'name': 'Invalid email'}, status=400)
+            except Exception as e:
+                return JsonResponse({'name': str(e)}, status=400)
+        else:
+            return JsonResponse({'name': 'Missing fields'}, status=400)
 
     def destroy(self, request, *args, **kwargs):
         user = request.user
         if not user.has_perm('database.delete_teacher'):
             raise PermissionDenied()
-        return super().destroy(request, *args, **kwargs)
+        # delete user
+        teacher = self.get_object()
+        user = teacher.user
+        user.delete()
+        # delete teacher
+        teacher.delete()
+        return Response(status=204)
         
 
 class StudentViewSet(ModelViewSet):
@@ -258,13 +281,39 @@ class StudentViewSet(ModelViewSet):
         user = request.user
         if not user.has_perm('database.change_student'):
             raise PermissionDenied()
-        return super().update(request, *args, **kwargs)
+        
+        # check if request.data contains fields from user model
+        if 'email' in request.data and 'first_name' in request.data and 'last_name' in request.data and 'student_id' in request.data:
+            try:
+                student = self.get_object()
+                user = student.user
+                user.email = request.data['email']
+                user.first_name = request.data['first_name']
+                user.last_name = request.data['last_name']
+                user.save()
+                student.student_id = request.data['student_id']
+                student.save()
+                return Response(StudentSerializer(student).data)
+            except IntegrityError:
+                return JsonResponse({'name': 'User with this email already exists'}, status=400)
+            except ValidationError:
+                return JsonResponse({'name': 'Invalid email'}, status=400)
+            except Exception as e:
+                return JsonResponse({'name': str(e)}, status=400)
+        else:
+            return JsonResponse({'name': 'Missing fields'}, status=400)
 
     def destroy(self, request, *args, **kwargs):
         user = request.user
         if not user.has_perm('database.delete_student'):
             raise PermissionDenied()
-        return super().destroy(request, *args, **kwargs)
+        # delete user
+        student = self.get_object()
+        user = student.user
+        user.delete()
+        # delete student
+        student.delete()
+        return Response(status=204)
 
 
 class MajorViewSet(ModelViewSet):
