@@ -78,15 +78,15 @@ class StudentSerializer(ModelSerializer):
             'user',
             'student_id',
             'major',
-            'groups',
-            'db_accounts',
+            # 'groups',
+            # 'db_accounts',
         ]
     
     def to_representation(self, instance):
         self.fields['user'] = BasicUserSerializer(read_only=True)
         self.fields['major'] = BasicMajorSerializer(read_only=True)
-        self.fields['groups'] = BasicGroupSerializer(many=True, read_only=True)
-        self.fields['db_accounts'] = BasicDBAccountSerializer(many=True, read_only=True)
+        # self.fields['groups'] = BasicGroupSerializer(many=True, read_only=True)
+        # self.fields['db_accounts'] = BasicDBAccountSerializer(many=True, read_only=True)
         return super(StudentSerializer, self).to_representation(instance)
 
 
@@ -332,6 +332,23 @@ class BasicGroupSerializer(ModelSerializer):
             'room',
             'teacherEdition',
         ]
+
+
+class GroupSerializerForStudent(ModelSerializer):
+    class Meta:
+        model = Group
+        fields = [
+            'id',
+            'name',
+            'day',
+            'hour',
+            'room',
+            'teacherEdition',
+        ]
+    
+    def to_representation(self, instance):
+        self.fields['teacherEdition'] = TeacherEditionSerializer(many=False, read_only=True)
+        return super(GroupSerializerForStudent, self).to_representation(instance)
 
 
 class ServerSerializer(ModelSerializer):

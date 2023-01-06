@@ -28,7 +28,7 @@ import json
 
 from database.password_generator import PasswordGenerator
 from database.sender import EmailSender
-from .serializers import UserSerializer, TeacherSerializer, StudentSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, DBAccountSerializer, SimpleTeacherEditionSerializer
+from .serializers import UserSerializer, TeacherSerializer, StudentSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, GroupSerializerForStudent, ServerSerializer, EditionServerSerializer, DBAccountSerializer, SimpleTeacherEditionSerializer
 from .models import User, Teacher, Student, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
 
 class UserViewSet(ModelViewSet):
@@ -89,7 +89,7 @@ class TeacherViewSet(ModelViewSet):
         'editions__course__name',
     ]
 
-    def grant_teacher_permissions(user):
+    def grant_teacher_permissions(self, user):
         teacher_group = AuthGroup.objects.get(name='TeacherGroup')
         user.groups.add(teacher_group)
 
@@ -175,7 +175,7 @@ class StudentViewSet(ModelViewSet):
         'db_accounts__editionServer__server__name',
     ]
 
-    def grant_student_permissions(user):
+    def grant_student_permissions(self, user):
         student_group = AuthGroup.objects.get(name='StudentGroup')
         user.groups.add(student_group)
 
@@ -195,6 +195,21 @@ class StudentViewSet(ModelViewSet):
             return Student.objects.filter(id=student.id)
         else:
             return Student.objects.none()
+
+    def retrieve(self, request, *args, **kwargs):
+        user = request.user
+
+        if not user.has_perm('database.view_student'):
+            raise PermissionDenied
+
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        groups = instance.groups.all()
+        db_accounts = instance.db_accounts.all()
+        resp = serializer.data
+        resp['groups'] = GroupSerializerForStudent(groups, many=True).data
+        resp['db_accounts'] = DBAccountSerializer(db_accounts, many=True).data
+        return Response(resp, status=200)
 
     def create(self, request, *args, **kwargs):
         user = request.user
