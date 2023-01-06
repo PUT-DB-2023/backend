@@ -36,12 +36,12 @@ class TeacherSerializer(ModelSerializer):
         fields = [
             'id',
             'user',
-            'editions',
+            # 'editions',
         ]
 
     def to_representation(self, instance):
         self.fields['user'] = BasicUserSerializer(read_only=True)
-        self.fields['editions'] = BasicEditionSerializer(many=True, read_only=True)
+        # self.fields['editions'] = BasicEditionSerializer(many=True, read_only=True)
         return super(TeacherSerializer, self).to_representation(instance)
 
 

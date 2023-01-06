@@ -28,7 +28,7 @@ import json
 
 from database.password_generator import PasswordGenerator
 from database.sender import EmailSender
-from .serializers import UserSerializer, TeacherSerializer, StudentSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, GroupSerializerForStudent, ServerSerializer, EditionServerSerializer, DBAccountSerializer, SimpleTeacherEditionSerializer
+from .serializers import UserSerializer, TeacherSerializer, StudentSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, BasicEditionSerializer, TeacherEditionSerializer, GroupSerializer, GroupSerializerForStudent, ServerSerializer, EditionServerSerializer, DBAccountSerializer, SimpleTeacherEditionSerializer
 from .models import User, Teacher, Student, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
 
 class UserViewSet(ModelViewSet):
@@ -110,6 +110,18 @@ class TeacherViewSet(ModelViewSet):
         else:
             return Teacher.objects.none()
 
+    def retrieve(self, request, *args, **kwargs):
+        user = request.user
+
+        if not user.has_perm('database.view_teacher'):
+            raise PermissionDenied
+
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        editions = Edition.objects.filter(teacheredition__teacher=instance)
+        resp = serializer.data
+        resp['editions'] = BasicEditionSerializer(editions, many=True).data
+        return Response(resp, status=200)
 
     def create(self, request, *args, **kwargs):
         user = request.user
@@ -127,7 +139,7 @@ class TeacherViewSet(ModelViewSet):
                     password = new_password,
                     is_teacher=True,
                 )
-                TeacherViewSet.grant_teacher_permissions(user)
+                TeacherViewSet.grant_teacher_permissions(self, user)
                 teacher = Teacher.objects.create(user=user)
                 email_sender = EmailSender()
                 email_sender.send_email_gmail("putdb2023@gmail.com", new_password)
@@ -228,7 +240,7 @@ class StudentViewSet(ModelViewSet):
                     password=new_password,
                     is_student=True,
                 )
-                StudentViewSet.grant_student_permissions(user)
+                StudentViewSet.grant_student_permissions(self, user)
                 student = Student.objects.create(user=user, student_id=request.data['student_id'])
                 email_sender = EmailSender()
                 email_sender.send_email_gmail("putdb2023@gmail.com", new_password)
