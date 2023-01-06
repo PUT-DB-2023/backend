@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from django.contrib.auth.hashers import check_password
+from django.contrib.auth.models import Group as AuthGroup
 
 import MySQLdb as mdb
 import psycopg2
@@ -88,6 +89,10 @@ class TeacherViewSet(ModelViewSet):
         'editions__course__name',
     ]
 
+    def grant_teacher_permissions(user):
+        teacher_group = AuthGroup.objects.get(name='TeacherGroup')
+        user.groups.add(teacher_group)
+
     def get_queryset(self):
         user = self.request.user
 
@@ -113,16 +118,19 @@ class TeacherViewSet(ModelViewSet):
         # check if request.data contains fields from user model
         if 'email' in request.data and 'first_name' in request.data and 'last_name' in request.data:
             try:
+                # new_password = PasswordGenerator(10).generate_password()
+                new_password = 'password'
                 user = User.objects.create_user(
                     email=request.data['email'],
                     first_name=request.data['first_name'],
                     last_name=request.data['last_name'],
-                    password = 'password',
-                    # password=PasswordGenerator(10).generate_password(),
+                    password = new_password,
                     is_teacher=True,
                 )
+                TeacherViewSet.grant_teacher_permissions(user)
                 teacher = Teacher.objects.create(user=user)
-                # TODO: send email with password
+                email_sender = EmailSender()
+                email_sender.send_email_gmail("putdb2023@gmail.com", new_password)
                 return Response(TeacherSerializer(teacher).data)
             except IntegrityError:
                 return JsonResponse({'name': 'User with this email already exists'}, status=400)
@@ -167,6 +175,10 @@ class StudentViewSet(ModelViewSet):
         'db_accounts__editionServer__server__name',
     ]
 
+    def grant_student_permissions(user):
+        student_group = AuthGroup.objects.get(name='StudentGroup')
+        user.groups.add(student_group)
+
     def get_queryset(self):
         user = self.request.user
         
@@ -192,15 +204,19 @@ class StudentViewSet(ModelViewSet):
         # check if request.data contains fields from user model
         if 'email' in request.data and 'first_name' in request.data and 'last_name' in request.data and 'student_id' in request.data:
             try:
+                # new_password = PasswordGenerator(10).generate_password()
+                new_password = 'password'
                 user = User.objects.create_user(
                     email=request.data['email'],
                     first_name=request.data['first_name'],
                     last_name=request.data['last_name'],
-                    password=PasswordGenerator(10).generate_password(),
+                    password=new_password,
                     is_student=True,
                 )
+                StudentViewSet.grant_student_permissions(user)
                 student = Student.objects.create(user=user, student_id=request.data['student_id'])
-                # TODO: send email with password
+                email_sender = EmailSender()
+                email_sender.send_email_gmail("putdb2023@gmail.com", new_password)
                 return JsonResponse({'name': StudentSerializer(student).data})
             except IntegrityError:
                 return JsonResponse({'name': 'User with this email already exists'}, status=400)
