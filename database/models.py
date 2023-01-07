@@ -50,6 +50,9 @@ class User(AbstractUser, PermissionsMixin):
 class Teacher(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='teacher')
 
+    def __str__(self):
+        return f"{self.user.first_name} {self.user.last_name}"
+
 
 class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student')
@@ -57,10 +60,16 @@ class Student(models.Model):
     student_id = models.CharField(max_length=6, unique=True)
     major = models.ForeignKey('Major', on_delete=models.SET_NULL, blank=True, null=True, related_name='students')
 
+    def __str__(self):
+        return f"{self.user.first_name} {self.user.last_name}"
+
 
 class Major(models.Model):
     name = models.CharField(max_length=50, unique=True)
     description = models.CharField(max_length=255, blank=True, default='')
+
+    def __str__(self):
+        return self.name
 
 class Course(models.Model):
     name = models.CharField(max_length=50, unique=True)
@@ -85,6 +94,9 @@ class Course(models.Model):
             print(f"No editions found for course: {self}")
             self.active = False
         super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
 
 
 class Semester(models.Model):
@@ -125,6 +137,10 @@ class Semester(models.Model):
         for course in Course.objects.all():
             print(f"Checking course: {course}")
             course.save()
+    
+    def __str__(self):
+        # return year and winter if self.winter=True, else return year and summer
+        return f"{self.start_year}/{self.start_year + 1} - {'zima' if self.winter else 'lato'}"
 
 class Edition(models.Model):
     description = models.CharField(max_length=255, blank=True, default='')
@@ -157,6 +173,8 @@ class Edition(models.Model):
         print("Saving course")
         self.course.save()
 
+    def __str__(self):
+        return f"{self.course} - {self.semester}"
 
 class TeacherEdition(models.Model):
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
@@ -166,6 +184,9 @@ class TeacherEdition(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['teacher', 'edition'], name='unique_teacher_edition'),
         ]
+    
+    def __str__(self):
+        return f"{self.teacher} - {self.edition}"
 
 
 class Group(models.Model):
@@ -180,6 +201,9 @@ class Group(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['teacherEdition', 'name'], name='unique_group'),
         ]
+    
+    def __str__(self):
+        return self.name
 
 
 # class DBProvider(models.Model):
@@ -203,12 +227,18 @@ class Server(models.Model):
     delete_user_template = models.CharField(max_length=255, blank=True, default='')
     username_template = models.CharField(max_length=255, null=True)
 
+    def __str__(self):
+        return f"{self.name} - {self.provider}"
+
 class EditionServer(models.Model):
     edition = models.ForeignKey(Edition, on_delete=models.CASCADE)
     server = models.ForeignKey(Server, on_delete=models.CASCADE)
     additional_info = models.CharField(max_length=255, blank=True, default='')
     # username_template = models.CharField(max_length=255, null=True)
     # passwd_template = models.CharField(max_length=255, null=True)
+
+    def __str__(self):
+        return f"{self.edition} - {self.server}"
 
 class DBAccount(models.Model):
     username = models.CharField(max_length=30)
@@ -222,3 +252,6 @@ class DBAccount(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['username', 'editionServer'], name='unique_username_editionserver'),
         ]
+    
+    def __str__(self):
+        return self.username
