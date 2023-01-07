@@ -15,8 +15,8 @@ router.register('groups', views.GroupViewSet, basename='groups')
 router.register('servers', views.ServerViewSet, basename='servers')
 router.register('edition_servers', views.EditionServerViewSet, basename='edition_servers')
 router.register('db_accounts', views.DBAccountViewSet, basename='db_accounts')
-router.register('basic_teacher_editions', views.SimpleTeacherEditionViewSet, basename='simple_teacher_editions')
-router.register('basic_semesters', views.SimpleSemesterViewSet, basename='simple_semesters')
+# router.register('basic_teacher_editions', views.SimpleTeacherEditionViewSet, basename='simple_teacher_editions')
+# router.register('basic_semesters', views.SimpleSemesterViewSet, basename='simple_semesters')
 
 
 urlpatterns = [

@@ -28,7 +28,8 @@ import json
 
 from database.password_generator import PasswordGenerator
 from database.sender import EmailSender
-from .serializers import UserSerializer, TeacherSerializer, StudentSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, BasicEditionSerializer, TeacherEditionSerializer, GroupSerializer, GroupSerializerForStudent, ServerSerializer, EditionServerSerializer, DBAccountSerializer, SimpleTeacherEditionSerializer
+from .serializers import UserSerializer, TeacherSerializer, DetailedTeacherSerializer, StudentSerializer, DetailedStudentSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, BasicEditionSerializer, TeacherEditionSerializer, GroupSerializer, DetailedGroupSerializer, GroupSerializerForStudent, ServerSerializer, EditionServerSerializer, DBAccountSerializer
+# , SimpleTeacherEditionSerializer
 from .models import User, Teacher, Student, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
 
 class UserViewSet(ModelViewSet):
@@ -89,6 +90,11 @@ class TeacherViewSet(ModelViewSet):
         'editions__course__name',
     ]
 
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return DetailedTeacherSerializer
+        return TeacherSerializer
+
     def grant_teacher_permissions(self, user):
         teacher_group = AuthGroup.objects.get(name='TeacherGroup')
         user.groups.add(teacher_group)
@@ -109,19 +115,6 @@ class TeacherViewSet(ModelViewSet):
             return Teacher.objects.all().filter(teacheredition__groups__students=student).distinct()
         else:
             return Teacher.objects.none()
-
-    def retrieve(self, request, *args, **kwargs):
-        user = request.user
-
-        if not user.has_perm('database.view_teacher'):
-            raise PermissionDenied
-
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        editions = Edition.objects.filter(teacheredition__teacher=instance)
-        resp = serializer.data
-        resp['editions'] = BasicEditionSerializer(editions, many=True).data
-        return Response(resp, status=200)
 
     def create(self, request, *args, **kwargs):
         user = request.user
@@ -210,6 +203,11 @@ class StudentViewSet(ModelViewSet):
         'db_accounts__editionServer__server__name',
     ]
 
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return DetailedStudentSerializer
+        return StudentSerializer
+
     def grant_student_permissions(self, user):
         student_group = AuthGroup.objects.get(name='StudentGroup')
         user.groups.add(student_group)
@@ -231,20 +229,20 @@ class StudentViewSet(ModelViewSet):
         else:
             return Student.objects.none()
 
-    def retrieve(self, request, *args, **kwargs):
-        user = request.user
+    # def retrieve(self, request, *args, **kwargs):
+    #     user = request.user
 
-        if not user.has_perm('database.view_student'):
-            raise PermissionDenied
+    #     if not user.has_perm('database.view_student'):
+    #         raise PermissionDenied
 
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        groups = instance.groups.all()
-        db_accounts = instance.db_accounts.all()
-        resp = serializer.data
-        resp['groups'] = GroupSerializerForStudent(groups, many=True).data
-        resp['db_accounts'] = DBAccountSerializer(db_accounts, many=True).data
-        return Response(resp, status=200)
+    #     instance = self.get_object()
+    #     serializer = self.get_serializer(instance)
+    #     groups = instance.groups.all()
+    #     db_accounts = instance.db_accounts.all()
+    #     resp = serializer.data
+    #     resp['groups'] = GroupSerializerForStudent(groups, many=True).data
+    #     resp['db_accounts'] = DBAccountSerializer(db_accounts, many=True).data
+    #     return Response(resp, status=200)
 
     def create(self, request, *args, **kwargs):
         user = request.user
@@ -685,21 +683,21 @@ class TeacherEditionViewSet(ModelViewSet):
 
 
 
-class SimpleTeacherEditionViewSet(ModelViewSet):
-    """
-    A simple ViewSet for listing, retrieving and posting teachers in editions.
-    """
-    serializer_class = SimpleTeacherEditionSerializer
-    queryset = TeacherEdition.objects.select_related('teacher').only('id', 'teacher_id')
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = [
-        'id',
-        'teacher',
-        'teacher__user'
-        'teacher__user__first_name',
-        'teacher__user__last_name',
-        'edition',
-    ]
+# class SimpleTeacherEditionViewSet(ModelViewSet):
+#     """
+#     A simple ViewSet for listing, retrieving and posting teachers in editions.
+#     """
+#     serializer_class = SimpleTeacherEditionSerializer
+#     queryset = TeacherEdition.objects.select_related('teacher').only('id', 'teacher_id')
+#     filter_backends = [DjangoFilterBackend]
+#     filterset_fields = [
+#         'id',
+#         'teacher',
+#         'teacher__user',
+#         'teacher__user__first_name',
+#         'teacher__user__last_name',
+#         'edition',
+#     ]
 
 
 
@@ -733,6 +731,11 @@ class GroupViewSet(ModelViewSet):
         'teacherEdition__teacher__user__first_name', 
         'teacherEdition__teacher__user__last_name',
     ]
+
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return DetailedGroupSerializer
+        return GroupSerializer
 
     def retrieve(self, request, *args, **kwargs):
         user = request.user
