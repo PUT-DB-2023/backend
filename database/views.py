@@ -969,7 +969,7 @@ class LoginView(ViewSet):
                     }
                 }, status=200)
         else:
-            return HttpResponseBadRequest(json.dumps({'message': 'Invalid credentials'}), headers={'Content-Type': 'application/json'})
+            return HttpResponseBadRequest(json.dumps({'name': 'Invalid credentials'}), headers={'Content-Type': 'application/json'})
 
 class LogoutView(ViewSet):
     def get_permissions(self):
