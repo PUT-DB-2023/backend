@@ -32,6 +32,9 @@ from .serializers import UserSerializer, TeacherSerializer, DetailedTeacherSeria
 # , SimpleTeacherEditionSerializer
 from .models import User, Teacher, Student, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
 
+INVALID_EMAIL = 'Niepoprawny adres email.'
+EMAIL_DUPLICATED = 'Podany adres email jest już zajęty.'
+MISSING_FIELDS = 'Nie podano wszystkich wymaganych pól.'
 
 def email_validation(email):
     try:
@@ -57,10 +60,8 @@ class UserViewSet(ModelViewSet):
         if not user.has_perm('database.view_user'):
             raise PermissionDenied
 
-        # return User.objects.filter(id=user.id)
         if user.is_superuser:
             return User.objects.all()
-            # return User.objects.filter(is_superuser=True)
         return User.objects.filter(id=user.id)
 
     def create(self, request, *args, **kwargs):
@@ -72,7 +73,7 @@ class UserViewSet(ModelViewSet):
             raise PermissionDenied()
         
         if not email_validation(request.data['email']):
-            return JsonResponse({'name': 'Invalid email'}, status=400)
+            return JsonResponse({'name': INVALID_EMAIL}, status=400)
 
         new_superuser = User.objects.create_superuser(
             email=request.data['email'],
@@ -82,7 +83,7 @@ class UserViewSet(ModelViewSet):
             last_name=request.data['last_name'],
             *args, **kwargs)
         print('superuser created:', new_superuser)
-        return JsonResponse({'name': 'Superuser created successfully'}, status=201)
+        return JsonResponse({'name': 'Pomyślnie utworzono administratora'}, status=201)
 
     def update(self, request, *args, **kwargs):
         user = request.user
@@ -152,7 +153,7 @@ class TeacherViewSet(ModelViewSet):
         # check if request.data contains fields from user model
         if 'email' in request.data and 'first_name' in request.data and 'last_name' in request.data:
             if not email_validation(request.data['email']):
-                return JsonResponse({'name': 'Invalid email'}, status=400)
+                return JsonResponse({'name': INVALID_EMAIL}, status=400)
             try:
                 # new_password = PasswordGenerator(10).generate_password()
                 new_password = 'password'
@@ -169,13 +170,13 @@ class TeacherViewSet(ModelViewSet):
                 email_sender.send_email_gmail("putdb2023@gmail.com", new_password)
                 return Response(TeacherSerializer(teacher).data)
             except IntegrityError:
-                return JsonResponse({'name': 'User with this email already exists'}, status=400)
+                return JsonResponse({'name': EMAIL_DUPLICATED}, status=400)
             except ValidationError:
-                return JsonResponse({'name': 'Invalid email'}, status=400)
+                return JsonResponse({'name': INVALID_EMAIL}, status=400)
             except Exception as e:
                 return JsonResponse({'name': str(e)}, status=400)
         else:
-            return JsonResponse({'name': 'Missing fields'}, status=400)
+            return JsonResponse({'name': MISSING_FIELDS}, status=400)
 
     def update(self, request, *args, **kwargs):
         user = request.user
@@ -193,13 +194,13 @@ class TeacherViewSet(ModelViewSet):
                 user.save()
                 return Response(TeacherSerializer(teacher).data)
             except IntegrityError:
-                return JsonResponse({'name': 'User with this email already exists'}, status=400)
+                return JsonResponse({'name': EMAIL_DUPLICATED}, status=400)
             except ValidationError:
-                return JsonResponse({'name': 'Invalid email'}, status=400)
+                return JsonResponse({'name': INVALID_EMAIL}, status=400)
             except Exception as e:
                 return JsonResponse({'name': str(e)}, status=400)
         else:
-            return JsonResponse({'name': 'Missing fields'}, status=400)
+            return JsonResponse({'name': MISSING_FIELDS}, status=400)
 
     def destroy(self, request, *args, **kwargs):
         user = request.user
@@ -283,7 +284,7 @@ class StudentViewSet(ModelViewSet):
         # check if request.data contains fields from user model
         if 'email' in request.data and 'first_name' in request.data and 'last_name' in request.data and 'student_id' in request.data and 'major' in request.data:
             if not email_validation(request.data['email']):
-                return JsonResponse({'name': 'Invalid email'}, status=400)
+                return JsonResponse({'name': INVALID_EMAIL}, status=400)
             try:
                 # new_password = PasswordGenerator(10).generate_password()
                 new_password = 'password'
@@ -301,13 +302,13 @@ class StudentViewSet(ModelViewSet):
                 email_sender.send_email_gmail("putdb2023@gmail.com", new_password)
                 return JsonResponse({'name': StudentSerializer(student).data})
             except IntegrityError:
-                return JsonResponse({'name': 'User with this email already exists'}, status=400)
+                return JsonResponse({'name': EMAIL_DUPLICATED}, status=400)
             except ValidationError:
-                return JsonResponse({'name': 'Invalid email'}, status=400)
+                return JsonResponse({'name': INVALID_EMAIL}, status=400)
             except Exception as e:
                 return JsonResponse({'name': str(e)}, status=400)
         else:
-            return JsonResponse({'name': 'Missing fields'}, status=400)
+            return JsonResponse({'name': MISSING_FIELDS}, status=400)
 
     def update(self, request, *args, **kwargs):
         user = request.user
@@ -327,13 +328,13 @@ class StudentViewSet(ModelViewSet):
                 student.save()
                 return Response(StudentSerializer(student).data)
             except IntegrityError:
-                return JsonResponse({'name': 'User with this email already exists'}, status=400)
+                return JsonResponse({'name': EMAIL_DUPLICATED}, status=400)
             except ValidationError:
-                return JsonResponse({'name': 'Invalid email'}, status=400)
+                return JsonResponse({'name': INVALID_EMAIL}, status=400)
             except Exception as e:
                 return JsonResponse({'name': str(e)}, status=400)
         else:
-            return JsonResponse({'name': 'Missing fields'}, status=400)
+            return JsonResponse({'name': MISSING_FIELDS}, status=400)
 
     def destroy(self, request, *args, **kwargs):
         user = request.user
@@ -976,6 +977,7 @@ class DBAccountViewSet(ModelViewSet):
         if not user.has_perm('database.add_dbaccount'):
             raise PermissionDenied
 
+
 class LoginView(ViewSet):
     def get_permissions(self):
         if self.action == 'login_user':
@@ -993,7 +995,7 @@ class LoginView(ViewSet):
             login(request, user)
             return JsonResponse(
                 {
-                    'name': 'Logged in successfully',
+                    'name': 'Udało się zalogować.',
                     'user': {
                         'id': user.id,
                         'first_name': user.first_name,
@@ -1006,7 +1008,7 @@ class LoginView(ViewSet):
                     }
                 }, status=200)
         else:
-            return HttpResponseBadRequest(json.dumps({'name': 'Invalid credentials'}), headers={'Content-Type': 'application/json'})
+            return HttpResponseBadRequest(json.dumps({'name': 'Niepoprawne dane logowania.'}), headers={'Content-Type': 'application/json'})
 
 class LogoutView(ViewSet):
     def get_permissions(self):
@@ -1018,7 +1020,7 @@ class LogoutView(ViewSet):
     def logout_user(self, request, format=None):
         print('logout', request)
         logout(request)
-        return Response({'message': 'Logged out successfully'}, status=200)
+        return Response({'name': 'Nastąpiło poprawne wylogowanie.'}, status=200)
 
 class AddUserAccountToExternalDB(ViewSet):
     @action (methods=['post'], detail=False)
@@ -1042,7 +1044,7 @@ class AddUserAccountToExternalDB(ViewSet):
             server = Server.objects.get(id=accounts_data['server_id'])
             return HttpResponseBadRequest(json.dumps({'name': f"Wszystkie konta w grupie zostały już utworzone w zewnętrznej bazie danych ({server.name} - {server.provider})."}), headers={'Content-Type': 'application/json'})
 
-        server = Server.objects.get(id=accounts_data['server_id'], active=True)
+        # server = Server.objects.get(id=accounts_data['server_id'], active=True)
         moved_accounts = []
 
         print(f"Server: {server}, server user: {server.user}, server password: {server.password}, server ip: {server.ip}, server port: {server.port}")
@@ -1173,7 +1175,7 @@ class AddUserAccountToExternalDB(ViewSet):
                 print(error)
                 return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
         else:
-            return HttpResponseBadRequest(json.dumps({'name': 'Unknown provider.'}), headers={'Content-Type': 'application/json'})
+            return HttpResponseBadRequest(json.dumps({'name': 'Nieznany SZBD.'}), headers={'Content-Type': 'application/json'})
 
 
 class RemoveUserFromExternalDB(ViewSet):
@@ -1237,7 +1239,7 @@ class RemoveUserFromExternalDB(ViewSet):
                 return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
         
-        return HttpResponseBadRequest(json.dumps({'name': 'Unknown provider.'}), headers={'Content-Type': 'application/json'})
+        return HttpResponseBadRequest(json.dumps({'name': 'Nieznany SZBD.'}), headers={'Content-Type': 'application/json'})
 
 
 class LoadStudentsFromCSV(ViewSet):
@@ -1279,11 +1281,9 @@ class LoadStudentsFromCSV(ViewSet):
             if student['first_name'] is None or student['last_name'] is None or student['email'] is None or student['student_id'] is None:
                 print("Bad request. Nie wszystkie kolumny zawierają wartości.")
                 return HttpResponseBadRequest(json.dumps({'name': 'Nie wszystkie kolumny zawierają wartości.'}), headers={'Content-Type': 'application/json'})
-            try:
-                validate_email(student['email'])
-            except ValidationError as error:
-                print("Bad request. Błędny adres email.")
-                return HttpResponseBadRequest(json.dumps({'name': 'Sprawdź poprawność wszystkich adresów email.'}), headers={'Content-Type': 'application/json'})
+            if not email_validation(student['email']):
+                print("Bad request. Niepoprawny email.")
+                return HttpResponseBadRequest(json.dumps({'name': INVALID_EMAIL}), headers={'Content-Type': 'application/json'})
         
 
         try:
@@ -1352,7 +1352,7 @@ class LoadStudentsFromCSV(ViewSet):
 
                 if added_student in group_to_add.students.all():
                     print(f"Student {added_user.first_name} {added_user.last_name} already exists in group {group_to_add.name}.")
-                    students_info[student_info_index]['added_to_group'] = False # TODO: check if this works
+                    students_info[student_info_index]['added_to_group'] = False
                 else:
                     group_to_add.students.add(added_student)
                     print(f"Student {added_user.first_name} {added_user.last_name} added to group {group_to_add.name}.")
