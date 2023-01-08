@@ -325,7 +325,7 @@ class GroupSerializer(ModelSerializer):
         ]
     
     def to_representation(self, instance):
-        self.fields['teacherEdition'] = BasicTeacherEditionSerializer(many=False, read_only=True)
+        self.fields['teacherEdition'] = TeacherEditionSerializer(many=False, read_only=True)
         # self.fields['students'] = BasicStudentSerializer(many=True, read_only=True)
         return super(GroupSerializer, self).to_representation(instance)
 

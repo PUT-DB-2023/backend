@@ -993,9 +993,9 @@ class LoginView(ViewSet):
         print('Request log:', login_data)
         # print('Request headers:', request.headers)
         user = authenticate(email=login_data['email'], password=login_data['password'])
-        print(user.get_all_permissions())
         if user is not None:
             login(request, user)
+            print(user.get_all_permissions())
             return JsonResponse(
                 {
                     'name': 'Udało się zalogować.',
