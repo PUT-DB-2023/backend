@@ -1129,8 +1129,10 @@ class AddUserAccountToExternalDB(ViewSet):
                 conn_postgres.close()
                 return JsonResponse({'moved_accounts': moved_accounts}, status=200)
 
-            except (Exception) as error:
+            except Exception as error:
                 print(error)
+                if 'could not connect to server' in str(error):
+                    return HttpResponseBadRequest(json.dumps({'name': f"Nie udało się połączyć z serwerem baz danych ({server.name} - {server.provider})."}), headers={'Content-Type': 'application/json'})
                 return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
         elif server.provider.lower() == 'mongo' or server.provider.lower() == 'mongodb':
