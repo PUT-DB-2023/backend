@@ -85,7 +85,7 @@ class UserViewSet(ModelViewSet):
             last_name=request.data['last_name'],
             *args, **kwargs)
         print('superuser created:', new_superuser)
-        return JsonResponse({'name': 'Pomyślnie utworzono administratora'}, status=201)
+        return Response(UserSerializer(new_superuser).data, status=201)
 
     def update(self, request, *args, **kwargs):
         user = request.user
@@ -169,7 +169,7 @@ class TeacherViewSet(ModelViewSet):
                 teacher = Teacher.objects.create(user=user)
                 email_sender = EmailSender()
                 email_sender.send_email_gmail("putdb2023@gmail.com", new_password)
-                return Response(TeacherSerializer(teacher).data)
+                return Response(TeacherSerializer(teacher).data, status=201)
             except IntegrityError:
                 return JsonResponse({'name': EMAIL_DUPLICATED}, status=400)
             except ValidationError:
@@ -301,7 +301,7 @@ class StudentViewSet(ModelViewSet):
                 student = Student.objects.create(user=user, student_id=request.data['student_id'], major=major)
                 email_sender = EmailSender()
                 email_sender.send_email_gmail("putdb2023@gmail.com", new_password)
-                return JsonResponse({'name': StudentSerializer(student).data})
+                return Response(StudentSerializer(student).data, status=201)
             except IntegrityError:
                 return JsonResponse({'name': EMAIL_DUPLICATED}, status=400)
             except ValidationError:
