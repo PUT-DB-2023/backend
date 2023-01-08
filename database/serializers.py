@@ -17,19 +17,6 @@ class UserSerializer(ModelSerializer):
         ]
 
 
-class BasicUserSerializer(ModelSerializer):
-    class Meta:
-        model = User
-        fields = [
-            'id',
-            'first_name',
-            'last_name',
-            'email',
-            'is_student',
-            'is_teacher',
-        ]
-
-
 class TeacherSerializer(ModelSerializer):
     class Meta:
         model = Teacher
@@ -39,7 +26,7 @@ class TeacherSerializer(ModelSerializer):
         ]
 
     def to_representation(self, instance):
-        self.fields['user'] = BasicUserSerializer(read_only=True)
+        self.fields['user'] = UserSerializer(read_only=True)
         return super(TeacherSerializer, self).to_representation(instance)
 
 
@@ -53,7 +40,7 @@ class DetailedTeacherSerializer(ModelSerializer):
         ]
     
     def to_representation(self, instance):
-        self.fields['user'] = BasicUserSerializer(read_only=True)
+        self.fields['user'] = UserSerializer(read_only=True)
         self.fields['editions'] = BasicEditionSerializer(many=True, read_only=True)
         return super(DetailedTeacherSerializer, self).to_representation(instance)
 
@@ -67,7 +54,7 @@ class BasicTeacherSerializer(ModelSerializer):
         ]
     
     def to_representation(self, instance):
-        self.fields['user'] = BasicUserSerializer(read_only=True)
+        self.fields['user'] = UserSerializer(read_only=True)
         return super(BasicTeacherSerializer, self).to_representation(instance)
 
 
@@ -84,7 +71,7 @@ class StudentSerializer(ModelSerializer):
         ]
     
     def to_representation(self, instance):
-        self.fields['user'] = BasicUserSerializer(read_only=True)
+        self.fields['user'] = UserSerializer(read_only=True)
         self.fields['major'] = BasicMajorSerializer(read_only=True)
         # self.fields['groups'] = BasicGroupSerializer(many=True, read_only=True)
         # self.fields['db_accounts'] = BasicDBAccountSerializer(many=True, read_only=True)
@@ -104,7 +91,7 @@ class DetailedStudentSerializer(ModelSerializer):
         ]
     
     def to_representation(self, instance):
-        self.fields['user'] = BasicUserSerializer(read_only=True)
+        self.fields['user'] = UserSerializer(read_only=True)
         self.fields['major'] = BasicMajorSerializer(read_only=True)
         self.fields['groups'] = BasicGroupSerializer(many=True, read_only=True)
         self.fields['db_accounts'] = BasicDBAccountSerializer(many=True, read_only=True)
@@ -121,7 +108,7 @@ class BasicStudentSerializer(ModelSerializer):
         ]
     
     def to_representation(self, instance):
-        self.fields['user'] = BasicUserSerializer(read_only=True)
+        self.fields['user'] = UserSerializer(read_only=True)
         return super(BasicStudentSerializer, self).to_representation(instance)
 
 

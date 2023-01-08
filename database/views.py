@@ -32,6 +32,16 @@ from .serializers import UserSerializer, TeacherSerializer, DetailedTeacherSeria
 # , SimpleTeacherEditionSerializer
 from .models import User, Teacher, Student, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
 
+
+def email_validation(email):
+    try:
+        validate_email(email)
+        # print("Valid email address.")
+    except ValidationError:
+        # print("Bad request. Błędny adres email.")
+        return False
+    return True
+
 class UserViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting users.
@@ -47,13 +57,32 @@ class UserViewSet(ModelViewSet):
         if not user.has_perm('database.view_user'):
             raise PermissionDenied
 
+        # return User.objects.filter(id=user.id)
+        if user.is_superuser:
+            return User.objects.all()
+            # return User.objects.filter(is_superuser=True)
         return User.objects.filter(id=user.id)
 
     def create(self, request, *args, **kwargs):
         user = request.user
         if not user.has_perm('database.add_user'):
             raise PermissionDenied()
-        return super().create(request, *args, **kwargs)
+        # create superuser
+        if not user.is_superuser:
+            raise PermissionDenied()
+        
+        if not email_validation(request.data['email']):
+            return JsonResponse({'name': 'Invalid email'}, status=400)
+
+        new_superuser = User.objects.create_superuser(
+            email=request.data['email'],
+            # password=PasswordGenerator(10).generate_password(),
+            password='admin',
+            first_name=request.data['first_name'],
+            last_name=request.data['last_name'],
+            *args, **kwargs)
+        print('superuser created:', new_superuser)
+        return JsonResponse({'name': 'Superuser created successfully'}, status=201)
 
     def update(self, request, *args, **kwargs):
         user = request.user
@@ -122,6 +151,8 @@ class TeacherViewSet(ModelViewSet):
             raise PermissionDenied()
         # check if request.data contains fields from user model
         if 'email' in request.data and 'first_name' in request.data and 'last_name' in request.data:
+            if not email_validation(request.data['email']):
+                return JsonResponse({'name': 'Invalid email'}, status=400)
             try:
                 # new_password = PasswordGenerator(10).generate_password()
                 new_password = 'password'
@@ -150,7 +181,7 @@ class TeacherViewSet(ModelViewSet):
         user = request.user
         if not user.has_perm('database.change_teacher'):
             raise PermissionDenied()
-        
+        print(f"request.data {request.data}")
         # check if request.data contains fields from user model
         if 'email' in request.data and 'first_name' in request.data and 'last_name' in request.data:
             try:
@@ -250,7 +281,9 @@ class StudentViewSet(ModelViewSet):
             raise PermissionDenied()
         
         # check if request.data contains fields from user model
-        if 'email' in request.data and 'first_name' in request.data and 'last_name' in request.data and 'student_id' in request.data:
+        if 'email' in request.data and 'first_name' in request.data and 'last_name' in request.data and 'student_id' in request.data and 'major' in request.data:
+            if not email_validation(request.data['email']):
+                return JsonResponse({'name': 'Invalid email'}, status=400)
             try:
                 # new_password = PasswordGenerator(10).generate_password()
                 new_password = 'password'
@@ -262,7 +295,8 @@ class StudentViewSet(ModelViewSet):
                     is_student=True,
                 )
                 StudentViewSet.grant_student_permissions(self, user)
-                student = Student.objects.create(user=user, student_id=request.data['student_id'])
+                major = Major.objects.get(id=request.data['major'])
+                student = Student.objects.create(user=user, student_id=request.data['student_id'], major=major)
                 email_sender = EmailSender()
                 email_sender.send_email_gmail("putdb2023@gmail.com", new_password)
                 return JsonResponse({'name': StudentSerializer(student).data})
@@ -279,7 +313,7 @@ class StudentViewSet(ModelViewSet):
         user = request.user
         if not user.has_perm('database.change_student'):
             raise PermissionDenied()
-        
+        print(f"request.data {request.data}")
         # check if request.data contains fields from user model
         if 'email' in request.data and 'first_name' in request.data and 'last_name' in request.data and 'student_id' in request.data:
             try:
