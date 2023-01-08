@@ -11,6 +11,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.models import Group as AuthGroup
+from django.db.models import Prefetch
 
 import MySQLdb as mdb
 import psycopg2
@@ -44,6 +45,7 @@ def email_validation(email):
         # print("Bad request. Błędny adres email.")
         return False
     return True
+
 
 class UserViewSet(ModelViewSet):
     """
@@ -96,7 +98,6 @@ class UserViewSet(ModelViewSet):
         if not user.has_perm('database.delete_user'):
             raise PermissionDenied()
         return super().destroy(request, *args, **kwargs)
-
 
 
 class TeacherViewSet(ModelViewSet):
@@ -253,11 +254,11 @@ class StudentViewSet(ModelViewSet):
         if user.is_superuser:
             return Student.objects.all()
         elif user.is_teacher:
-            teacher = get_object_or_404(Teacher, user=self.request.user)
+            teacher = get_object_or_404(Teacher, user=user)
             return Student.objects.filter(groups__teacherEdition__teacher=teacher).distinct()
         elif user.is_student:
-            student = get_object_or_404(Student, user=self.request.user)
-            return Student.objects.filter(id=student.id)
+            # student = get_object_or_404(Student, user=user)
+            return Student.objects.filter(user=user)
         else:
             return Student.objects.none()
 
@@ -482,7 +483,6 @@ class SemesterViewSet(ModelViewSet):
         return Semester.objects.all()
 
 
-
 class SimpleSemesterViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting semesters.
@@ -497,6 +497,7 @@ class SimpleSemesterViewSet(ModelViewSet):
         'active',
         'editions'
     ]
+
 
 class EditionViewSet(ModelViewSet):
     """
@@ -561,7 +562,6 @@ class EditionViewSet(ModelViewSet):
         except Exception as error:
             return HttpResponseBadRequest(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
-
     def update(self, request, *args, **kwargs):
         user = request.user
 
@@ -608,7 +608,6 @@ class EditionViewSet(ModelViewSet):
                 return HttpResponseBadRequest(json.dumps({'name': 'Edycja już istnieje.'}), headers={'Content-Type': 'application/json'})
             return HttpResponseBadRequest(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
-    
     def destroy(self, request, *args, **kwargs):
         user = request.user
 
@@ -735,7 +734,6 @@ class TeacherEditionViewSet(ModelViewSet):
 #     ]
 
 
-
 class GroupViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting groups.
@@ -796,6 +794,7 @@ class GroupViewSet(ModelViewSet):
     
     # filter against current user
     def get_queryset(self):
+
         user = self.request.user
 
         if not user.has_perm('database.view_group'):
@@ -804,11 +803,14 @@ class GroupViewSet(ModelViewSet):
         if user.is_superuser:
             return Group.objects.order_by('id')
         elif user.is_teacher:
-            teacher = get_object_or_404(Teacher, user=self.request.user)
+            teacher = get_object_or_404(Teacher, user=user)
             return Group.objects.filter(teacherEdition__teacher=teacher).order_by('id').distinct()
         elif user.is_student:
-            student = get_object_or_404(Student, user=self.request.user)
-            return Group.objects.filter(students=student).order_by('id').distinct()
+            # student = get_object_or_404(Student, user=user)
+            # return Group.objects.filter(students=student).order_by('id').distinct()
+            student = Student.objects.get(user=user)
+            groups = Group.objects.filter(students=student).prefetch_related(Prefetch('students', queryset=Student.objects.filter(user=user)))
+            return groups.order_by('id').distinct()
         else:
             return Group.objects.none()
 
@@ -865,6 +867,7 @@ class ServerViewSet(ModelViewSet):
             raise PermissionDenied
         return super().update(request, *args, **kwargs)
 
+
 class EditionServerViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting edition servers.
@@ -916,6 +919,7 @@ class EditionServerViewSet(ModelViewSet):
         if not user.has_perm('database.change_editionserver'):
             raise PermissionDenied
         return super().update(request, *args, **kwargs)
+
 
 class DBAccountViewSet(ModelViewSet):
     """
@@ -971,7 +975,6 @@ class DBAccountViewSet(ModelViewSet):
 
         return super().destroy(request, *args, **kwargs)
 
-
     def create(self, request, *args, **kwargs):
         user = request.user
         if not user.has_perm('database.add_dbaccount'):
@@ -1009,6 +1012,7 @@ class LoginView(ViewSet):
                 }, status=200)
         else:
             return HttpResponseBadRequest(json.dumps({'name': 'Niepoprawne dane logowania.'}), headers={'Content-Type': 'application/json'})
+
 
 class LogoutView(ViewSet):
     def get_permissions(self):
@@ -1223,7 +1227,6 @@ class RemoveUserFromExternalDB(ViewSet):
                 print(error)
                 return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
-
         elif db_account_server_provider.lower() == 'mongo' or db_account_server_provider.lower() == 'mongodb':
             try:
                 conn = MongoClient(f'mongodb://{db_account.editionServer.server.user}:{db_account.editionServer.server.password}@{db_account.editionServer.server.ip}:{db_account.editionServer.server.port}/')
@@ -1237,7 +1240,6 @@ class RemoveUserFromExternalDB(ViewSet):
             except (Exception, mdb.DatabaseError) as error:
                 print(f"Error: {error}")
                 return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
-
         
         return HttpResponseBadRequest(json.dumps({'name': 'Nieznany SZBD.'}), headers={'Content-Type': 'application/json'})
 
@@ -1567,7 +1569,7 @@ class RemoveStudentFromGroup(ViewSet):
             return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
 class ResetSystemPassword(ViewSet):
-    
+
         @action (methods=['post'], detail=False)
         def reset_system_password(self, request, format=None):
     
@@ -1625,11 +1627,9 @@ class UpdatePasswordAfterReset(ViewSet):
             print('Error: new_password not found in request data.')
             return HttpResponseBadRequest(json.dumps({'name': 'Nie podano nowego hasła.'}), headers={'Content-Type': 'application/json'})
 
-
         account_id = data['account_id']
         old_password = data['current_password']
         new_password = data['new_password']
-
 
         try:
             account_to_update = User.objects.get(id=account_id)
@@ -1645,6 +1645,3 @@ class UpdatePasswordAfterReset(ViewSet):
         except Exception as error:
             print(error)
             return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
-
-
-        
