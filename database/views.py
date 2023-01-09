@@ -1634,6 +1634,7 @@ class ResetOwnPassword(ViewSet):
             account_to_reset.save()
             email_sender.send_email_gmail('putdb2023@gmail.com', new_password)
             print(f"Password for {account_to_reset.email} reset.")
+            logout(request)
             return JsonResponse({'name': "Succesfull password reset for account of id: " + str(account_to_reset.id)}, status=200)
         except Exception as error:
             print(error)
@@ -1705,6 +1706,7 @@ class UpdatePasswordAfterReset(ViewSet):
                 account_to_update.set_password(new_password)
                 account_to_update.save()
                 print("Password updated for account: ", account_to_update.first_name + " " + account_to_update.last_name)
+                logout(request)
                 return JsonResponse({'name': "Succesfull password update for account of id: " + str(account_to_update.id)}, status=200)
             else:
                 print("Wrong password for account: ", account_to_update.first_name + " " + account_to_update.last_name)
