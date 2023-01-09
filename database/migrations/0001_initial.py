@@ -42,19 +42,19 @@ def forwards_func(apps, schema_editor):
     password_generator = PasswordGenerator(10)
 
     server_names = ['MySQL ZBD Server', 'Oracle ZBD Server', 'Postgres PBD Server', 'Mongo ZBDNS Server', 'Microsoft SQL Server PBD']
-    server_ipss = ['185.180.207.251', '185.150.207.251', '185.180.207.251', 'mongo', '176.119.32.0']
+    server_ipss = ['185.180.207.251', '185.180.207.251', '185.180.207.251', 'mongo', '176.119.32.0']
     # server_ports = ['3306', '5432', '5433', '2850', '4179']
     # server_ipss = ['localhost', '128.127.80.0', 'postgres-external', '156.154.84.0', '176.119.32.0']
     server_ports = ['3306', '44475', '5432', '27017', '4179']
     server_date_createds = '2021-12-31'
     server_databases = ['mysql', 'xe', 'postgres', 'database', 'mssql']
-    server_passwords = ['mysql12', 'PASSWORD', 'postgres12', 'mongo12', 'mssqlpass']
+    server_passwords = ['mysql12', 'oracle', 'postgres12', 'mongo12', 'mssqlpass']
     # server_passwords = ['root', 'oracledbpass', 'postgres', 'mongodbnosqlpass', 'mssqlpass']
     server_providers = ['MySQL', 'Oracle', 'Postgres', 'MongoDB', 'Microsoft SQL Server']
-    server_users = ['root', 'USERDB', 'postgres', 'root', 'mssqluser']
-    server_create_user_templates = ["CREATE USER IF NOT EXISTS \"%s\"@'%%' IDENTIFIED BY '%s'", "", "CREATE USER \"%s\" WITH PASSWORD \'%s\';", '"createUser" : %s, "pwd" : %s, "customData" : {}, "roles" : []', ""]
+    server_users = ['root', 'system', 'postgres', 'root', 'mssqluser']
+    server_create_user_templates = ["CREATE USER IF NOT EXISTS \"%s\"@'%%' IDENTIFIED BY '%s'", "CREATE USER \"%s\" IDENTIFIED BY \"%s\"", "CREATE USER \"%s\" WITH PASSWORD \'%s\';", '"createUser" : %s, "pwd" : %s, "customData" : {}, "roles" : []', ""]
     server_modify_user_templates = ["ALTER USER %s@'localhost' IDENTIFIED BY %s;", "", "ALTER USER \"%s\" WITH PASSWORD \'%s\';", "", ""]
-    server_delete_user_templates = ["DROP USER IF EXISTS \"%s\"@'%%';", "", "DROP USER IF EXISTS \"%s\";", "", ""]
+    server_delete_user_templates = ["DROP USER IF EXISTS \"%s\"@'%%';", "DROP USER \"%s\" CASCADE", "DROP USER IF EXISTS \"%s\";", "", ""]
     server_username_templates = [
         "INF_{NR_INDEKSU}", "{IMIE}_{NAZWISKO}", "{NAZWISKO}_{NR_INDEKSU}", "STUDENT_{NR_INDEKSU}", "INF_{NR_INDEKSU}"
     ]
@@ -234,10 +234,18 @@ def forwards_func(apps, schema_editor):
         # username_template='INF_{NR_INDEKSU}', passwd_template='blank'
     )
 
+    # special edition for oracle
+    EditionServer.objects.using(db_alias).create(
+        additional_info='Additional info about EditionServer',
+        edition_id=editions[0],
+        server_id=servers[1],
+        # username_template='INF_{NR_INDEKSU}', passwd_template='blank'
+    )
+
     teachers = Teacher.objects.all().values_list('id', flat=True)
 
     teacher_edition_edition_id = [editions[i] for i in range(8)]
-    teacher_edition_teacher_id = [teachers[0], teachers[1], teachers[2], teachers[3], teachers[0], teachers[0], teachers[1], teachers[2]]
+    teacher_edition_teacher_id = [teachers[0], teachers[1], teachers[2], teachers[3], teachers[0], teachers[0], teachers[1], teachers[2], teachers[0]]
 
     for i in range(len(teacher_edition_edition_id)):
         TeacherEdition.objects.using(db_alias).create(
@@ -300,6 +308,9 @@ def forwards_func(apps, schema_editor):
             )
                 DBAccount.objects.using(db_alias).create(
                     username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password_generator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[8]
+            )
+                DBAccount.objects.using(db_alias).create(
+                    username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password_generator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[9]
             )
         if 52 <= i <= 75: # GRUPY 7-9
                 DBAccount.objects.using(db_alias).create(

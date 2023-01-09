@@ -143,6 +143,7 @@ class TeacherViewSet(ModelViewSet):
             return Teacher.objects.all().filter(id=teacher.id)
         elif user.is_student:
             student = get_object_or_404(Student, user=self.request.user)
+            print('Debug: ', Teacher.objects.all().filter(teacheredition__groups__students=student).distinct())
             return Teacher.objects.all().filter(teacheredition__groups__students=student).distinct()
         else:
             return Teacher.objects.none()
@@ -1164,14 +1165,29 @@ class AddUserAccountToExternalDB(ViewSet):
 
         elif server.provider.lower() == 'oracle' or server.provider.lower() == 'oracledb':
             try:
-                conn = cx_Oracle.connect(server.user, server.password, f'{server.ip}:{server.port}/{server.database}')
+                oracledb.init_oracle_client()
+
+                conn = oracledb.connect(
+                    user=server.user,
+                    password=server.password,
+                    dsn=f"{server.ip}:{server.port}/{server.database}")
+
+                print("Successfully connected to Oracle server.")
+
                 cursor = conn.cursor()
                 for account in db_accounts:
                     print(account.username)
-                    cursor.execute(server.create_user_template % (account.username, account.password))
-                    moved_accounts.append(account.username)
-                    DBAccount.objects.filter(id=account.id).update(is_moved=True)
-                    print(f"Successfully created user '{account.username}' with '{account.password}' password.")
+                    cursor.execute(f"SELECT * FROM DBA_USERS WHERE username = '{account.username}'")
+                    user_exists = cursor.fetchone()
+                    if user_exists:
+                        print(f"User '{account.username}' already exists in database.")
+                        DBAccount.objects.filter(id=account.id).update(is_moved=True)
+                        continue
+                    else:
+                        cursor.execute(server.create_user_template % (account.username, account.password))
+                        moved_accounts.append(account.username)
+                        DBAccount.objects.filter(id=account.id).update(is_moved=True)
+                        print(f"Successfully created user '{account.username}' with '{account.password}' password.")
                 conn.commit()
                 cursor.close()
                 return Response(json.dumps({
@@ -1242,6 +1258,34 @@ class RemoveUserFromExternalDB(ViewSet):
             except (Exception, mdb.DatabaseError) as error:
                 print(f"Error: {error}")
                 return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
+        elif db_account_server_provider.lower() == 'oracle' or db_account_server_provider.lower() == 'oracledb':
+            try:
+                oracledb.init_oracle_client()
+
+                connection = oracledb.connect(
+                    user=db_account.editionServer.server.user,
+                    password=db_account.editionServer.server.password,
+                    dsn=f"{db_account.editionServer.server.ip}:{db_account.editionServer.server.port}/{db_account.editionServer.server.database}")
+
+                cursor = connection.cursor()
+                # check if user exists
+                cursor.execute(f"SELECT * FROM DBA_USERS WHERE username = '{db_account.username}'")
+                user_exists = cursor.fetchone()
+                if not user_exists:
+                    print(f"User '{db_account.username}' does not exist")
+                    DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
+                    return HttpResponseBadRequest(json.dumps({'name': 'Użytkownik nie istnieje.'}), headers={'Content-Type': 'application/json'})
+
+                cursor.execute(db_account.editionServer.server.delete_user_template % (db_account.username))
+                connection.commit()
+                DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
+                cursor.close()
+                print(f"Successfully deleted user '{db_account.username}'")
+                return HttpResponse(f'deleted_account: {db_account.username}', status=200)
+            except (Exception, mdb.DatabaseError) as error:
+                print(f"Error: {error}")
+                return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
+
         
         return HttpResponseBadRequest(json.dumps({'name': 'Nieznany SZBD.'}), headers={'Content-Type': 'application/json'})
 
@@ -1647,3 +1691,6 @@ class UpdatePasswordAfterReset(ViewSet):
         except Exception as error:
             print(error)
             return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
+
+
+        
