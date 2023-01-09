@@ -1614,14 +1614,40 @@ class RemoveStudentFromGroup(ViewSet):
             print(error)
             return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
-class ResetSystemPassword(ViewSet):
+class ResetOwnPassword(ViewSet):
+
+    @action (methods=['post'], detail=False)
+    def reset_own_password(self, request, format=None):
+
+        user = request.user
+
+        if not user.has_perm('database.reset_own_password'):
+            raise PermissionDenied
+
+        passwordGenerator = PasswordGenerator()
+        email_sender = EmailSender()
+
+        try:
+            account_to_reset = User.objects.get(id=user.id)
+            new_password = passwordGenerator.generate_password()
+            account_to_reset.set_password(new_password)
+            account_to_reset.save()
+            email_sender.send_email_gmail('putdb2023@gmail.com', new_password)
+            print(f"Password for {account_to_reset.email} reset.")
+            return JsonResponse({'name': "Succesfull password reset for account of id: " + str(account_to_reset.id)}, status=200)
+        except Exception as error:
+            print(error)
+            return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
+                
+
+class ResetStudentPassword(ViewSet):
 
         @action (methods=['post'], detail=False)
-        def reset_system_password(self, request, format=None):
+        def reset_student_password(self, request, format=None):
     
             user = request.user
     
-            if not user.has_perm('database.reset_system_password'):
+            if not user.has_perm('database.reset_student_password'):
                 raise PermissionDenied
     
             data = request.data
@@ -1661,10 +1687,6 @@ class UpdatePasswordAfterReset(ViewSet):
 
         data = request.data
 
-        if 'account_id' not in data:
-            print('Error: account_id not found in request data.')
-            return HttpResponseBadRequest(json.dumps({'name': 'Nie podano konta.'}), headers={'Content-Type': 'application/json'})
-
         if 'current_password' not in data:
             print('Error: current_password not found in request data.')
             return HttpResponseBadRequest(json.dumps({'name': 'Nie podano hasła.'}), headers={'Content-Type': 'application/json'})
@@ -1673,12 +1695,11 @@ class UpdatePasswordAfterReset(ViewSet):
             print('Error: new_password not found in request data.')
             return HttpResponseBadRequest(json.dumps({'name': 'Nie podano nowego hasła.'}), headers={'Content-Type': 'application/json'})
 
-        account_id = data['account_id']
         old_password = data['current_password']
         new_password = data['new_password']
 
         try:
-            account_to_update = User.objects.get(id=account_id)
+            account_to_update = User.objects.get(id=user.id)
             # hash the old_password variable so it matches the hash in the database
             if check_password(old_password, account_to_update.password):
                 account_to_update.set_password(new_password)
