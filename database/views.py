@@ -255,8 +255,13 @@ class StudentViewSet(ModelViewSet):
         if user.is_superuser:
             return Student.objects.all()
         elif user.is_teacher:
-            teacher = get_object_or_404(Teacher, user=user)
-            return Student.objects.filter(groups__teacherEdition__teacher=teacher).distinct()
+            teacher = Teacher.objects.get(user=user)
+            groups = Group.objects.filter(teacherEdition__teacher=teacher)
+            students = Student.objects.filter(groups__teacherEdition__teacher=teacher).prefetch_related(Prefetch('groups', queryset=groups))
+            return students.distinct()
+            # student = Student.objects.get(user=user)
+            # groups = Group.objects.filter(students=student).prefetch_related(Prefetch('students', queryset=Student.objects.filter(user=user)))
+            # return groups.order_by('id').distinct()
         elif user.is_student:
             # student = get_object_or_404(Student, user=user)
             return Student.objects.filter(user=user)
@@ -810,7 +815,7 @@ class GroupViewSet(ModelViewSet):
             # student = get_object_or_404(Student, user=user)
             # return Group.objects.filter(students=student).order_by('id').distinct()
             student = Student.objects.get(user=user)
-            groups = Group.objects.filter(students=student).prefetch_related(Prefetch('students', queryset=Student.objects.filter(user=user)))
+            groups = Group.objects.filter(students=student).prefetch_related(Prefetch('students', queryset=student))
             return groups.order_by('id').distinct()
         else:
             return Group.objects.none()
