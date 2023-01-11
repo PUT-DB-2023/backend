@@ -187,6 +187,7 @@ class Edition(models.Model):
     def __str__(self):
         return f"{self.course} - {self.semester}"
 
+
 class TeacherEdition(models.Model):
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     edition = models.ForeignKey(Edition, on_delete=models.CASCADE)
@@ -217,39 +218,46 @@ class Group(models.Model):
         return self.name
 
 
-# class DBProvider(models.Model):
-#     name = models.CharField(max_length=30)
-#     description = models.CharField(max_length=255, blank=True, default='')
+class DBMS(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    description = models.CharField(max_length=255, blank=True, default='')
+
+    def __str__(self):
+        return self.name
+
 
 class Server(models.Model):
-    name = models.CharField(max_length=50)
-    ip = models.CharField(max_length=30)
-    port = models.CharField(max_length=30)
-    provider = models.CharField(max_length=30)
-    # provider = models.ForeignKey(DBProvider, on_delete=models.SET_NULL, null=True, related_name='servers')
-    user = models.CharField(max_length=30)
-    password = models.CharField(max_length=30)
-    database = models.CharField(max_length=30)
+    name = models.CharField(max_length=255)
+    host = models.CharField(max_length=255)
+    port = models.CharField(max_length=255)
+    # provider = models.CharField(max_length=30)
+    dbms = models.ForeignKey(DBMS, on_delete=models.CASCADE, related_name='servers')
+    user = models.CharField(max_length=255)
+    password = models.CharField(max_length=255)
+    database = models.CharField(max_length=255)
     date_created = models.DateField(auto_now_add=True)
     active = models.BooleanField(default=True)
     editions = models.ManyToManyField(Edition, through='EditionServer', related_name='servers')
+
     create_user_template = models.CharField(max_length=255, blank=True, default='')
     modify_user_template = models.CharField(max_length=255, blank=True, default='')
     delete_user_template = models.CharField(max_length=255, blank=True, default='')
+    custom_command_template = models.CharField(max_length=1023, blank=True, default='')
+
     username_template = models.CharField(max_length=255, null=True)
 
     def __str__(self):
-        return f"{self.name} - {self.provider}"
+        return f"{self.name} - {self.dbms.name}"
+
 
 class EditionServer(models.Model):
     edition = models.ForeignKey(Edition, on_delete=models.CASCADE)
     server = models.ForeignKey(Server, on_delete=models.CASCADE)
     additional_info = models.CharField(max_length=255, blank=True, default='')
-    # username_template = models.CharField(max_length=255, null=True)
-    # passwd_template = models.CharField(max_length=255, null=True)
 
     def __str__(self):
         return f"{self.edition} - {self.server}"
+
 
 class DBAccount(models.Model):
     username = models.CharField(max_length=30)

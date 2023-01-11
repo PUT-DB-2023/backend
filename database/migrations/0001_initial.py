@@ -27,6 +27,7 @@ def forwards_func(apps, schema_editor):
     Edition = apps.get_model('database', 'Edition')
     Semester = apps.get_model('database', 'Semester')
     Course = apps.get_model('database', 'Course')
+    Dbms = apps.get_model('database', 'DBMS')
     Server = apps.get_model('database', 'Server')
     Major = apps.get_model('database', 'Major')
     AuthGroup = apps.get_model('auth.Group')
@@ -41,33 +42,41 @@ def forwards_func(apps, schema_editor):
 
     password_generator = PasswordGenerator(10)
 
-    server_names = ['MySQL ZBD Server', 'Oracle ZBD Server', 'Postgres PBD Server', 'Mongo ZBDNS Server', 'Microsoft SQL Server PBD']
-    server_ipss = ['185.180.207.251', '185.180.207.251', '185.180.207.251', 'mongo', '176.119.32.0']
-    # server_ports = ['3306', '5432', '5433', '2850', '4179']
-    # server_ipss = ['localhost', '128.127.80.0', 'postgres-external', '156.154.84.0', '176.119.32.0']
-    server_ports = ['3306', '44475', '5432', '27017', '4179']
+    server_names = ['MySQL ZBD Server', 'Oracle ZBD Server', 'Postgres PBD Server', 'Mongo ZBDNS Server']
+    server_ipss = ['185.180.207.251', '185.180.207.251', '185.180.207.251', 'mongo']
+    # server_ports = ['3306', '5432', '5433', '2850']
+    # server_ipss = ['localhost', '128.127.80.0', 'postgres-external', '156.154.84.0']
+    server_ports = ['3306', '44475', '5432', '27017']
     server_date_createds = '2021-12-31'
-    server_databases = ['mysql', 'xe', 'postgres', 'database', 'mssql']
-    server_passwords = ['mysql12', 'oracle', 'postgres12', 'mongo12', 'mssqlpass']
-    # server_passwords = ['root', 'oracledbpass', 'postgres', 'mongodbnosqlpass', 'mssqlpass']
-    server_providers = ['MySQL', 'Oracle', 'Postgres', 'MongoDB', 'Microsoft SQL Server']
-    server_users = ['root', 'system', 'postgres', 'root', 'mssqluser']
-    server_create_user_templates = ["CREATE USER IF NOT EXISTS \"%s\"@'%%' IDENTIFIED BY '%s'", "CREATE USER \"%s\" IDENTIFIED BY \"%s\"", "CREATE USER \"%s\" WITH PASSWORD \'%s\';", '"createUser" : %s, "pwd" : %s, "customData" : {}, "roles" : []', ""]
-    server_modify_user_templates = ["ALTER USER %s@'localhost' IDENTIFIED BY %s;", "", "ALTER USER \"%s\" WITH PASSWORD \'%s\';", "", ""]
-    server_delete_user_templates = ["DROP USER IF EXISTS \"%s\"@'%%';", "DROP USER \"%s\" CASCADE", "DROP USER IF EXISTS \"%s\";", "", ""]
+    server_databases = ['mysql', 'xe', 'postgres', 'database']
+    server_passwords = ['mysql12', 'oracle', 'postgres12', 'mongo12']
+    # server_passwords = ['root', 'oracledbpass', 'postgres', 'mongodbnosqlpass']
+    dbms_names = ['MySQL', 'Oracle', 'PostgreSQL', 'MongoDB']
+    server_users = ['root', 'system', 'postgres', 'root']
+    server_create_user_templates = ["CREATE USER IF NOT EXISTS \"%s\"@'%%' IDENTIFIED BY '%s'", "CREATE USER \"%s\" IDENTIFIED BY \"%s\"", "CREATE USER \"%s\" WITH PASSWORD \'%s\';", '"createUser" : %s, "pwd" : %s, "customData" : {}, "roles" : []']
+    server_modify_user_templates = ["ALTER USER %s@'localhost' IDENTIFIED BY %s;", "", "ALTER USER \"%s\" WITH PASSWORD \'%s\';", ""]
+    server_delete_user_templates = ["DROP USER IF EXISTS \"%s\"@'%%';", "DROP USER \"%s\" CASCADE", "DROP USER IF EXISTS \"%s\";", ""]
     server_username_templates = [
         "INF_{NR_INDEKSU}", "{IMIE}_{NAZWISKO}", "{NAZWISKO}_{NR_INDEKSU}", "STUDENT_{NR_INDEKSU}", "INF_{NR_INDEKSU}"
     ]
 
+    dbms = []
+
+    for i in range(len(dbms_names)):
+        dbms_object = Dbms.objects.using(db_alias).create(
+            name=dbms_names[i]
+        )
+        dbms.append(dbms_object)
+
     for i in range(len(server_names)):
         Server.objects.using(db_alias).create(
             name=server_names[i],
-            ip=server_ipss[i],
+            host=server_ipss[i],
             port=server_ports[i],
             date_created=server_date_createds,
             database=server_databases[i],
             password=server_passwords[i],
-            provider=server_providers[i],
+            dbms=dbms[i],
             user=server_users[i],
             create_user_template=server_create_user_templates[i],
             modify_user_template=server_modify_user_templates[i],
@@ -516,22 +525,6 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='Permission',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=30, unique=True)),
-                ('description', models.CharField(blank=True, default='', max_length=255)),
-            ],
-        ),
-        migrations.CreateModel(
-            name='Role',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=30, unique=True)),
-                ('description', models.CharField(blank=True, default='', max_length=255)),
-            ],
-        ),
-        migrations.CreateModel(
             name='Semester',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
@@ -565,21 +558,30 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
+            name='DBMS',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('name', models.CharField(max_length=255, unique=True)),
+                ('description', models.CharField(blank=True, default='', max_length=255)),
+            ],
+        ),
+        migrations.CreateModel(
             name='Server',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=30)),
-                ('ip', models.CharField(max_length=30)),
-                ('port', models.CharField(max_length=10)),
-                ('provider', models.CharField(max_length=30)),
-                ('user', models.CharField(max_length=30)),
-                ('password', models.CharField(max_length=30)),
-                ('database', models.CharField(max_length=30)),
+                ('name', models.CharField(max_length=255)),
+                ('host', models.CharField(max_length=255)),
+                ('port', models.CharField(max_length=255)),
+                ('dbms', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='database.dbms', related_name='servers')),
+                ('user', models.CharField(max_length=255)),
+                ('password', models.CharField(max_length=255)),
+                ('database', models.CharField(max_length=255)),
                 ('date_created', models.DateField(auto_now_add=True)),
                 ('active', models.BooleanField(default=True)),
                 ('create_user_template', models.CharField(blank=True, default='', max_length=255)),
                 ('modify_user_template', models.CharField(blank=True, default='', max_length=255)),
                 ('delete_user_template', models.CharField(blank=True, default='', max_length=255)),
+                ('custom_command_template', models.CharField(blank=True, default='', max_length=1023)),
                 ('username_template', models.CharField(max_length=255, null=True)),
                 ('editions', models.ManyToManyField(related_name='servers', through='database.EditionServer', to='database.edition')),
             ],
@@ -591,16 +593,6 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name='semester',
             constraint=models.CheckConstraint(check=models.Q(('start_year__gte', 2000), ('start_year__lte', 3000)), name='start_year_between_2020_and_3000'),
-        ),
-        migrations.AddField(
-            model_name='role',
-            name='permissions',
-            field=models.ManyToManyField(blank=True, related_name='roles', to='database.permission'),
-        ),
-        migrations.AddField(
-            model_name='role',
-            name='users',
-            field=models.ManyToManyField(blank=True, related_name='roles', to=settings.AUTH_USER_MODEL),
         ),
         migrations.AddField(
             model_name='group',
@@ -689,34 +681,14 @@ class Migration(migrations.Migration):
             name='name',
             field=models.CharField(max_length=50, unique=True),
         ),
-        migrations.AlterField(
-            model_name='permission',
-            name='name',
-            field=models.CharField(max_length=50, unique=True),
-        ),
-        migrations.AlterField(
-            model_name='role',
-            name='name',
-            field=models.CharField(max_length=50, unique=True),
-        ),
-        migrations.AlterField(
-            model_name='server',
-            name='name',
-            field=models.CharField(max_length=50),
-        ),
-        migrations.AlterField(
-            model_name='server',
-            name='port',
-            field=models.CharField(max_length=30),
-        ),
-        migrations.AlterField(
-            model_name='user',
-            name='email',
-            field=models.EmailField(max_length=70, unique=True),
-        ),
         migrations.AddConstraint(
             model_name='group',
             constraint=models.UniqueConstraint(fields=('teacherEdition', 'name'), name='unique_group'),
+        ),
+        migrations.AlterField(
+            model_name='group',
+            name='teacherEdition',
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='groups', to='database.teacheredition'),
         ),
         migrations.RunPython(forwards_func),
     ]

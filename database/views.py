@@ -29,9 +29,9 @@ import json
 
 from database.password_generator import PasswordGenerator
 from database.sender import EmailSender
-from .serializers import UserSerializer, TeacherSerializer, DetailedTeacherSerializer, StudentSerializer, DetailedStudentSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, BasicEditionSerializer, TeacherEditionSerializer, GroupSerializer, DetailedGroupSerializer, GroupSerializerForStudent, ServerSerializer, EditionServerSerializer, DBAccountSerializer
+from .serializers import UserSerializer, TeacherSerializer, DetailedTeacherSerializer, StudentSerializer, DetailedStudentSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, BasicEditionSerializer, TeacherEditionSerializer, GroupSerializer, DetailedGroupSerializer, DBMSSerializer, GroupSerializerForStudent, ServerSerializer, EditionServerSerializer, DBAccountSerializer
 # , SimpleTeacherEditionSerializer
-from .models import User, Teacher, Student, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
+from .models import User, Teacher, Student, Major, Course, Semester, Edition, TeacherEdition, Group, DBMS, Server, EditionServer, DBAccount
 
 INVALID_EMAIL = 'Niepoprawny adres email.'
 EMAIL_DUPLICATED = 'Podany adres email jest już zajęty.'
@@ -821,6 +821,18 @@ class GroupViewSet(ModelViewSet):
             return Group.objects.none()
 
 
+class DBMSViewSet(ModelViewSet):
+    serializer_class = DBMSSerializer
+    queryset = DBMS.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = [
+        'id',
+        'name',
+        'description',
+        'servers',
+    ]
+
+
 class ServerViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting servers.
@@ -832,7 +844,7 @@ class ServerViewSet(ModelViewSet):
     filterset_fields = [
         'id', 
         'name',
-        'ip', 
+        'host', 
         'port', 
         'date_created', 
         'active',
@@ -1052,14 +1064,14 @@ class AddUserAccountToExternalDB(ViewSet):
         if not db_accounts:
             print('No accounts to move')
             server = Server.objects.get(id=accounts_data['server_id'])
-            return HttpResponseBadRequest(json.dumps({'name': f"Wszystkie konta w grupie zostały już utworzone w zewnętrznej bazie danych ({server.name} - {server.provider})."}), headers={'Content-Type': 'application/json'})
+            return HttpResponseBadRequest(json.dumps({'name': f"Wszystkie konta w grupie zostały już utworzone w zewnętrznej bazie danych ({server.name} - {server.dbms.name})."}), headers={'Content-Type': 'application/json'})
 
         # server = Server.objects.get(id=accounts_data['server_id'], active=True)
         moved_accounts = []
 
         print(f"Server: {server}, server user: {server.user}, server password: {server.password}, server ip: {server.ip}, server port: {server.port}")
         
-        if server.provider.lower() == 'mysql':  
+        if server.dbms.name.lower() == 'mysql':  
             try:
                 conn_mysql = mdb.connect(host=server.ip, port=int(server.port), user=server.user, passwd=server.password, db=server.database)
                 print('Connected to MySQL server')
@@ -1086,7 +1098,7 @@ class AddUserAccountToExternalDB(ViewSet):
             except (Exception, mdb.DatabaseError) as error:
                 print("error: ", error)
                 if error.args[0] == 2002:
-                    return HttpResponseBadRequest(json.dumps({'name': f"Nie udało się połączyć z serwerem baz danych ({server.name} - {server.provider})."}), headers={'Content-Type': 'application/json'})
+                    return HttpResponseBadRequest(json.dumps({'name': f"Nie udało się połączyć z serwerem baz danych ({server.name} - {server.dbms.name})."}), headers={'Content-Type': 'application/json'})
                 return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
             # connect to mysql server using odbc driver
@@ -1112,7 +1124,7 @@ class AddUserAccountToExternalDB(ViewSet):
             #     return HttpResponse(error, status=500)
                 
 
-        elif server.provider.lower() == 'postgres' or server.provider.lower() == 'postgresql': 
+        elif server.dbms.name.lower() == 'postgres' or server.dbms.name.lower() == 'postgresql': 
             try:
                 conn_postgres = psycopg2.connect(dbname=server.database, user=server.user, password=server.password, host=server.ip, port=server.port)
                 print('Connected to Postgres server')
@@ -1138,10 +1150,10 @@ class AddUserAccountToExternalDB(ViewSet):
             except Exception as error:
                 print(error)
                 if 'could not connect to server' in str(error):
-                    return HttpResponseBadRequest(json.dumps({'name': f"Nie udało się połączyć z serwerem baz danych ({server.name} - {server.provider})."}), headers={'Content-Type': 'application/json'})
+                    return HttpResponseBadRequest(json.dumps({'name': f"Nie udało się połączyć z serwerem baz danych ({server.name} - {server.dbms.name})."}), headers={'Content-Type': 'application/json'})
                 return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
-        elif server.provider.lower() == 'mongo' or server.provider.lower() == 'mongodb':
+        elif server.dbms.name.lower() == 'mongo' or server.dbms.name.lower() == 'mongodb':
             try:
                 conn = MongoClient(f'mongodb://{server.user}:{server.password}@{server.ip}:{server.port}/')
                 db = conn[server.database]
@@ -1168,7 +1180,7 @@ class AddUserAccountToExternalDB(ViewSet):
                 print(error)
                 return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
-        elif server.provider.lower() == 'oracle' or server.provider.lower() == 'oracledb':
+        elif server.dbms.name.lower() == 'oracle' or server.dbms.name.lower() == 'oracledb':
             try:
                 oracledb.init_oracle_client()
 
@@ -1217,7 +1229,7 @@ class RemoveUserFromExternalDB(ViewSet):
         print('Request log:', accounts_data)
 
         db_account = DBAccount.objects.get(id=accounts_data['dbaccount_id'])
-        db_account_server_provider = db_account.editionServer.server.provider
+        db_account_server_provider = db_account.editionServer.server.dbms.name
         
         if db_account_server_provider.lower() == 'mysql':
             try:
@@ -1373,7 +1385,7 @@ class LoadStudentsFromCSV(ViewSet):
                     'student_id': student['student_id'],
                     'student_created': '',
                     'added_to_group': '',
-                    'account_created': {f"{editionServer.server.name} ({editionServer.server.provider})": {} for editionServer in available_edition_servers}
+                    'account_created': {f"{editionServer.server.name} ({editionServer.server.dbms.name})": {} for editionServer in available_edition_servers}
                 })
 
             for j, student in enumerate(students_list):
@@ -1425,14 +1437,14 @@ class LoadStudentsFromCSV(ViewSet):
 
                     if DBAccount.objects.filter(username=username_to_add, editionServer=edition_server).exists():
                         added_account = DBAccount.objects.get(username=username_to_add, editionServer=edition_server)
-                        students_info[student_info_index]['account_created'][f"{edition_server.server.name} ({edition_server.server.provider})"] = False
-                        print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server already exists.")
+                        students_info[student_info_index]['account_created'][f"{edition_server.server.name} ({edition_server.server.dbms.name})"] = False
+                        print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server already exists.")
                     else:
                         added_account = DBAccount.objects.create(
                             username=username_to_add, password=password_generator.generate_password(), student=added_student, editionServer=edition_server
                         )
-                        students_info[student_info_index]['account_created'][f"{edition_server.server.name} ({edition_server.server.provider})"] = True
-                        print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server.")
+                        students_info[student_info_index]['account_created'][f"{edition_server.server.name} ({edition_server.server.dbms.name})"] = True
+                        print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server.")
             
             group_to_add.save()
 
@@ -1548,7 +1560,7 @@ class AddStudentsToGroup(ViewSet):
                     if DBAccount.objects.filter(student=student_to_add, editionServer__server=edition_server.server).exists():
                         added_account = DBAccount.objects.get(student=student_to_add, editionServer__server=edition_server.server)
                         print(added_account)
-                        print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server already exists.")
+                        print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server already exists.")
                         print("After if, before else")
                     else:
                         print("After else, before create")
@@ -1558,7 +1570,7 @@ class AddStudentsToGroup(ViewSet):
                             )
                             print("After create")
                             added_accounts.append(added_account.username)
-                            print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server.")                
+                            print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server.")                
             
             print("before save")
             group_to_add.save()

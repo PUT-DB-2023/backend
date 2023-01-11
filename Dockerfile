@@ -19,9 +19,7 @@ RUN apt-get update && \
     apt -y autoremove && \
     rm -rf /var/cache/apt
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-WORKDIR /backend
-COPY requirements.txt requirements.txt
+WORKDIR /code
+COPY requirements.txt /code/
 RUN pip install -r requirements.txt
-COPY . .
+COPY . /code/
