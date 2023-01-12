@@ -763,7 +763,7 @@ class GroupViewSet(ModelViewSet):
         'teacherEdition__edition__course__name',
         'teacherEdition__edition__servers',
         'teacherEdition__edition__servers__name',
-        'teacherEdition__edition__servers__ip',
+        'teacherEdition__edition__servers__host',
         'teacherEdition__edition__servers__port',
         'teacherEdition__edition__servers__active',
         'teacherEdition__teacher', 
