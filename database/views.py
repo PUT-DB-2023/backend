@@ -836,6 +836,30 @@ class DBMSViewSet(ModelViewSet):
         'servers',
     ]
 
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        if not user.has_perm('database.add_dbms'):
+            raise PermissionDenied()
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        user = request.user
+        if not user.has_perm('database.change_dbms'):
+            raise PermissionDenied()
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        user = request.user
+        if not user.has_perm('database.delete_dbms'):
+            raise PermissionDenied()
+        return super().destroy(request, *args, **kwargs)
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.has_perm('database.view_dbms'):
+            raise PermissionDenied
+        return super().get_queryset()
+
 
 class ServerViewSet(ModelViewSet):
     """
