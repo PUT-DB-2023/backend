@@ -44,13 +44,10 @@ def forwards_func(apps, schema_editor):
 
     server_names = ['MySQL ZBD Server', 'Oracle ZBD Server', 'Postgres PBD Server', 'Mongo ZBDNS Server']
     server_ipss = ['185.180.207.251', '185.180.207.251', '185.180.207.251', 'mongo']
-    # server_ports = ['3306', '5432', '5433', '2850']
-    # server_ipss = ['localhost', '128.127.80.0', 'postgres-external', '156.154.84.0']
     server_ports = ['3306', '44475', '5432', '27017']
     server_date_createds = '2021-12-31'
     server_databases = ['mysql', 'xe', 'postgres', 'database']
     server_passwords = ['mysql12', 'oracle', 'postgres12', 'mongo12']
-    # server_passwords = ['root', 'oracledbpass', 'postgres', 'mongodbnosqlpass']
     dbms_names = ['MySQL', 'Oracle', 'PostgreSQL', 'MongoDB']
     server_users = ['root', 'system', 'postgres', 'root']
     server_create_user_templates = ["CREATE USER IF NOT EXISTS \"%s\"@'%%' IDENTIFIED BY '%s'", "CREATE USER \"%s\" IDENTIFIED BY \"%s\"", "CREATE USER \"%s\" WITH PASSWORD \'%s\';", '"createUser" : %s, "pwd" : %s, "customData" : {}, "roles" : []']
@@ -121,16 +118,10 @@ def forwards_func(apps, schema_editor):
 
     users_names = ["Ferdynand Dulski","Celestyn Tomaszewski","Sylwester Kaczkowski","Juri Rokicki","Pabian Archacki","Leo Zelek","Kwiatosław Greger","Hubert Kiedrowski","Waldemar Piotrowicz","Olaf Gursky","Hilary Franczak","Melchior Perzan","Świętosław Kopa","Marcin Gorniak","Oskar Kobylinski","Tymon Bialek","Gabriel Orlowski","Pankracy Grodzicki","Serwacy Watroba","Zygmunt Bilik","Aleksander Nabozny","Maryn Wyszynski","Remigiusz Ciolek","Cyprian Gracyalny","Dominik Bernacki","Szymon Rogalski","Ignacy Smigel","Ireneusz Dziak","Wisław Gielgud","Korneli Krynicki","Świętosław Lozowski","Bartłomiej Lach","Konstantyn Pitera","Franciszek Sochaczewski","Malachiasz Car","Eugeniusz Jaracz","Zbigniew Kula","Kamil Rajewski","Zenon Kosmalski","Chwalimir Bania","Romuald Mita","Ryszard Nowak","Sławomir Garstka","Tomasz Kocik","Gerwazy Cieply","Gwalbert Grodzicki","Denis Slusarczyk","Edward Przybylowicz","Malachiasz Cesarz","Iwon Capek","Dobrogost Wojtaszek","Świętosław Pawelski","Tobiasz Raczkowski","Gerard Chmiel","Bartosz Burak","Oktawiusz Ignasiak","Arkadiusz Michalak","Zdzisław Luka","Jerzy Kurcz","Julian Karczewski","Herbert Marcinkiewicz","Klemens Krzyzaniak","Metody Mioduszewski","Gościsław Niziolek","Sylwester Kaczkowski","Fryderyk Dusza","Dobrogost Wójcik","Albin Bialy","Jaromir Misiaszek","Tadeusz Galik","Bożidar Jablon","Witold Demby","Chrystian Krolikowski","Kryspyn Piekarz","Nikodem Czepiec","Wojsław Korczak","Hugo Tylka","Lubomił Ciesinski","Wisław Samborski","Bożimir Jagodzinski","Hilary Lesak","Adrian Bartel","Prot Ewy","Ludomił Kaniuk","Dobrogost Syslo","Adrian Dudzinski","Florentyn Rawski","Bożimir Banik","Wandelin Jaroszewski","Herbert Pekala","Gustaw Dobek","Oskar Jusko","Maksymilian Zajac","Bronisław Prus","Marcel Zaczek","Antoni Wiech","Przemysław Woźniak","Jakub Wróbel","Krystian Jakusik","Kamil Ambozy"]
     users_names2 = ['Eryk Sikorska','Alek Wróblewski','Damian Baran','Emanuel Witkowski','Kamil Borkowski','Anatol Nowak','Gniewomir Makowski','Cyprian Szymański','Joachim Rutkowski','Krystian Kucharski','Ryszard Marciniak','Bruno Szymański','Roman Kołodziej','Leonardo Wojciechowski','Daniel Zieliński','Norbert Jaworski','Kacper Gajewska','Jan Szymański','Ksawery Szymczak','Heronim Wiśniewski','Ludwik Kalinowski','Cezary Szewczyk','Kryspin Zakrzewska','Piotr Głowacka','Jarosław Gajewska','Olgierd Dąbrowski','Joachim Brzeziński','Krzysztof Makowski','Łukasz Malinowski','Eryk Mazur','Gracjan Lewandowski','Alan Zalewski','Korneliusz Marciniak','Igor Sokołowski','Kryspin Wójcik','Rafał Krajewska','Igor Borkowski','Emanuel Piotrowski','Bruno Czerwiński','Roman Maciejewski','Andrzej Walczak','Kacper Sokołowski','Marek Piotrowski','Bartłomiej Krawczyk','Dariusz Wasilewska','Kajetan Marciniak','Ryszard Krajewska','Mateusz Mróz','Arkadiusz Mazur','Bartłomiej Baranowski','Marian Maciejewski','Jędrzej Szymański','Adam Sokołowski','Kryspin Sawicki','Jerzy Krupa','Mikołaj Zawadzki','Kamil Baran','Przemysław Mróz','Gustaw Kaczmarczyk','Lucjan Jankowski','Aleksander Przybylski','Kazimierz Kamiński','Dariusz Szymański','Marek Czerwiński','Gniewomir Adamska','Amadeusz Zalewski','Franciszek Czerwiński','Milan Lis','Ryszard Kalinowski','Łukasz Gajewska','Norbert Woźniak','Ernest Baranowski','Artur Tomaszewski','Krzysztof Laskowska','Kamil Makowski','Dorian Pietrzak','Olaf Ziółkowska','Ariel Sawicki','Jarosław Jankowski','Bolesław Laskowska','Kamil Kubiak','Franciszek Gajewska','Olgierd Kamiński','Adrian Kucharski','Leszek Jakubowski','Mirosław Jaworski','Mateusz Pawlak','Jerzy Kaczmarczyk','Konstanty Kaczmarczyk','Kordian Lis','Cezary Wójcik','Emil Duda','Filip Wojciechowski','Alfred Sokołowski','Ariel Sobczak','Mieszko Sokołowski','Cezary Adamska','Rafał Ziółkowska','Karol Włodarczyk','Milan Górecki']
-
     users_names.extend(users_names2)
 
-    # Admin.objects.using(db_alias).create(
-    #     first_name="Admin", last_name="Admin", email='admin@cs.put.poznan.pl' , password=passwordGenerator.generate_password(), polymorphic_ctype_id=admin_ct.id
-    # )
+    User.objects.create_superuser(first_name='Admin', last_name='Admin', email='admin@cs.put.poznan.pl', password='admin')
 
-    User.objects.create_superuser(email='admin@cs.put.poznan.pl', password='admin')
-
-    # User.objects.create_user('student', 'student@student.put.poznan.pl', 'student')
 
     for i in range(4):
         user = User.objects.create_user(
@@ -145,7 +136,6 @@ def forwards_func(apps, schema_editor):
         user.groups.add(teacher_group)
         user.save()
         
-        # print(f"User: {user} {user.first_name} {user.last_name} {user.email} {user.password} {user.is_teacher}")
         Teacher.objects.using(db_alias).create(user=user)
 
     for i in range(4, len(users_names)):
@@ -370,6 +360,11 @@ def forwards_func(apps, schema_editor):
         view_teacher_permission, _ = AuthPermission.objects.get_or_create(codename='view_teacher', content_type=ContentType.objects.get_for_model(Teacher))
         delete_teacher_permission, _ = AuthPermission.objects.get_or_create(codename='delete_teacher', content_type=ContentType.objects.get_for_model(Teacher))
 
+        add_admin_permission, _ = AuthPermission.objects.get_or_create(codename='add_admin', content_type=ContentType.objects.get_for_model(User))
+        change_admin_permission, _ = AuthPermission.objects.get_or_create(codename='change_admin', content_type=ContentType.objects.get_for_model(User))
+        view_admin_permission, _ = AuthPermission.objects.get_or_create(codename='view_admin', content_type=ContentType.objects.get_for_model(User))
+        delete_admin_permission, _ = AuthPermission.objects.get_or_create(codename='delete_admin', content_type=ContentType.objects.get_for_model(User))
+
         add_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='add_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
         change_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='change_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
         delete_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='delete_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
@@ -393,6 +388,14 @@ def forwards_func(apps, schema_editor):
 
 
         view_major_permission, _ = AuthPermission.objects.get_or_create(codename='view_major', content_type=ContentType.objects.get_for_model(Major))
+        add_major_permission, _ = AuthPermission.objects.get_or_create(codename='add_major', content_type=ContentType.objects.get_for_model(Major))
+        change_major_permission, _ = AuthPermission.objects.get_or_create(codename='change_major', content_type=ContentType.objects.get_for_model(Major))
+        delete_major_permission, _ = AuthPermission.objects.get_or_create(codename='delete_major', content_type=ContentType.objects.get_for_model(Major))
+
+        view_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='view_dbms', content_type=ContentType.objects.get_for_model(Dbms))
+        add_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='add_dbms', content_type=ContentType.objects.get_for_model(Dbms))
+        change_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='change_dbms', content_type=ContentType.objects.get_for_model(Dbms))
+        delete_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='delete_dbms', content_type=ContentType.objects.get_for_model(Dbms))
 
         teacher_group.permissions.add(view_course_permission.pk)
         teacher_group.permissions.add(view_edition_permission.pk)

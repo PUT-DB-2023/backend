@@ -67,6 +67,7 @@ class UserViewSet(ModelViewSet):
         return User.objects.filter(id=user.id)
 
     def create(self, request, *args, **kwargs):
+        print("Creating admin...")
         user = request.user
         if not user.has_perm('database.add_user'):
             raise PermissionDenied()
@@ -77,10 +78,13 @@ class UserViewSet(ModelViewSet):
         if not email_validation(request.data['email']):
             return JsonResponse({'name': INVALID_EMAIL}, status=400)
 
+        password = User.objects.make_random_password()
+        print(f"Email: {request.data['email']}\nPassword: {password}")
+        
         new_superuser = User.objects.create_superuser(
             email=request.data['email'],
             # password=PasswordGenerator(10).generate_password(),
-            password='admin',
+            password=password,
             first_name=request.data['first_name'],
             last_name=request.data['last_name'],
             *args, **kwargs)
@@ -1069,11 +1073,11 @@ class AddUserAccountToExternalDB(ViewSet):
         # server = Server.objects.get(id=accounts_data['server_id'], active=True)
         moved_accounts = []
 
-        print(f"Server: {server}, server user: {server.user}, server password: {server.password}, server ip: {server.ip}, server port: {server.port}")
+        print(f"Server: {server}, server user: {server.user}, server password: {server.password}, server ip: {server.host}, server port: {server.port}")
         
         if server.dbms.name.lower() == 'mysql':  
             try:
-                conn_mysql = mdb.connect(host=server.ip, port=int(server.port), user=server.user, passwd=server.password, db=server.database)
+                conn_mysql = mdb.connect(host=server.host, port=int(server.port), user=server.user, passwd=server.password, db=server.database)
                 print('Connected to MySQL server')
                 cursor = conn_mysql.cursor()
                 for account in db_accounts:
@@ -1104,7 +1108,7 @@ class AddUserAccountToExternalDB(ViewSet):
             # connect to mysql server using odbc driver
 
             # try:
-            #     conn_mysql = pyodbc.connect(f"DRIVER={server.driver};SERVER={server.ip};PORT={server.port};DATABASE={server.database};USER={server.user};PASSWORD={server.password}")
+            #     conn_mysql = pyodbc.connect(f"DRIVER={server.driver};SERVER={server.host};PORT={server.port};DATABASE={server.database};USER={server.user};PASSWORD={server.password}")
             #     print('Connected to MySQL server')
             #     cursor = conn_mysql.cursor()
             #     for account in db_accounts:
@@ -1126,7 +1130,7 @@ class AddUserAccountToExternalDB(ViewSet):
 
         elif server.dbms.name.lower() == 'postgres' or server.dbms.name.lower() == 'postgresql': 
             try:
-                conn_postgres = psycopg2.connect(dbname=server.database, user=server.user, password=server.password, host=server.ip, port=server.port)
+                conn_postgres = psycopg2.connect(dbname=server.database, user=server.user, password=server.password, host=server.host, port=server.port)
                 print('Connected to Postgres server')
                 cursor = conn_postgres.cursor()
                 for account in db_accounts:
@@ -1155,7 +1159,7 @@ class AddUserAccountToExternalDB(ViewSet):
 
         elif server.dbms.name.lower() == 'mongo' or server.dbms.name.lower() == 'mongodb':
             try:
-                conn = MongoClient(f'mongodb://{server.user}:{server.password}@{server.ip}:{server.port}/')
+                conn = MongoClient(f'mongodb://{server.user}:{server.password}@{server.host}:{server.port}/')
                 db = conn[server.database]
                 for account in db_accounts:
                     print(account.username)
@@ -1187,7 +1191,7 @@ class AddUserAccountToExternalDB(ViewSet):
                 conn = oracledb.connect(
                     user=server.user,
                     password=server.password,
-                    dsn=f"{server.ip}:{server.port}/{server.database}")
+                    dsn=f"{server.host}:{server.port}/{server.database}")
 
                 print("Successfully connected to Oracle server.")
 
@@ -1233,7 +1237,7 @@ class RemoveUserFromExternalDB(ViewSet):
         
         if db_account_server_provider.lower() == 'mysql':
             try:
-                conn_mysql = mdb.connect(host=db_account.editionServer.server.ip, port=int(db_account.editionServer.server.port), user=db_account.editionServer.server.user, passwd=db_account.editionServer.server.password, db=db_account.editionServer.server.database)
+                conn_mysql = mdb.connect(host=db_account.editionServer.server.host, port=int(db_account.editionServer.server.port), user=db_account.editionServer.server.user, passwd=db_account.editionServer.server.password, db=db_account.editionServer.server.database)
                 print('Connected to MySQL server')  
                 cursor = conn_mysql.cursor()
                 cursor.execute(db_account.editionServer.server.delete_user_template % (db_account.username))
@@ -1249,7 +1253,7 @@ class RemoveUserFromExternalDB(ViewSet):
                 
         elif db_account_server_provider.lower() == 'postgres' or db_account_server_provider.lower() == 'postgresql':
             try:
-                conn_postgres = psycopg2.connect(dbname=db_account.editionServer.server.database, user=db_account.editionServer.server.user, password=db_account.editionServer.server.password, host=db_account.editionServer.server.ip, port=db_account.editionServer.server.port)
+                conn_postgres = psycopg2.connect(dbname=db_account.editionServer.server.database, user=db_account.editionServer.server.user, password=db_account.editionServer.server.password, host=db_account.editionServer.server.host, port=db_account.editionServer.server.port)
                 print('Connected to Postgres server')
                 cursor = conn_postgres.cursor()
                 cursor.execute(db_account.editionServer.server.delete_user_template % (db_account.username))
@@ -1264,7 +1268,7 @@ class RemoveUserFromExternalDB(ViewSet):
 
         elif db_account_server_provider.lower() == 'mongo' or db_account_server_provider.lower() == 'mongodb':
             try:
-                conn = MongoClient(f'mongodb://{db_account.editionServer.server.user}:{db_account.editionServer.server.password}@{db_account.editionServer.server.ip}:{db_account.editionServer.server.port}/')
+                conn = MongoClient(f'mongodb://{db_account.editionServer.server.user}:{db_account.editionServer.server.password}@{db_account.editionServer.server.host}:{db_account.editionServer.server.port}/')
                 db = conn[db_account.editionServer.server.database]
                 db.command({
                     "dropUser" : db_account.username
@@ -1282,7 +1286,7 @@ class RemoveUserFromExternalDB(ViewSet):
                 connection = oracledb.connect(
                     user=db_account.editionServer.server.user,
                     password=db_account.editionServer.server.password,
-                    dsn=f"{db_account.editionServer.server.ip}:{db_account.editionServer.server.port}/{db_account.editionServer.server.database}")
+                    dsn=f"{db_account.editionServer.server.host}:{db_account.editionServer.server.port}/{db_account.editionServer.server.database}")
 
                 cursor = connection.cursor()
                 # check if user exists
