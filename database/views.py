@@ -57,13 +57,13 @@ class UserViewSet(ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-
         if not user.has_perm('database.view_user'):
             raise PermissionDenied
 
         if user.is_superuser:
             return User.objects.all()
         return User.objects.filter(id=user.id)
+
 
     def create(self, request, *args, **kwargs):
         print("Creating admin...")
@@ -135,10 +135,8 @@ class TeacherViewSet(ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-
         if not user.has_perm('database.view_teacher'):
             raise PermissionDenied
-
         if user.is_superuser:
             return Teacher.objects.all()
         elif user.is_teacher:
@@ -249,14 +247,13 @@ class StudentViewSet(ModelViewSet):
         user.groups.add(student_group)
 
     def get_queryset(self):
-        user = self.request.user
-        
+        user = self.request.user  
         if not user.has_perm('database.view_student'):
             raise PermissionDenied
-
         if user.is_superuser:
             return Student.objects.all()
         elif user.is_teacher:
+
             teacher = Teacher.objects.get(user=user)
             groups = Group.objects.filter(teacherEdition__teacher=teacher)
             students = Student.objects.filter(groups__teacherEdition__teacher=teacher).prefetch_related(Prefetch('groups', queryset=groups))
@@ -264,6 +261,7 @@ class StudentViewSet(ModelViewSet):
             # student = Student.objects.get(user=user)
             # groups = Group.objects.filter(students=student).prefetch_related(Prefetch('students', queryset=Student.objects.filter(user=user)))
             # return groups.order_by('id').distinct()
+
         elif user.is_student:
             # student = get_object_or_404(Student, user=user)
             return Student.objects.filter(user=user)
@@ -690,14 +688,13 @@ class TeacherEditionViewSet(ModelViewSet):
             student = get_object_or_404(Student, user=self.request.user)
             return TeacherEdition.objects.filter(edition__groups__students=student).order_by('id')
 
-        return super().get_queryset()
+        return TeacherEdition.objects.none()
 
     def create(self, request, *args, **kwargs):
         user = request.user
 
         if not user.has_perm('database.add_teacheredition'):
             raise PermissionDenied
-
         return super().create(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
@@ -705,7 +702,6 @@ class TeacherEditionViewSet(ModelViewSet):
 
         if not user.has_perm('database.change_teacheredition'):
             raise PermissionDenied
-
         return super().update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
@@ -713,9 +709,7 @@ class TeacherEditionViewSet(ModelViewSet):
 
         if not user.has_perm('database.delete_teacheredition'):
             raise PermissionDenied
-
         return super().destroy(request, *args, **kwargs)
-
 
 
 # class SimpleTeacherEditionViewSet(ModelViewSet):
@@ -733,6 +727,7 @@ class TeacherEditionViewSet(ModelViewSet):
 #         'teacher__user__last_name',
 #         'edition',
 #     ]
+
 
 
 class GroupViewSet(ModelViewSet):
@@ -1188,7 +1183,7 @@ class AddUserAccountToExternalDB(ViewSet):
                     if exists:
                         DBAccount.objects.filter(id=account.id).update(is_moved=True)
                     else:
-                        db.command('createUser', account.username, pwd=account.password, roles=[{'role': 'readWrite', 'db': server.database}])
+                        db.command('createUser', account.username, pwd=account.password, roles=[{'role': server.create_user_template, 'db': server.database}])
                         moved_accounts.append(account.username)
                         DBAccount.objects.filter(id=account.id).update(is_moved=True)
                         print(f"Successfully created user '{account.username}' with '{account.password}' password.")
@@ -1741,4 +1736,93 @@ class UpdatePasswordAfterReset(ViewSet):
             return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
 
-        
+class ResetDBPassword(ViewSet):
+    
+    @action (methods=['post'], detail=False)
+    def reset_db_password(self, request, format=None):
+
+        user = request.user
+
+        if not user.has_perm('database.reset_db_password'):
+            raise PermissionDenied
+
+        data = request.data
+
+        if 'dbaccount_id' not in data:
+            print('Error: dbaccount_id not found in request data.')
+            return HttpResponseBadRequest(json.dumps({'name': 'Nie podano konta.'}), headers={'Content-Type': 'application/json'})
+
+        dbaccount_id = data['dbaccount_id']
+
+        try:
+            account_to_reset = DBAccount.objects.get(id=dbaccount_id)
+            new_password = PasswordGenerator().generate_password()
+            account_to_reset.password = new_password
+            account_to_reset.save()
+
+            server = Server.objects.get(id=account_to_reset.editionServer.server.id)
+
+            if server.provider == 'MySQL':
+                conn_mysql = mdb.connect(host=server.ip, port=int(server.port), user=server.user, passwd=server.password, db=server.database)
+                cursor = conn_mysql.cursor()
+                cursor.execute(server.modify_user_template % (account_to_reset.username, new_password))
+                conn_mysql.commit()
+                conn_mysql.close()
+            elif server.provider == 'Postgres':
+                conn_postgres = psycopg2.connect(host=server.ip, port=server.port, user=server.user, password=server.password, database=server.database)
+                cursor = conn_postgres.cursor()
+                cursor.execute(server.modify_user_template % (account_to_reset.username, new_password))
+                conn_postgres.commit()
+                conn_postgres.close()
+            elif server.provider == 'Oracle':
+                oracledb.init_oracle_client()
+
+                conn = oracledb.connect(
+                    user=server.user,
+                    password=server.password,
+                    dsn=f"{server.ip}:{server.port}/{server.database}")
+                cursor = conn.cursor()
+                cursor.execute(server.modify_user_template % (account_to_reset.username, new_password))
+                conn.commit()
+                conn.close()
+            elif server.provider == 'MongoDB':
+                conn = MongoClient(f'mongodb://{server.user}:{server.password}@{server.ip}:{server.port}/')
+                db = conn[server.database]
+                db.command("updateUser", account_to_reset.username, pwd=new_password)
+                conn.close()
+            else:
+                print('Error: Unknown server provider.')
+                return HttpResponseBadRequest(json.dumps({'name': 'Nieznany SZBD.'}), headers={'Content-Type': 'application/json'})
+
+            print("Password reseted for account: ", account_to_reset.username)
+            return JsonResponse({'name': "Succesfull password reset for account of id: " + str(account_to_reset.id)}, status=200)
+        except Exception as error:
+            print(error)
+            return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
+
+class DeleteEdition(ViewSet):
+    
+    @action (methods=['post'], detail=False)
+    def delete_edition(self, request, format=None):
+
+        user = request.user
+
+        if not user.has_perm('database.delete_edition'):
+            raise PermissionDenied
+
+        data = request.data
+
+        if 'edition_id' not in data:
+            print('Error: edition_id not found in request data.')
+            return HttpResponseBadRequest(json.dumps({'name': 'Nie podano edycji.'}), headers={'Content-Type': 'application/json'})
+
+        edition_id = data['edition_id']
+
+        try:
+            edition_to_delete = Edition.objects.get(id=edition_id)
+            edition_to_delete.delete()
+            print("Edition deleted: ", edition_to_delete.id)
+            return JsonResponse({'name': "Succesfull edition delete of id: " + str(edition_to_delete.id)}, status=200)
+        except Exception as error:
+            print(error)
+            return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
