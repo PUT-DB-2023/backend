@@ -1,5 +1,5 @@
 from rest_framework.serializers import ModelSerializer
-from .models import User, Teacher, Student, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
+from .models import User, Teacher, Student, Major, Course, Semester, Edition, TeacherEdition, Group, DBMS, Server, EditionServer, DBAccount
 
 
 class UserSerializer(ModelSerializer):
@@ -379,15 +379,40 @@ class GroupSerializerForStudent(ModelSerializer):
         return super(GroupSerializerForStudent, self).to_representation(instance)
 
 
+class DBMSSerializer(ModelSerializer):
+    class Meta:
+        model = DBMS
+        fields = [
+            'id',
+            'name',
+            'description',
+            'servers',
+        ]
+    
+    def to_representation(self, instance):
+        self.fields['servers'] = ServerSerializerForDBMS(many=True, read_only=True)
+        return super(DBMSSerializer, self).to_representation(instance)
+
+
+class BasicDBMSSerializer(ModelSerializer):
+    class Meta:
+        model = DBMS
+        fields = [
+            'id',
+            'name',
+            'description',
+        ]
+
+
 class ServerSerializer(ModelSerializer):
     class Meta:
         model = Server
         fields = [
             'id',
             'name',
-            'ip',
+            'host',
             'port',
-            'provider',
+            'dbms',
             'user',
             'password',
             'database',
@@ -396,6 +421,7 @@ class ServerSerializer(ModelSerializer):
             'create_user_template',
             'modify_user_template',
             'delete_user_template',
+            'custom_command_template',
             'username_template',
             'active',
         ]
@@ -404,14 +430,31 @@ class ServerSerializer(ModelSerializer):
     #     self.fields['editions'] = BasicEditionSerializer(many=True, read_only=True)
     #     return super(ServerSerializer, self).to_representation(instance)
 
+    def to_representation(self, instance):
+        self.fields['dbms'] = BasicDBMSSerializer(many=False, read_only=True)
+        return super(ServerSerializer, self).to_representation(instance)
+
 class BasicServerSerializer(ModelSerializer):
     class Meta:
         model = Server
         fields = [
             'id',
             'name',
-            'provider',
+            'dbms',
             'active',
+        ]
+    
+    def to_representation(self, instance):
+        self.fields['dbms'] = BasicDBMSSerializer(many=False, read_only=True)
+        return super(BasicServerSerializer, self).to_representation(instance)
+
+
+class ServerSerializerForDBMS(ModelSerializer):
+    class Meta:
+        model = Server
+        fields = [
+            'id',
+            'name',
         ]
 
 
