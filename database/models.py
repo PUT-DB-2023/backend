@@ -8,6 +8,16 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import PermissionsMixin
 
 
+def remove_accents(input_text):
+
+    accents='ŮôῡΒძěἊἦëĐᾇόἶἧзвŅῑἼźἓŉἐÿἈΌἢὶЁϋυŕŽŎŃğûλВὦėἜŤŨîᾪĝžἙâᾣÚκὔჯᾏᾢĠфĞὝŲŊŁČῐЙῤŌὭŏყἀхῦЧĎὍОуνἱῺèᾒῘᾘὨШūლἚύсÁóĒἍŷöὄЗὤἥბĔõὅῥŋБщἝξĢюᾫაπჟῸდΓÕűřἅгἰშΨńģὌΥÒᾬÏἴქὀῖὣᾙῶŠὟὁἵÖἕΕῨčᾈķЭτἻůᾕἫжΩᾶŇᾁἣჩαἄἹΖеУŹἃἠᾞåᾄГΠКíōĪὮϊὂᾱიżŦИὙἮὖÛĮἳφᾖἋΎΰῩŚἷРῈĲἁéὃσňİΙῠΚĸὛΪᾝᾯψÄᾭêὠÀღЫĩĈμΆᾌἨÑἑïოĵÃŒŸζჭᾼőΣŻçųøΤΑËņĭῙŘАдὗპŰἤცᾓήἯΐÎეὊὼΘЖᾜὢĚἩħĂыῳὧďТΗἺĬὰὡὬὫÇЩᾧñῢĻᾅÆßшδòÂчῌᾃΉᾑΦÍīМƒÜἒĴἿťᾴĶÊΊȘῃΟúχΔὋŴćŔῴῆЦЮΝΛῪŢὯнῬũãáἽĕᾗნᾳἆᾥйᾡὒსᾎĆрĀüСὕÅýფᾺῲšŵкἎἇὑЛვёἂΏθĘэᾋΧĉᾐĤὐὴιăąäὺÈФĺῇἘſგŜæῼῄĊἏØÉПяწДĿᾮἭĜХῂᾦωთĦлðὩზკίᾂᾆἪпἸиᾠώᾀŪāоÙἉἾρаđἌΞļÔβĖÝᾔĨНŀęᾤÓцЕĽŞὈÞუтΈέıàᾍἛśìŶŬȚĳῧῊᾟάεŖᾨᾉςΡმᾊᾸįᾚὥηᾛġÐὓłγľмþᾹἲἔбċῗჰხοἬŗŐἡὲῷῚΫŭᾩὸùᾷĹēრЯĄὉὪῒᾲΜᾰÌœĥტ'
+    ascii_replacements='UoyBdeAieDaoiiZVNiIzeneyAOiiEyyrZONgulVoeETUiOgzEaoUkyjAoGFGYUNLCiIrOOoqaKyCDOOUniOeiIIOSulEySAoEAyooZoibEoornBSEkGYOapzOdGOuraGisPngOYOOIikoioIoSYoiOeEYcAkEtIuiIZOaNaicaaIZEUZaiIaaGPKioIOioaizTIYIyUIifiAYyYSiREIaeosnIIyKkYIIOpAOeoAgYiCmAAINeiojAOYzcAoSZcuoTAEniIRADypUitiiIiIeOoTZIoEIhAYoodTIIIaoOOCSonyKaAsSdoACIaIiFIiMfUeJItaKEISiOuxDOWcRoiTYNLYTONRuaaIeinaaoIoysACRAuSyAypAoswKAayLvEaOtEEAXciHyiiaaayEFliEsgSaOiCAOEPYtDKOIGKiootHLdOzkiaaIPIIooaUaOUAIrAdAKlObEYiINleoOTEKSOTuTEeiaAEsiYUTiyIIaeROAsRmAAiIoiIgDylglMtAieBcihkoIrOieoIYuOouaKerYAOOiaMaIoht'
+
+    translator=str.maketrans(accents, ascii_replacements)
+    
+    return input_text.translate(translator)
+
+
 class CustomUserManager(UserManager):
 
     use_in_migrations = True
@@ -18,6 +28,7 @@ class CustomUserManager(UserManager):
             raise ValueError('Users must have an email address')
         if not password:
             raise ValueError('Users must have a password')
+        email = remove_accents(email)
         user = self.model(email=self.normalize_email(email), **extra_fields)
         user.password = make_password(password)
         user.save(using=self._db)
@@ -50,6 +61,9 @@ class User(AbstractUser, PermissionsMixin):
 class Teacher(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='teacher')
 
+    def __str__(self):
+        return f"{self.user.first_name} {self.user.last_name}"
+
 
 class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student')
@@ -57,25 +71,19 @@ class Student(models.Model):
     student_id = models.CharField(max_length=6, unique=True)
     major = models.ForeignKey('Major', on_delete=models.SET_NULL, blank=True, null=True, related_name='students')
 
-
-class Permission(models.Model):
-    name = models.CharField(max_length=30, unique=True)
-    description = models.CharField(max_length=255, blank=True, default='')
-
-
-class Role(models.Model):
-    name = models.CharField(max_length=30, unique=True)
-    description = models.CharField(max_length=255, blank=True, default='')
-    permissions = models.ManyToManyField(Permission, blank=True, related_name='roles')
-    users = models.ManyToManyField(User, related_name='roles', blank=True)
+    def __str__(self):
+        return f"{self.user.first_name} {self.user.last_name}"
 
 
 class Major(models.Model):
-    name = models.CharField(max_length=30, unique=True)
+    name = models.CharField(max_length=50, unique=True)
     description = models.CharField(max_length=255, blank=True, default='')
 
+    def __str__(self):
+        return self.name
+
 class Course(models.Model):
-    name = models.CharField(max_length=30, unique=True)
+    name = models.CharField(max_length=50, unique=True)
     major = models.ForeignKey(Major, on_delete=models.SET_NULL, blank=True, null=True, related_name='courses')
     description = models.CharField(max_length=255, blank=True, default='')
     active = models.BooleanField(default=False)
@@ -97,6 +105,9 @@ class Course(models.Model):
             print(f"No editions found for course: {self}")
             self.active = False
         super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
 
 
 class Semester(models.Model):
@@ -137,6 +148,10 @@ class Semester(models.Model):
         for course in Course.objects.all():
             print(f"Checking course: {course}")
             course.save()
+    
+    def __str__(self):
+        # return year and winter if self.winter=True, else return year and summer
+        return f"{self.start_year}/{self.start_year + 1} - {'zima' if self.winter else 'lato'}"
 
 class Edition(models.Model):
     description = models.CharField(max_length=255, blank=True, default='')
@@ -169,6 +184,9 @@ class Edition(models.Model):
         print("Saving course")
         self.course.save()
 
+    def __str__(self):
+        return f"{self.course} - {self.semester}"
+
 
 class TeacherEdition(models.Model):
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
@@ -178,44 +196,68 @@ class TeacherEdition(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['teacher', 'edition'], name='unique_teacher_edition'),
         ]
+    
+    def __str__(self):
+        return f"{self.teacher} - {self.edition}"
 
 
 class Group(models.Model):
-    name = models.CharField(max_length=30)
+    name = models.CharField(max_length=50)
     day = models.CharField(max_length=30, blank=True, default='')
     hour = models.CharField(max_length=30, blank=True, default='')
     room = models.CharField(max_length=30, blank=True, default='')
     teacherEdition = models.ForeignKey(TeacherEdition, on_delete=models.CASCADE, related_name='groups')
     students = models.ManyToManyField(Student, blank=True, related_name='groups')
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['teacherEdition', 'name'], name='unique_group'),
+        ]
+    
+    def __str__(self):
+        return self.name
 
-# class DBProvider(models.Model):
-#     name = models.CharField(max_length=30)
-#     description = models.CharField(max_length=255, blank=True, default='')
+
+class DBMS(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    description = models.CharField(max_length=255, blank=True, default='')
+
+    def __str__(self):
+        return self.name
+
 
 class Server(models.Model):
-    name = models.CharField(max_length=30)
-    ip = models.CharField(max_length=30)
-    port = models.CharField(max_length=10)
-    provider = models.CharField(max_length=30)
-    # provider = models.ForeignKey(DBProvider, on_delete=models.SET_NULL, null=True, related_name='servers')
-    user = models.CharField(max_length=30)
-    password = models.CharField(max_length=30)
-    database = models.CharField(max_length=30)
+    name = models.CharField(max_length=255)
+    host = models.CharField(max_length=255)
+    port = models.CharField(max_length=255)
+    # provider = models.CharField(max_length=30)
+    dbms = models.ForeignKey(DBMS, on_delete=models.CASCADE, related_name='servers')
+    user = models.CharField(max_length=255)
+    password = models.CharField(max_length=255)
+    database = models.CharField(max_length=255)
     date_created = models.DateField(auto_now_add=True)
     active = models.BooleanField(default=True)
     editions = models.ManyToManyField(Edition, through='EditionServer', related_name='servers')
+
     create_user_template = models.CharField(max_length=255, blank=True, default='')
     modify_user_template = models.CharField(max_length=255, blank=True, default='')
     delete_user_template = models.CharField(max_length=255, blank=True, default='')
+    custom_command_template = models.CharField(max_length=1023, blank=True, default='')
+
     username_template = models.CharField(max_length=255, null=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.dbms.name}"
+
 
 class EditionServer(models.Model):
     edition = models.ForeignKey(Edition, on_delete=models.CASCADE)
     server = models.ForeignKey(Server, on_delete=models.CASCADE)
     additional_info = models.CharField(max_length=255, blank=True, default='')
-    # username_template = models.CharField(max_length=255, null=True)
-    # passwd_template = models.CharField(max_length=255, null=True)
+
+    def __str__(self):
+        return f"{self.edition} - {self.server}"
+
 
 class DBAccount(models.Model):
     username = models.CharField(max_length=30)
@@ -229,3 +271,6 @@ class DBAccount(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['username', 'editionServer'], name='unique_username_editionserver'),
         ]
+    
+    def __str__(self):
+        return self.username

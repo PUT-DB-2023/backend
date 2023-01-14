@@ -9,6 +9,9 @@ from rest_framework.viewsets import ModelViewSet, ViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
+from django.contrib.auth.hashers import check_password
+from django.contrib.auth.models import Group as AuthGroup
+from django.db.models import Prefetch
 
 import MySQLdb as mdb
 import psycopg2
@@ -18,45 +21,85 @@ import oracledb
 from pymongo import MongoClient
 
 import csv
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse, HttpResponseServerError, HttpResponseNotFound
+from django.db import IntegrityError
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 import json
 
 from database.password_generator import PasswordGenerator
-from .serializers import UserSerializer, TeacherSerializer, StudentSerializer, RoleSerializer, PermissionSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, TeacherEditionSerializer, GroupSerializer, ServerSerializer, EditionServerSerializer, DBAccountSerializer, SimpleTeacherEditionSerializer
-from .models import User, Teacher, Student, Role, Permission, Major, Course, Semester, Edition, TeacherEdition, Group, Server, EditionServer, DBAccount
+from database.sender import EmailSender
+from .serializers import UserSerializer, TeacherSerializer, DetailedTeacherSerializer, StudentSerializer, DetailedStudentSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, BasicEditionSerializer, TeacherEditionSerializer, GroupSerializer, DetailedGroupSerializer, DBMSSerializer, GroupSerializerForStudent, ServerSerializer, EditionServerSerializer, DBAccountSerializer
+# , SimpleTeacherEditionSerializer
+from .models import User, Teacher, Student, Major, Course, Semester, Edition, TeacherEdition, Group, DBMS, Server, EditionServer, DBAccount
+
+INVALID_EMAIL = 'Niepoprawny adres email.'
+EMAIL_DUPLICATED = 'Podany adres email jest już zajęty.'
+MISSING_FIELDS = 'Nie podano wszystkich wymaganych pól.'
+
+def email_validation(email):
+    try:
+        validate_email(email)
+        # print("Valid email address.")
+    except ValidationError:
+        # print("Bad request. Błędny adres email.")
+        return False
+    return True
+
 
 class UserViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting users.
     """
     serializer_class = UserSerializer
-    queryset = User.objects.prefetch_related('roles')
+    queryset = User.objects.all()
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'roles', 'is_student', 'is_teacher', 'is_staff', 'is_superuser', 'is_active']
+    filterset_fields = ['id', 'password', 'email', 'first_name', 'last_name', 'is_student', 'is_teacher', 'is_staff', 'is_superuser', 'is_active']
 
     def get_queryset(self):
         user = self.request.user
         if not user.has_perm('database.view_user'):
             raise PermissionDenied
-        if user.is_superuser or user.is_teacher:
+
+        if user.is_superuser:
             return User.objects.all()
-        elif user.is_student:
-            return User.objects.filter(id=user.id)
+        return User.objects.filter(id=user.id)
+
 
     def create(self, request, *args, **kwargs):
+        print("Creating admin...")
         user = request.user
-        if not user.get_permission('database.add_user'):
+        if not user.has_perm('database.add_user'):
             raise PermissionDenied()
-        return super().create(request, *args, **kwargs)
+        # create superuser
+        if not user.is_superuser:
+            raise PermissionDenied()
+        
+        if not email_validation(request.data['email']):
+            return JsonResponse({'name': INVALID_EMAIL}, status=400)
+
+        password = User.objects.make_random_password()
+        print(f"Email: {request.data['email']}\nPassword: {password}")
+        
+        new_superuser = User.objects.create_superuser(
+            email=request.data['email'],
+            # password=PasswordGenerator(10).generate_password(),
+            password=password,
+            first_name=request.data['first_name'],
+            last_name=request.data['last_name'],
+            *args, **kwargs)
+        print('superuser created:', new_superuser)
+        return Response(UserSerializer(new_superuser).data, status=201)
 
     def update(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.change_user'):
+        if not user.has_perm('database.change_user'):
             raise PermissionDenied()
         return super().update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.delete_user'):
+        if not user.has_perm('database.delete_user'):
             raise PermissionDenied()
         return super().destroy(request, *args, **kwargs)
 
@@ -66,7 +109,7 @@ class TeacherViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting teachers.
     """
     serializer_class = TeacherSerializer
-    queryset = Teacher.objects.prefetch_related('editions__semester', 'editions__course')
+    queryset = Teacher.objects.all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id',
@@ -74,7 +117,6 @@ class TeacherViewSet(ModelViewSet):
         'user__email',
         'user__first_name',
         'user__last_name',
-        'user__roles',
         'editions__semester',
         'editions__semester__start_year',
         'editions__semester__winter',
@@ -83,39 +125,98 @@ class TeacherViewSet(ModelViewSet):
         'editions__course__name',
     ]
 
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return DetailedTeacherSerializer
+        return TeacherSerializer
+
+    def grant_teacher_permissions(self, user):
+        teacher_group = AuthGroup.objects.get(name='TeacherGroup')
+        user.groups.add(teacher_group)
+
     def get_queryset(self):
         user = self.request.user
         if not user.has_perm('database.view_teacher'):
             raise PermissionDenied
         if user.is_superuser:
-            return Teacher.objects.prefetch_related('editions__semester', 'editions__course')
+            return Teacher.objects.all()
         elif user.is_teacher:
             teacher = get_object_or_404(Teacher, user=self.request.user)
-            return Teacher.objects.prefetch_related('editions__semester', 'editions__course').filter(id=teacher.id)
+            return Teacher.objects.all().filter(id=teacher.id)
         elif user.is_student:
             student = get_object_or_404(Student, user=self.request.user)
-            return Teacher.objects.prefetch_related('editions__semester', 'editions__course').filter(teacheredition__groups__students=student).distinct()
+            print('Debug: ', Teacher.objects.all().filter(teacheredition__groups__students=student).distinct())
+            return Teacher.objects.all().filter(teacheredition__groups__students=student).distinct()
         else:
             return Teacher.objects.none()
 
-
     def create(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.add_teacher'):
+        if not user.has_perm('database.add_teacher'):
             raise PermissionDenied()
-        return super().create(request, *args, **kwargs)
+        # check if request.data contains fields from user model
+        if 'email' in request.data and 'first_name' in request.data and 'last_name' in request.data:
+            if not email_validation(request.data['email']):
+                return JsonResponse({'name': INVALID_EMAIL}, status=400)
+            try:
+                # new_password = PasswordGenerator(10).generate_password()
+                new_password = 'password'
+                user = User.objects.create_user(
+                    email=request.data['email'],
+                    first_name=request.data['first_name'],
+                    last_name=request.data['last_name'],
+                    password = new_password,
+                    is_teacher=True,
+                )
+                TeacherViewSet.grant_teacher_permissions(self, user)
+                teacher = Teacher.objects.create(user=user)
+                email_sender = EmailSender()
+                email_sender.send_email_gmail("putdb2023@gmail.com", new_password)
+                return Response(TeacherSerializer(teacher).data, status=201)
+            except IntegrityError:
+                return JsonResponse({'name': EMAIL_DUPLICATED}, status=400)
+            except ValidationError:
+                return JsonResponse({'name': INVALID_EMAIL}, status=400)
+            except Exception as e:
+                return JsonResponse({'name': str(e)}, status=400)
+        else:
+            return JsonResponse({'name': MISSING_FIELDS}, status=400)
 
     def update(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.change_teacher'):
+        if not user.has_perm('database.change_teacher'):
             raise PermissionDenied()
-        return super().update(request, *args, **kwargs)
+        print(f"request.data {request.data}")
+        # check if request.data contains fields from user model
+        if 'email' in request.data and 'first_name' in request.data and 'last_name' in request.data:
+            try:
+                teacher = self.get_object()
+                user = teacher.user
+                user.email = request.data['email']
+                user.first_name = request.data['first_name']
+                user.last_name = request.data['last_name']
+                user.save()
+                return Response(TeacherSerializer(teacher).data)
+            except IntegrityError:
+                return JsonResponse({'name': EMAIL_DUPLICATED}, status=400)
+            except ValidationError:
+                return JsonResponse({'name': INVALID_EMAIL}, status=400)
+            except Exception as e:
+                return JsonResponse({'name': str(e)}, status=400)
+        else:
+            return JsonResponse({'name': MISSING_FIELDS}, status=400)
 
     def destroy(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.delete_teacher'):
+        if not user.has_perm('database.delete_teacher'):
             raise PermissionDenied()
-        return super().destroy(request, *args, **kwargs)
+        # delete user
+        teacher = self.get_object()
+        user = teacher.user
+        user.delete()
+        # delete teacher
+        teacher.delete()
+        return Response(status=204)
         
 
 class StudentViewSet(ModelViewSet):
@@ -123,7 +224,7 @@ class StudentViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting students.
     """
     serializer_class = StudentSerializer
-    queryset = Student.objects.prefetch_related('groups', 'db_accounts')
+    queryset = Student.objects.all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id',
@@ -138,65 +239,123 @@ class StudentViewSet(ModelViewSet):
         'db_accounts__editionServer__server__name',
     ]
 
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return DetailedStudentSerializer
+        return StudentSerializer
+
+    def grant_student_permissions(self, user):
+        student_group = AuthGroup.objects.get(name='StudentGroup')
+        user.groups.add(student_group)
+
     def get_queryset(self):
         user = self.request.user  
         if not user.has_perm('database.view_student'):
             raise PermissionDenied
         if user.is_superuser:
-            return Student.objects.prefetch_related('groups', 'db_accounts')
+            return Student.objects.all()
         elif user.is_teacher:
-            teacher = get_object_or_404(Teacher, user=self.request.user)
-            return Student.objects.prefetch_related('groups', 'db_accounts').filter(groups__teacherEdition__teacher=teacher).distinct()
+
+            teacher = Teacher.objects.get(user=user)
+            groups = Group.objects.filter(teacherEdition__teacher=teacher)
+            students = Student.objects.filter(groups__teacherEdition__teacher=teacher).prefetch_related(Prefetch('groups', queryset=groups))
+            return students.distinct()
+            # student = Student.objects.get(user=user)
+            # groups = Group.objects.filter(students=student).prefetch_related(Prefetch('students', queryset=Student.objects.filter(user=user)))
+            # return groups.order_by('id').distinct()
+
         elif user.is_student:
-            student = get_object_or_404(Student, user=self.request.user)
-            return Student.objects.prefetch_related('groups', 'db_accounts').filter(id=student.id)
+            # student = get_object_or_404(Student, user=user)
+            return Student.objects.filter(user=user)
         else:
             return Student.objects.none()
 
+    # def retrieve(self, request, *args, **kwargs):
+    #     user = request.user
+
+    #     if not user.has_perm('database.view_student'):
+    #         raise PermissionDenied
+
+    #     instance = self.get_object()
+    #     serializer = self.get_serializer(instance)
+    #     groups = instance.groups.all()
+    #     db_accounts = instance.db_accounts.all()
+    #     resp = serializer.data
+    #     resp['groups'] = GroupSerializerForStudent(groups, many=True).data
+    #     resp['db_accounts'] = DBAccountSerializer(db_accounts, many=True).data
+    #     return Response(resp, status=200)
+
     def create(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.add_student'):
+        if not user.has_perm('database.add_student'):
             raise PermissionDenied()
-        return super().create(request, *args, **kwargs)
+        
+        # check if request.data contains fields from user model
+        if 'email' in request.data and 'first_name' in request.data and 'last_name' in request.data and 'student_id' in request.data and 'major' in request.data:
+            if not email_validation(request.data['email']):
+                return JsonResponse({'name': INVALID_EMAIL}, status=400)
+            try:
+                # new_password = PasswordGenerator(10).generate_password()
+                new_password = 'password'
+                user = User.objects.create_user(
+                    email=request.data['email'],
+                    first_name=request.data['first_name'],
+                    last_name=request.data['last_name'],
+                    password=new_password,
+                    is_student=True,
+                )
+                StudentViewSet.grant_student_permissions(self, user)
+                major = Major.objects.get(id=request.data['major'])
+                student = Student.objects.create(user=user, student_id=request.data['student_id'], major=major)
+                email_sender = EmailSender()
+                email_sender.send_email_gmail("putdb2023@gmail.com", new_password)
+                return Response(StudentSerializer(student).data, status=201)
+            except IntegrityError:
+                return JsonResponse({'name': EMAIL_DUPLICATED}, status=400)
+            except ValidationError:
+                return JsonResponse({'name': INVALID_EMAIL}, status=400)
+            except Exception as e:
+                return JsonResponse({'name': str(e)}, status=400)
+        else:
+            return JsonResponse({'name': MISSING_FIELDS}, status=400)
 
     def update(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.change_student'):
+        if not user.has_perm('database.change_student'):
             raise PermissionDenied()
-        return super().update(request, *args, **kwargs)
+        print(f"request.data {request.data}")
+        # check if request.data contains fields from user model
+        if 'email' in request.data and 'first_name' in request.data and 'last_name' in request.data and 'student_id' in request.data:
+            try:
+                student = self.get_object()
+                user = student.user
+                user.email = request.data['email']
+                user.first_name = request.data['first_name']
+                user.last_name = request.data['last_name']
+                user.save()
+                student.student_id = request.data['student_id']
+                student.save()
+                return Response(StudentSerializer(student).data)
+            except IntegrityError:
+                return JsonResponse({'name': EMAIL_DUPLICATED}, status=400)
+            except ValidationError:
+                return JsonResponse({'name': INVALID_EMAIL}, status=400)
+            except Exception as e:
+                return JsonResponse({'name': str(e)}, status=400)
+        else:
+            return JsonResponse({'name': MISSING_FIELDS}, status=400)
 
     def destroy(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.delete_student'):
+        if not user.has_perm('database.delete_student'):
             raise PermissionDenied()
-        return super().destroy(request, *args, **kwargs)
-        
-
-class RoleViewSet(ModelViewSet):
-    """
-    A simple ViewSet for listing, retrieving and posting roles.
-    """
-    serializer_class = RoleSerializer
-    queryset = Role.objects.prefetch_related('permissions', 'users')
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = [
-        'id', 'name', 'description',
-        'permissions', 'permissions__name', 
-        'users', 'users__first_name', 'users__last_name',
-    ]
-
-
-class PermissionViewSet(ModelViewSet):
-    """
-    A simple ViewSet for listing, retrieving and posting permissions.
-    """
-    serializer_class = PermissionSerializer
-    queryset = Permission.objects.all()
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = [
-        'id', 'name', 'description',
-        'roles', 'roles__name', 'roles__users', 'roles__users__first_name', 'roles__users__last_name',
-    ]
+        # delete user
+        student = self.get_object()
+        user = student.user
+        user.delete()
+        # delete student
+        student.delete()
+        return Response(status=204)
 
 
 class MajorViewSet(ModelViewSet):
@@ -204,25 +363,25 @@ class MajorViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting majors.
     """
     serializer_class = MajorSerializer
-    queryset = Major.objects.prefetch_related('courses')
+    queryset = Major.objects.all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'courses', 'courses__name']
 
     def create(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.add_major'):
+        if not user.has_perm('database.add_major'):
             raise PermissionDenied()
         return super().create(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.change_major'):
+        if not user.has_perm('database.change_major'):
             raise PermissionDenied()
         return super().update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         user = request.user
-        if not user.get_permission('database.delete_major'):
+        if not user.has_perm('database.delete_major'):
             raise PermissionDenied()
         return super().destroy(request, *args, **kwargs)
 
@@ -238,7 +397,7 @@ class CourseViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting courses.
     """
     serializer_class = CourseSerializer
-    queryset = Course.objects.prefetch_related('editions').order_by('id')
+    queryset = Course.objects.all().order_by('id')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'name', 'major', 'active', 'description', 'editions']
 
@@ -267,13 +426,13 @@ class CourseViewSet(ModelViewSet):
             raise PermissionDenied
 
         if user.is_superuser:
-            return Course.objects.prefetch_related('editions').order_by('id')
+            return Course.objects.all().order_by('id')
         elif user.is_teacher:
             teacher = get_object_or_404(Teacher, user=self.request.user)
-            return Course.objects.prefetch_related('editions').filter(editions__teachers=teacher).order_by('id').distinct()
+            return Course.objects.all().filter(editions__teachers=teacher).order_by('id').distinct()
         elif user.is_student:
             student = get_object_or_404(Student, user=self.request.user)
-            return Course.objects.prefetch_related('editions').filter(editions__teacheredition__groups__students=student).order_by('id').distinct()
+            return Course.objects.all().filter(editions__teacheredition__groups__students=student).order_by('id').distinct()
         else:
             return Course.objects.none()
 
@@ -283,7 +442,7 @@ class SemesterViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting semesters.
     """
     serializer_class = SemesterSerializer
-    queryset = Semester.objects.prefetch_related('editions')
+    queryset = Semester.objects.all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['id', 'start_year', 'winter', 'active', 'editions']
 
@@ -329,8 +488,7 @@ class SemesterViewSet(ModelViewSet):
         if not user.has_perm('database.view_semester'):
             raise PermissionDenied
 
-        return Semester.objects.prefetch_related('editions')
-
+        return Semester.objects.all()
 
 
 class SimpleSemesterViewSet(ModelViewSet):
@@ -348,12 +506,13 @@ class SimpleSemesterViewSet(ModelViewSet):
         'editions'
     ]
 
+
 class EditionViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting editions.
     """
     serializer_class = EditionSerializer
-    queryset = Edition.objects.prefetch_related('teachers', 'servers').select_related('course', 'semester')
+    queryset = Edition.objects.all()
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id', 
@@ -411,7 +570,6 @@ class EditionViewSet(ModelViewSet):
         except Exception as error:
             return HttpResponseBadRequest(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
-
     def update(self, request, *args, **kwargs):
         user = request.user
 
@@ -458,7 +616,6 @@ class EditionViewSet(ModelViewSet):
                 return HttpResponseBadRequest(json.dumps({'name': 'Edycja już istnieje.'}), headers={'Content-Type': 'application/json'})
             return HttpResponseBadRequest(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
-    
     def destroy(self, request, *args, **kwargs):
         user = request.user
 
@@ -505,7 +662,7 @@ class TeacherEditionViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting teachers in editions.
     """
     serializer_class = TeacherEditionSerializer
-    queryset = TeacherEdition.objects.select_related('teacher', 'edition__semester', 'edition__course').prefetch_related('edition__servers').order_by('id')
+    queryset = TeacherEdition.objects.all().order_by('id')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id',
@@ -530,7 +687,17 @@ class TeacherEditionViewSet(ModelViewSet):
 
         if not user.has_perm('database.view_teacheredition'):
             raise PermissionDenied
-        return super().get_queryset()
+        if user.is_superuser:
+            return super().get_queryset()
+        elif user.is_teacher:
+            teacher = get_object_or_404(Teacher, user=self.request.user)
+            print(f"Teacher: {teacher}")
+            return TeacherEdition.objects.filter(teacher=teacher).order_by('id')
+        elif user.is_student:
+            student = get_object_or_404(Student, user=self.request.user)
+            return TeacherEdition.objects.filter(edition__groups__students=student).order_by('id')
+
+        return TeacherEdition.objects.none()
 
     def create(self, request, *args, **kwargs):
         user = request.user
@@ -554,20 +721,21 @@ class TeacherEditionViewSet(ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
 
-class SimpleTeacherEditionViewSet(ModelViewSet):
-    """
-    A simple ViewSet for listing, retrieving and posting teachers in editions.
-    """
-    serializer_class = SimpleTeacherEditionSerializer
-    queryset = TeacherEdition.objects.select_related('teacher').only('id', 'teacher_id')
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = [
-        'id',
-        'teacher',
-        'teacher__user__first_name',
-        'teacher__user__last_name',
-        'edition',
-    ]
+# class SimpleTeacherEditionViewSet(ModelViewSet):
+#     """
+#     A simple ViewSet for listing, retrieving and posting teachers in editions.
+#     """
+#     serializer_class = SimpleTeacherEditionSerializer
+#     queryset = TeacherEdition.objects.select_related('teacher').only('id', 'teacher_id')
+#     filter_backends = [DjangoFilterBackend]
+#     filterset_fields = [
+#         'id',
+#         'teacher',
+#         'teacher__user',
+#         'teacher__user__first_name',
+#         'teacher__user__last_name',
+#         'edition',
+#     ]
 
 
 
@@ -576,7 +744,7 @@ class GroupViewSet(ModelViewSet):
     A simple ViewSet for listing, retrieving and posting groups.
     """
     serializer_class = GroupSerializer
-    queryset = Group.objects.select_related('teacherEdition__teacher', 'teacherEdition__edition__semester', 'teacherEdition__edition__course').prefetch_related('students', 'teacherEdition__edition__servers').order_by('id')
+    queryset = Group.objects.all().order_by('id')
     filter_backends = [DjangoFilterBackend]
     filterset_fields = [
         'id', 
@@ -594,13 +762,18 @@ class GroupViewSet(ModelViewSet):
         'teacherEdition__edition__course__name',
         'teacherEdition__edition__servers',
         'teacherEdition__edition__servers__name',
-        'teacherEdition__edition__servers__ip',
+        'teacherEdition__edition__servers__host',
         'teacherEdition__edition__servers__port',
         'teacherEdition__edition__servers__active',
         'teacherEdition__teacher', 
         'teacherEdition__teacher__user__first_name', 
         'teacherEdition__teacher__user__last_name',
     ]
+
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return DetailedGroupSerializer
+        return GroupSerializer
 
     def retrieve(self, request, *args, **kwargs):
         user = request.user
@@ -611,19 +784,22 @@ class GroupViewSet(ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         all_accounts_moved = True
-        for student in instance.students.all():
-            for db_account in student.db_accounts.all():
-                if db_account.is_moved == False:
-                    all_accounts_moved = False
+
+        if not user.is_student:
+            for student in instance.students.all():
+                for db_account in student.db_accounts.all():
+                    if db_account.is_moved == False:
+                        all_accounts_moved = False
+                        break
+                if all_accounts_moved == False:
                     break
-            if all_accounts_moved == False:
-                break
         resp = serializer.data
         resp['all_accounts_moved'] = all_accounts_moved
         return Response(resp, status=200)
     
     # filter against current user
     def get_queryset(self):
+
         user = self.request.user
 
         if not user.has_perm('database.view_group'):
@@ -632,13 +808,52 @@ class GroupViewSet(ModelViewSet):
         if user.is_superuser:
             return Group.objects.order_by('id')
         elif user.is_teacher:
-            teacher = get_object_or_404(Teacher, user=self.request.user)
+            teacher = get_object_or_404(Teacher, user=user)
             return Group.objects.filter(teacherEdition__teacher=teacher).order_by('id').distinct()
         elif user.is_student:
-            student = get_object_or_404(Student, user=self.request.user)
-            return Group.objects.filter(students=student).order_by('id').distinct()
+            # student = get_object_or_404(Student, user=user)
+            # return Group.objects.filter(students=student).order_by('id').distinct()
+            student = Student.objects.get(user=user)
+            groups = Group.objects.filter(students=student).prefetch_related(Prefetch('students', queryset=student))
+            return groups.order_by('id').distinct()
         else:
             return Group.objects.none()
+
+
+class DBMSViewSet(ModelViewSet):
+    serializer_class = DBMSSerializer
+    queryset = DBMS.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = [
+        'id',
+        'name',
+        'description',
+        'servers',
+    ]
+
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        if not user.has_perm('database.add_dbms'):
+            raise PermissionDenied()
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        user = request.user
+        if not user.has_perm('database.change_dbms'):
+            raise PermissionDenied()
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        user = request.user
+        if not user.has_perm('database.delete_dbms'):
+            raise PermissionDenied()
+        return super().destroy(request, *args, **kwargs)
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.has_perm('database.view_dbms'):
+            raise PermissionDenied
+        return super().get_queryset()
 
 
 class ServerViewSet(ModelViewSet):
@@ -652,7 +867,7 @@ class ServerViewSet(ModelViewSet):
     filterset_fields = [
         'id', 
         'name',
-        'ip', 
+        'host', 
         'port', 
         'date_created', 
         'active',
@@ -692,6 +907,7 @@ class ServerViewSet(ModelViewSet):
         if not user.has_perm('database.change_server'):
             raise PermissionDenied
         return super().update(request, *args, **kwargs)
+
 
 class EditionServerViewSet(ModelViewSet):
     """
@@ -744,6 +960,7 @@ class EditionServerViewSet(ModelViewSet):
         if not user.has_perm('database.change_editionserver'):
             raise PermissionDenied
         return super().update(request, *args, **kwargs)
+
 
 class DBAccountViewSet(ModelViewSet):
     """
@@ -799,11 +1016,11 @@ class DBAccountViewSet(ModelViewSet):
 
         return super().destroy(request, *args, **kwargs)
 
-
     def create(self, request, *args, **kwargs):
         user = request.user
         if not user.has_perm('database.add_dbaccount'):
             raise PermissionDenied
+
 
 class LoginView(ViewSet):
     def get_permissions(self):
@@ -817,12 +1034,12 @@ class LoginView(ViewSet):
         print('Request log:', login_data)
         # print('Request headers:', request.headers)
         user = authenticate(email=login_data['email'], password=login_data['password'])
-        print(user.get_all_permissions())
         if user is not None:
             login(request, user)
+            print(user.get_all_permissions())
             return JsonResponse(
                 {
-                    'name': 'Logged in successfully',
+                    'name': 'Udało się zalogować.',
                     'user': {
                         'id': user.id,
                         'first_name': user.first_name,
@@ -835,7 +1052,8 @@ class LoginView(ViewSet):
                     }
                 }, status=200)
         else:
-            return HttpResponseBadRequest(json.dumps({'message': 'Invalid credentials'}), headers={'Content-Type': 'application/json'})
+            return HttpResponseBadRequest(json.dumps({'name': 'Niepoprawne dane logowania.'}), headers={'Content-Type': 'application/json'})
+
 
 class LogoutView(ViewSet):
     def get_permissions(self):
@@ -847,7 +1065,7 @@ class LogoutView(ViewSet):
     def logout_user(self, request, format=None):
         print('logout', request)
         logout(request)
-        return Response({'message': 'Logged out successfully'}, status=200)
+        return Response({'name': 'Nastąpiło poprawne wylogowanie.'}, status=200)
 
 class AddUserAccountToExternalDB(ViewSet):
     @action (methods=['post'], detail=False)
@@ -859,29 +1077,41 @@ class AddUserAccountToExternalDB(ViewSet):
 
         accounts_data = request.data
         print('Request log:', accounts_data)
+
+        server = Server.objects.get(id=accounts_data['server_id'])
+        if not server.active:
+            return HttpResponseBadRequest(json.dumps({'name': f"Serwer ({server.name}) nie jest aktywny."}), headers={'Content-Type': 'application/json'})
+
         db_accounts = DBAccount.objects.filter(is_moved=False, editionServer__server__active=True, editionServer__server__id=accounts_data['server_id'], student__groups__id=accounts_data['group_id'])
 
         if not db_accounts:
             print('No accounts to move')
             server = Server.objects.get(id=accounts_data['server_id'])
-            return HttpResponseBadRequest(json.dumps({'name': f"Wszystkie konta w grupie zostały już utworzone w zewnętrznej bazie danych ({server.name} - {server.provider})."}), headers={'Content-Type': 'application/json'})
+            return HttpResponseBadRequest(json.dumps({'name': f"Wszystkie konta w grupie zostały już utworzone w zewnętrznej bazie danych ({server.name} - {server.dbms.name})."}), headers={'Content-Type': 'application/json'})
 
-        server = Server.objects.get(id=accounts_data['server_id'], active=True)
+        # server = Server.objects.get(id=accounts_data['server_id'], active=True)
         moved_accounts = []
 
-        print(f"Server: {server}, server user: {server.user}, server password: {server.password}, server ip: {server.ip}, server port: {server.port}")
+        print(f"Server: {server}, server user: {server.user}, server password: {server.password}, server ip: {server.host}, server port: {server.port}")
         
-        if server.provider.lower() == 'mysql':  
+        if server.dbms.name.lower() == 'mysql':  
             try:
-                conn_mysql = mdb.connect(host=server.ip, port=int(server.port), user=server.user, passwd=server.password, db=server.database)
+                conn_mysql = mdb.connect(host=server.host, port=int(server.port), user=server.user, passwd=server.password, db=server.database)
                 print('Connected to MySQL server')
                 cursor = conn_mysql.cursor()
                 for account in db_accounts:
                     print(server.create_user_template)
-                    cursor.execute(server.create_user_template % (account.username, account.password))
-                    moved_accounts.append(account.username)
-                    DBAccount.objects.filter(id=account.id).update(is_moved=True)
-                    print(f"Successfully created user '{account.username}' with '{account.password}' password.")
+                    cursor.execute("SELECT user FROM mysql.user WHERE user = '%s'" % (account.username))
+                    user_exists = cursor.fetchone()
+                    if user_exists:
+                        print(f"User '{account.username}' already exists in database.")
+                        DBAccount.objects.filter(id=account.id).update(is_moved=True)
+                        continue
+                    else:
+                        cursor.execute(server.create_user_template % (account.username, account.password))
+                        moved_accounts.append(account.username)
+                        DBAccount.objects.filter(id=account.id).update(is_moved=True)
+                        print(f"Successfully created user '{account.username}' with '{account.password}' password.")
                 conn_mysql.commit()
                 cursor.close()
                 conn_mysql.close()
@@ -891,13 +1121,13 @@ class AddUserAccountToExternalDB(ViewSet):
             except (Exception, mdb.DatabaseError) as error:
                 print("error: ", error)
                 if error.args[0] == 2002:
-                    return HttpResponseBadRequest(json.dumps({'name': f"Nie udało się połączyć z serwerem baz danych ({server.name} - {server.provider})."}), headers={'Content-Type': 'application/json'})
+                    return HttpResponseBadRequest(json.dumps({'name': f"Nie udało się połączyć z serwerem baz danych ({server.name} - {server.dbms.name})."}), headers={'Content-Type': 'application/json'})
                 return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
             # connect to mysql server using odbc driver
 
             # try:
-            #     conn_mysql = pyodbc.connect(f"DRIVER={server.driver};SERVER={server.ip};PORT={server.port};DATABASE={server.database};USER={server.user};PASSWORD={server.password}")
+            #     conn_mysql = pyodbc.connect(f"DRIVER={server.driver};SERVER={server.host};PORT={server.port};DATABASE={server.database};USER={server.user};PASSWORD={server.password}")
             #     print('Connected to MySQL server')
             #     cursor = conn_mysql.cursor()
             #     for account in db_accounts:
@@ -917,30 +1147,38 @@ class AddUserAccountToExternalDB(ViewSet):
             #     return HttpResponse(error, status=500)
                 
 
-        elif server.provider.lower() == 'postgres' or server.provider.lower() == 'postgresql': 
+        elif server.dbms.name.lower() == 'postgres' or server.dbms.name.lower() == 'postgresql': 
             try:
-                conn_postgres = psycopg2.connect(dbname=server.database, user=server.user, password=server.password, host=server.ip, port=server.port)
+                conn_postgres = psycopg2.connect(dbname=server.database, user=server.user, password=server.password, host=server.host, port=server.port)
                 print('Connected to Postgres server')
                 cursor = conn_postgres.cursor()
                 for account in db_accounts:
                     print(account.username)
-                    cursor.execute('DROP ROLE IF EXISTS "%s";' % (account.username)) # TODO: implement checking if user exists
-                    cursor.execute(server.create_user_template % (account.username, account.password))
-                    moved_accounts.append(account.username)
-                    DBAccount.objects.filter(id=account.id).update(is_moved=True)
-                    print(f"Successfully created user '{account.username}' with '{account.password}' password.")
+                    cursor.execute('SELECT rolname FROM pg_roles WHERE rolname = %s', (account.username,))
+                    user_exists = cursor.fetchone()
+                    if user_exists:
+                        print(f"User '{account.username}' already exists in database.")
+                        DBAccount.objects.filter(id=account.id).update(is_moved=True)
+                        continue
+                    else:
+                        cursor.execute(server.create_user_template % (account.username, account.password))
+                        moved_accounts.append(account.username)
+                        DBAccount.objects.filter(id=account.id).update(is_moved=True)
+                        print(f"Successfully created user '{account.username}' with '{account.password}' password.")
                 conn_postgres.commit()
                 cursor.close()
                 conn_postgres.close()
                 return JsonResponse({'moved_accounts': moved_accounts}, status=200)
 
-            except (Exception) as error:
+            except Exception as error:
                 print(error)
+                if 'could not connect to server' in str(error):
+                    return HttpResponseBadRequest(json.dumps({'name': f"Nie udało się połączyć z serwerem baz danych ({server.name} - {server.dbms.name})."}), headers={'Content-Type': 'application/json'})
                 return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
-        elif server.provider.lower() == 'mongo' or server.provider.lower() == 'mongodb':
+        elif server.dbms.name.lower() == 'mongo' or server.dbms.name.lower() == 'mongodb':
             try:
-                conn = MongoClient(f'mongodb://{server.user}:{server.password}@{server.ip}:{server.port}/')
+                conn = MongoClient(f'mongodb://{server.user}:{server.password}@{server.host}:{server.port}/')
                 db = conn[server.database]
                 for account in db_accounts:
                     print(account.username)
@@ -955,7 +1193,7 @@ class AddUserAccountToExternalDB(ViewSet):
                     if exists:
                         DBAccount.objects.filter(id=account.id).update(is_moved=True)
                     else:
-                        db.command('createUser', account.username, pwd=account.password, roles=[{'role': 'readWrite', 'db': server.database}])
+                        db.command('createUser', account.username, pwd=account.password, roles=[{'role': server.create_user_template, 'db': server.database}])
                         moved_accounts.append(account.username)
                         DBAccount.objects.filter(id=account.id).update(is_moved=True)
                         print(f"Successfully created user '{account.username}' with '{account.password}' password.")
@@ -965,16 +1203,31 @@ class AddUserAccountToExternalDB(ViewSet):
                 print(error)
                 return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
-        elif server.provider.lower() == 'oracle' or server.provider.lower() == 'oracledb':
+        elif server.dbms.name.lower() == 'oracle' or server.dbms.name.lower() == 'oracledb':
             try:
-                conn = cx_Oracle.connect(server.user, server.password, f'{server.ip}:{server.port}/{server.database}')
+                oracledb.init_oracle_client()
+
+                conn = oracledb.connect(
+                    user=server.user,
+                    password=server.password,
+                    dsn=f"{server.host}:{server.port}/{server.database}")
+
+                print("Successfully connected to Oracle server.")
+
                 cursor = conn.cursor()
                 for account in db_accounts:
                     print(account.username)
-                    cursor.execute(server.create_user_template % (account.username, account.password))
-                    moved_accounts.append(account.username)
-                    DBAccount.objects.filter(id=account.id).update(is_moved=True)
-                    print(f"Successfully created user '{account.username}' with '{account.password}' password.")
+                    cursor.execute(f"SELECT * FROM DBA_USERS WHERE username = '{account.username}'")
+                    user_exists = cursor.fetchone()
+                    if user_exists:
+                        print(f"User '{account.username}' already exists in database.")
+                        DBAccount.objects.filter(id=account.id).update(is_moved=True)
+                        continue
+                    else:
+                        cursor.execute(server.create_user_template % (account.username, account.password))
+                        moved_accounts.append(account.username)
+                        DBAccount.objects.filter(id=account.id).update(is_moved=True)
+                        print(f"Successfully created user '{account.username}' with '{account.password}' password.")
                 conn.commit()
                 cursor.close()
                 return Response(json.dumps({
@@ -984,7 +1237,7 @@ class AddUserAccountToExternalDB(ViewSet):
                 print(error)
                 return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
         else:
-            return HttpResponseBadRequest(json.dumps({'name': 'Unknown provider.'}), headers={'Content-Type': 'application/json'})
+            return HttpResponseBadRequest(json.dumps({'name': 'Nieznany SZBD.'}), headers={'Content-Type': 'application/json'})
 
 
 class RemoveUserFromExternalDB(ViewSet):
@@ -999,11 +1252,11 @@ class RemoveUserFromExternalDB(ViewSet):
         print('Request log:', accounts_data)
 
         db_account = DBAccount.objects.get(id=accounts_data['dbaccount_id'])
-        db_account_server_provider = db_account.editionServer.server.provider
+        db_account_server_provider = db_account.editionServer.server.dbms.name
         
         if db_account_server_provider.lower() == 'mysql':
             try:
-                conn_mysql = mdb.connect(host=db_account.editionServer.server.ip, port=int(db_account.editionServer.server.port), user=db_account.editionServer.server.user, passwd=db_account.editionServer.server.password, db=db_account.editionServer.server.database)
+                conn_mysql = mdb.connect(host=db_account.editionServer.server.host, port=int(db_account.editionServer.server.port), user=db_account.editionServer.server.user, passwd=db_account.editionServer.server.password, db=db_account.editionServer.server.database)
                 print('Connected to MySQL server')  
                 cursor = conn_mysql.cursor()
                 cursor.execute(db_account.editionServer.server.delete_user_template % (db_account.username))
@@ -1019,7 +1272,7 @@ class RemoveUserFromExternalDB(ViewSet):
                 
         elif db_account_server_provider.lower() == 'postgres' or db_account_server_provider.lower() == 'postgresql':
             try:
-                conn_postgres = psycopg2.connect(dbname=db_account.editionServer.server.database, user=db_account.editionServer.server.user, password=db_account.editionServer.server.password, host=db_account.editionServer.server.ip, port=db_account.editionServer.server.port)
+                conn_postgres = psycopg2.connect(dbname=db_account.editionServer.server.database, user=db_account.editionServer.server.user, password=db_account.editionServer.server.password, host=db_account.editionServer.server.host, port=db_account.editionServer.server.port)
                 print('Connected to Postgres server')
                 cursor = conn_postgres.cursor()
                 cursor.execute(db_account.editionServer.server.delete_user_template % (db_account.username))
@@ -1032,10 +1285,9 @@ class RemoveUserFromExternalDB(ViewSet):
                 print(error)
                 return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
-
         elif db_account_server_provider.lower() == 'mongo' or db_account_server_provider.lower() == 'mongodb':
             try:
-                conn = MongoClient(f'mongodb://{db_account.editionServer.server.user}:{db_account.editionServer.server.password}@{db_account.editionServer.server.ip}:{db_account.editionServer.server.port}/')
+                conn = MongoClient(f'mongodb://{db_account.editionServer.server.user}:{db_account.editionServer.server.password}@{db_account.editionServer.server.host}:{db_account.editionServer.server.port}/')
                 db = conn[db_account.editionServer.server.database]
                 db.command({
                     "dropUser" : db_account.username
@@ -1046,9 +1298,36 @@ class RemoveUserFromExternalDB(ViewSet):
             except (Exception, mdb.DatabaseError) as error:
                 print(f"Error: {error}")
                 return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
+        elif db_account_server_provider.lower() == 'oracle' or db_account_server_provider.lower() == 'oracledb':
+            try:
+                oracledb.init_oracle_client()
+
+                connection = oracledb.connect(
+                    user=db_account.editionServer.server.user,
+                    password=db_account.editionServer.server.password,
+                    dsn=f"{db_account.editionServer.server.host}:{db_account.editionServer.server.port}/{db_account.editionServer.server.database}")
+
+                cursor = connection.cursor()
+                # check if user exists
+                cursor.execute(f"SELECT * FROM DBA_USERS WHERE username = '{db_account.username}'")
+                user_exists = cursor.fetchone()
+                if not user_exists:
+                    print(f"User '{db_account.username}' does not exist")
+                    DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
+                    return HttpResponseBadRequest(json.dumps({'name': 'Użytkownik nie istnieje.'}), headers={'Content-Type': 'application/json'})
+
+                cursor.execute(db_account.editionServer.server.delete_user_template % (db_account.username))
+                connection.commit()
+                DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
+                cursor.close()
+                print(f"Successfully deleted user '{db_account.username}'")
+                return HttpResponse(f'deleted_account: {db_account.username}', status=200)
+            except (Exception, mdb.DatabaseError) as error:
+                print(f"Error: {error}")
+                return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
 
         
-        return HttpResponseBadRequest(json.dumps({'name': 'Unknown provider.'}), headers={'Content-Type': 'application/json'})
+        return HttpResponseBadRequest(json.dumps({'name': 'Nieznany SZBD.'}), headers={'Content-Type': 'application/json'})
 
 
 class LoadStudentsFromCSV(ViewSet):
@@ -1057,7 +1336,7 @@ class LoadStudentsFromCSV(ViewSet):
     def load_students_csv(self, request, format=None):
 
         user = request.user
-        if not user.has_perm('database_accounts.load_from_csv'):
+        if not user.has_perm('database.load_from_csv'):
             raise PermissionDenied
 
         accounts_data = request.data
@@ -1074,6 +1353,7 @@ class LoadStudentsFromCSV(ViewSet):
             students_csv = students_csv.read().decode('utf-8-sig')
             csv_reader = csv.DictReader(students_csv.splitlines(), delimiter=',')
             students_list = list(csv_reader)
+            print('students_list: ', students_list)
         except Exception as error:
             print('Błędny plik csv.', error)
             return HttpResponseNotFound(json.dumps({'name': 'Błąd podczas wczytywania pliku csv. Upewnij się czy próbujesz przesłać poprawny plik (z kodowaniem UTF-8).'}), headers={'Content-Type': 'application/json'})
@@ -1083,6 +1363,16 @@ class LoadStudentsFromCSV(ViewSet):
         if 'first_name' not in students_list[0] or 'last_name' not in students_list[0] or 'email' not in students_list[0] or 'student_id' not in students_list[0]:
             print("Bad request. Błędny plik csv.")
             return HttpResponseBadRequest(json.dumps({'name': 'Błędny plik csv. Upewnij się, że zawiera on następujące kolumny: first_name, last_name, email i student_id.'}), headers={'Content-Type': 'application/json'})
+
+        # checking if all columns have appropriate values
+        for student in students_list:
+            if student['first_name'] is None or student['last_name'] is None or student['email'] is None or student['student_id'] is None:
+                print("Bad request. Nie wszystkie kolumny zawierają wartości.")
+                return HttpResponseBadRequest(json.dumps({'name': 'Nie wszystkie kolumny zawierają wartości.'}), headers={'Content-Type': 'application/json'})
+            if not email_validation(student['email']):
+                print("Bad request. Niepoprawny email.")
+                return HttpResponseBadRequest(json.dumps({'name': INVALID_EMAIL}), headers={'Content-Type': 'application/json'})
+        
 
         try:
             print(group_id)
@@ -1094,7 +1384,7 @@ class LoadStudentsFromCSV(ViewSet):
 
 
         try:
-            passwordGenerator = PasswordGenerator(8)
+            password_generator = PasswordGenerator(10)
             if group_to_add is None:
                 print('Group not found.')
                 return HttpResponseBadRequest(json.dumps({'name': 'Grupa nie została znaleziona.'}), headers={'Content-Type': 'application/json'})
@@ -1107,7 +1397,7 @@ class LoadStudentsFromCSV(ViewSet):
             students_passwords = []
 
             for student in students_list:
-                student_password = passwordGenerator.generate_password()
+                student_password = password_generator.generate_password()
                 students_passwords.append(student_password)
 
                 students_info.append({
@@ -1118,7 +1408,7 @@ class LoadStudentsFromCSV(ViewSet):
                     'student_id': student['student_id'],
                     'student_created': '',
                     'added_to_group': '',
-                    'account_created': {f"{editionServer.server.name} ({editionServer.server.provider})": {} for editionServer in available_edition_servers}
+                    'account_created': {f"{editionServer.server.name} ({editionServer.server.dbms.name})": {} for editionServer in available_edition_servers}
                 })
 
             for j, student in enumerate(students_list):
@@ -1150,7 +1440,7 @@ class LoadStudentsFromCSV(ViewSet):
 
                 if added_student in group_to_add.students.all():
                     print(f"Student {added_user.first_name} {added_user.last_name} already exists in group {group_to_add.name}.")
-                    students_info[student_info_index]['added_to_group'] = False # TODO: check if this works
+                    students_info[student_info_index]['added_to_group'] = False
                 else:
                     group_to_add.students.add(added_student)
                     print(f"Student {added_user.first_name} {added_user.last_name} added to group {group_to_add.name}.")
@@ -1170,14 +1460,14 @@ class LoadStudentsFromCSV(ViewSet):
 
                     if DBAccount.objects.filter(username=username_to_add, editionServer=edition_server).exists():
                         added_account = DBAccount.objects.get(username=username_to_add, editionServer=edition_server)
-                        students_info[student_info_index]['account_created'][f"{edition_server.server.name} ({edition_server.server.provider})"] = False
-                        print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server already exists.")
+                        students_info[student_info_index]['account_created'][f"{edition_server.server.name} ({edition_server.server.dbms.name})"] = False
+                        print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server already exists.")
                     else:
                         added_account = DBAccount.objects.create(
-                            username=username_to_add, password=passwordGenerator.generate_password(), student=added_student, editionServer=edition_server
+                            username=username_to_add, password=password_generator.generate_password(), student=added_student, editionServer=edition_server
                         )
-                        students_info[student_info_index]['account_created'][f"{edition_server.server.name} ({edition_server.server.provider})"] = True
-                        print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server.")
+                        students_info[student_info_index]['account_created'][f"{edition_server.server.name} ({edition_server.server.dbms.name})"] = True
+                        print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server.")
             
             group_to_add.save()
 
@@ -1293,7 +1583,7 @@ class AddStudentsToGroup(ViewSet):
                     if DBAccount.objects.filter(student=student_to_add, editionServer__server=edition_server.server).exists():
                         added_account = DBAccount.objects.get(student=student_to_add, editionServer__server=edition_server.server)
                         print(added_account)
-                        print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server already exists.")
+                        print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server already exists.")
                         print("After if, before else")
                     else:
                         print("After else, before create")
@@ -1303,7 +1593,7 @@ class AddStudentsToGroup(ViewSet):
                             )
                             print("After create")
                             added_accounts.append(added_account.username)
-                            print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.provider}) server.")                
+                            print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server.")                
             
             print("before save")
             group_to_add.save()
@@ -1360,6 +1650,172 @@ class RemoveStudentFromGroup(ViewSet):
             else:
                 print(f"Student {student_to_remove.first_name} {student_to_remove.last_name} does not exist in group {group_to_remove.name}.")
                 return HttpResponseBadRequest(json.dumps({'name': 'Student nie należy do tej grupy.'}), headers={'Content-Type': 'application/json'})
+        except Exception as error:
+            print(error)
+            return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
+
+class ResetOwnPassword(ViewSet):
+
+    @action (methods=['post'], detail=False)
+    def reset_own_password(self, request, format=None):
+
+        user = request.user
+
+        if not user.has_perm('database.reset_own_password'):
+            raise PermissionDenied
+
+        passwordGenerator = PasswordGenerator()
+        email_sender = EmailSender()
+
+        try:
+            account_to_reset = User.objects.get(id=user.id)
+            new_password = passwordGenerator.generate_password()
+            account_to_reset.set_password(new_password)
+            account_to_reset.save()
+            email_sender.send_email_gmail('putdb2023@gmail.com', new_password)
+            print(f"Password for {account_to_reset.email} reset.")
+            logout(request)
+            return JsonResponse({'name': "Succesfull password reset for account of id: " + str(account_to_reset.id)}, status=200)
+        except Exception as error:
+            print(error)
+            return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
+                
+
+class ResetStudentPassword(ViewSet):
+
+        @action (methods=['post'], detail=False)
+        def reset_student_password(self, request, format=None):
+    
+            user = request.user
+    
+            if not user.has_perm('database.reset_student_password'):
+                raise PermissionDenied
+    
+            data = request.data
+            print('Request log:', data)
+    
+            if 'account_id' not in data:
+                print('Error: account_id not found in request data.')
+                return HttpResponseBadRequest(json.dumps({'name': 'Nie podano konta.'}), headers={'Content-Type': 'application/json'})
+    
+            account_id = data['account_id']
+
+            passwordGenerator = PasswordGenerator()
+            email_sender = EmailSender()
+    
+            try:
+                account_to_reset = User.objects.get(id=account_id)
+                new_password = passwordGenerator.generate_password()
+                account_to_reset.set_password(new_password)
+                account_to_reset.save()
+                print("Password reseted for account: ", account_to_reset.first_name + " " + account_to_reset.last_name)
+                email_sender.send_email_gmail("putdb2023@gmail.com", new_password)
+                return JsonResponse({'name': "Succesfull password reset for account of id: " + str(account_to_reset.id)}, status=200)
+
+            except Exception as error:
+                print(error)
+                return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
+
+class UpdatePasswordAfterReset(ViewSet):
+
+    @action (methods=['post'], detail=False)
+    def update_password_after_reset(self, request, format=None):
+
+        user = request.user
+
+        if not user.has_perm('database.update_password_after_reset'):
+            raise PermissionDenied
+
+        data = request.data
+
+        if 'current_password' not in data:
+            print('Error: current_password not found in request data.')
+            return HttpResponseBadRequest(json.dumps({'name': 'Nie podano hasła.'}), headers={'Content-Type': 'application/json'})
+
+        if 'new_password' not in data:
+            print('Error: new_password not found in request data.')
+            return HttpResponseBadRequest(json.dumps({'name': 'Nie podano nowego hasła.'}), headers={'Content-Type': 'application/json'})
+
+        old_password = data['current_password']
+        new_password = data['new_password']
+
+        try:
+            account_to_update = User.objects.get(id=user.id)
+            # hash the old_password variable so it matches the hash in the database
+            if check_password(old_password, account_to_update.password):
+                account_to_update.set_password(new_password)
+                account_to_update.save()
+                print("Password updated for account: ", account_to_update.first_name + " " + account_to_update.last_name)
+                logout(request)
+                return JsonResponse({'name': "Succesfull password update for account of id: " + str(account_to_update.id)}, status=200)
+            else:
+                print("Wrong password for account: ", account_to_update.first_name + " " + account_to_update.last_name)
+                return HttpResponseBadRequest(json.dumps({'name': 'Niepoprawne hasło.'}), headers={'Content-Type': 'application/json'})
+        except Exception as error:
+            print(error)
+            return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
+
+
+class ResetDBPassword(ViewSet):
+    
+    @action (methods=['post'], detail=False)
+    def reset_db_password(self, request, format=None):
+
+        user = request.user
+
+        if not user.has_perm('database.reset_db_password'):
+            raise PermissionDenied
+
+        data = request.data
+
+        if 'dbaccount_id' not in data:
+            print('Error: dbaccount_id not found in request data.')
+            return HttpResponseBadRequest(json.dumps({'name': 'Nie podano konta.'}), headers={'Content-Type': 'application/json'})
+
+        dbaccount_id = data['dbaccount_id']
+
+        try:
+            account_to_reset = DBAccount.objects.get(id=dbaccount_id)
+            new_password = PasswordGenerator().generate_password()
+            account_to_reset.password = new_password
+            account_to_reset.save()
+
+            server = Server.objects.get(id=account_to_reset.editionServer.server.id)
+
+            if server.provider == 'MySQL':
+                conn_mysql = mdb.connect(host=server.ip, port=int(server.port), user=server.user, passwd=server.password, db=server.database)
+                cursor = conn_mysql.cursor()
+                cursor.execute(server.modify_user_template % (account_to_reset.username, new_password))
+                conn_mysql.commit()
+                conn_mysql.close()
+            elif server.provider == 'Postgres':
+                conn_postgres = psycopg2.connect(host=server.ip, port=server.port, user=server.user, password=server.password, database=server.database)
+                cursor = conn_postgres.cursor()
+                cursor.execute(server.modify_user_template % (account_to_reset.username, new_password))
+                conn_postgres.commit()
+                conn_postgres.close()
+            elif server.provider == 'Oracle':
+                oracledb.init_oracle_client()
+
+                conn = oracledb.connect(
+                    user=server.user,
+                    password=server.password,
+                    dsn=f"{server.ip}:{server.port}/{server.database}")
+                cursor = conn.cursor()
+                cursor.execute(server.modify_user_template % (account_to_reset.username, new_password))
+                conn.commit()
+                conn.close()
+            elif server.provider == 'MongoDB':
+                conn = MongoClient(f'mongodb://{server.user}:{server.password}@{server.ip}:{server.port}/')
+                db = conn[server.database]
+                db.command("updateUser", account_to_reset.username, pwd=new_password)
+                conn.close()
+            else:
+                print('Error: Unknown server provider.')
+                return HttpResponseBadRequest(json.dumps({'name': 'Nieznany SZBD.'}), headers={'Content-Type': 'application/json'})
+
+            print("Password reseted for account: ", account_to_reset.username)
+            return JsonResponse({'name': "Succesfull password reset for account of id: " + str(account_to_reset.id)}, status=200)
         except Exception as error:
             print(error)
             return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})

@@ -27,6 +27,7 @@ def forwards_func(apps, schema_editor):
     Edition = apps.get_model('database', 'Edition')
     Semester = apps.get_model('database', 'Semester')
     Course = apps.get_model('database', 'Course')
+    Dbms = apps.get_model('database', 'DBMS')
     Server = apps.get_model('database', 'Server')
     Major = apps.get_model('database', 'Major')
     AuthGroup = apps.get_model('auth.Group')
@@ -41,33 +42,38 @@ def forwards_func(apps, schema_editor):
 
     password_generator = PasswordGenerator(10)
 
-    server_names = ['MySQL ZBD Server', 'Oracle ZBD Server', 'Postgres PBD Server', 'Mongo ZBDNS Server', 'Microsoft SQL Server PBD']
-    server_ipss = ['185.180.207.251', '185.150.207.251', '185.180.207.251', 'mongo', '176.119.32.0']
-    # server_ports = ['3306', '5432', '5433', '2850', '4179']
-    # server_ipss = ['localhost', '128.127.80.0', 'postgres-external', '156.154.84.0', '176.119.32.0']
-    server_ports = ['3306', '44475', '5432', '27017', '4179']
+    server_names = ['MySQL ZBD Server', 'Oracle ZBD Server', 'Postgres PBD Server', 'Mongo ZBDNS Server']
+    server_ipss = ['185.180.207.251', '185.180.207.251', '185.180.207.251', 'mongo']
+    server_ports = ['3306', '44475', '5432', '27017']
     server_date_createds = '2021-12-31'
-    server_databases = ['mysql', 'xe', 'postgres', 'database', 'mssql']
-    server_passwords = ['mysql12', 'PASSWORD', 'postgres12', 'mongo12', 'mssqlpass']
-    # server_passwords = ['root', 'oracledbpass', 'postgres', 'mongodbnosqlpass', 'mssqlpass']
-    server_providers = ['MySQL', 'Oracle', 'Postgres', 'MongoDB', 'Microsoft SQL Server']
-    server_users = ['root', 'USERDB', 'postgres', 'root', 'mssqluser']
-    server_create_user_templates = ["CREATE USER IF NOT EXISTS \"%s\"@'%%' IDENTIFIED BY '%s'", "", "CREATE USER \"%s\" WITH PASSWORD \'%s\';", '"createUser" : %s, "pwd" : %s, "customData" : {}, "roles" : []', ""]
-    server_modify_user_templates = ["ALTER USER %s@'localhost' IDENTIFIED BY %s;", "", "ALTER USER \"%s\" WITH PASSWORD \'%s\';", "", ""]
-    server_delete_user_templates = ["DROP USER IF EXISTS \"%s\"@'%%';", "", "DROP USER IF EXISTS \"%s\";", "", ""]
+    server_databases = ['mysql', 'xe', 'postgres', 'database']
+    server_passwords = ['mysql12', 'oracle', 'postgres12', 'mongo12']
+    dbms_names = ['MySQL', 'Oracle', 'PostgreSQL', 'MongoDB']
+    server_users = ['root', 'system', 'postgres', 'root']
+    server_create_user_templates = ["CREATE USER IF NOT EXISTS \"%s\"@'%%' IDENTIFIED BY '%s'", "CREATE USER \"%s\" IDENTIFIED BY \"%s\"", "CREATE USER \"%s\" WITH PASSWORD \'%s\';", '"createUser" : %s, "pwd" : %s, "customData" : {}, "roles" : []']
+    server_modify_user_templates = ["ALTER USER %s@'localhost' IDENTIFIED BY %s;", "", "ALTER USER \"%s\" WITH PASSWORD \'%s\';", ""]
+    server_delete_user_templates = ["DROP USER IF EXISTS \"%s\"@'%%';", "DROP USER \"%s\" CASCADE", "DROP USER IF EXISTS \"%s\";", ""]
     server_username_templates = [
         "INF_{NR_INDEKSU}", "{IMIE}_{NAZWISKO}", "{NAZWISKO}_{NR_INDEKSU}", "STUDENT_{NR_INDEKSU}", "INF_{NR_INDEKSU}"
     ]
 
+    dbms = []
+
+    for i in range(len(dbms_names)):
+        dbms_object = Dbms.objects.using(db_alias).create(
+            name=dbms_names[i]
+        )
+        dbms.append(dbms_object)
+
     for i in range(len(server_names)):
         Server.objects.using(db_alias).create(
             name=server_names[i],
-            ip=server_ipss[i],
+            host=server_ipss[i],
             port=server_ports[i],
             date_created=server_date_createds,
             database=server_databases[i],
             password=server_passwords[i],
-            provider=server_providers[i],
+            dbms=dbms[i],
             user=server_users[i],
             create_user_template=server_create_user_templates[i],
             modify_user_template=server_modify_user_templates[i],
@@ -112,16 +118,10 @@ def forwards_func(apps, schema_editor):
 
     users_names = ["Ferdynand Dulski","Celestyn Tomaszewski","Sylwester Kaczkowski","Juri Rokicki","Pabian Archacki","Leo Zelek","Kwiatosław Greger","Hubert Kiedrowski","Waldemar Piotrowicz","Olaf Gursky","Hilary Franczak","Melchior Perzan","Świętosław Kopa","Marcin Gorniak","Oskar Kobylinski","Tymon Bialek","Gabriel Orlowski","Pankracy Grodzicki","Serwacy Watroba","Zygmunt Bilik","Aleksander Nabozny","Maryn Wyszynski","Remigiusz Ciolek","Cyprian Gracyalny","Dominik Bernacki","Szymon Rogalski","Ignacy Smigel","Ireneusz Dziak","Wisław Gielgud","Korneli Krynicki","Świętosław Lozowski","Bartłomiej Lach","Konstantyn Pitera","Franciszek Sochaczewski","Malachiasz Car","Eugeniusz Jaracz","Zbigniew Kula","Kamil Rajewski","Zenon Kosmalski","Chwalimir Bania","Romuald Mita","Ryszard Nowak","Sławomir Garstka","Tomasz Kocik","Gerwazy Cieply","Gwalbert Grodzicki","Denis Slusarczyk","Edward Przybylowicz","Malachiasz Cesarz","Iwon Capek","Dobrogost Wojtaszek","Świętosław Pawelski","Tobiasz Raczkowski","Gerard Chmiel","Bartosz Burak","Oktawiusz Ignasiak","Arkadiusz Michalak","Zdzisław Luka","Jerzy Kurcz","Julian Karczewski","Herbert Marcinkiewicz","Klemens Krzyzaniak","Metody Mioduszewski","Gościsław Niziolek","Sylwester Kaczkowski","Fryderyk Dusza","Dobrogost Wójcik","Albin Bialy","Jaromir Misiaszek","Tadeusz Galik","Bożidar Jablon","Witold Demby","Chrystian Krolikowski","Kryspyn Piekarz","Nikodem Czepiec","Wojsław Korczak","Hugo Tylka","Lubomił Ciesinski","Wisław Samborski","Bożimir Jagodzinski","Hilary Lesak","Adrian Bartel","Prot Ewy","Ludomił Kaniuk","Dobrogost Syslo","Adrian Dudzinski","Florentyn Rawski","Bożimir Banik","Wandelin Jaroszewski","Herbert Pekala","Gustaw Dobek","Oskar Jusko","Maksymilian Zajac","Bronisław Prus","Marcel Zaczek","Antoni Wiech","Przemysław Woźniak","Jakub Wróbel","Krystian Jakusik","Kamil Ambozy"]
     users_names2 = ['Eryk Sikorska','Alek Wróblewski','Damian Baran','Emanuel Witkowski','Kamil Borkowski','Anatol Nowak','Gniewomir Makowski','Cyprian Szymański','Joachim Rutkowski','Krystian Kucharski','Ryszard Marciniak','Bruno Szymański','Roman Kołodziej','Leonardo Wojciechowski','Daniel Zieliński','Norbert Jaworski','Kacper Gajewska','Jan Szymański','Ksawery Szymczak','Heronim Wiśniewski','Ludwik Kalinowski','Cezary Szewczyk','Kryspin Zakrzewska','Piotr Głowacka','Jarosław Gajewska','Olgierd Dąbrowski','Joachim Brzeziński','Krzysztof Makowski','Łukasz Malinowski','Eryk Mazur','Gracjan Lewandowski','Alan Zalewski','Korneliusz Marciniak','Igor Sokołowski','Kryspin Wójcik','Rafał Krajewska','Igor Borkowski','Emanuel Piotrowski','Bruno Czerwiński','Roman Maciejewski','Andrzej Walczak','Kacper Sokołowski','Marek Piotrowski','Bartłomiej Krawczyk','Dariusz Wasilewska','Kajetan Marciniak','Ryszard Krajewska','Mateusz Mróz','Arkadiusz Mazur','Bartłomiej Baranowski','Marian Maciejewski','Jędrzej Szymański','Adam Sokołowski','Kryspin Sawicki','Jerzy Krupa','Mikołaj Zawadzki','Kamil Baran','Przemysław Mróz','Gustaw Kaczmarczyk','Lucjan Jankowski','Aleksander Przybylski','Kazimierz Kamiński','Dariusz Szymański','Marek Czerwiński','Gniewomir Adamska','Amadeusz Zalewski','Franciszek Czerwiński','Milan Lis','Ryszard Kalinowski','Łukasz Gajewska','Norbert Woźniak','Ernest Baranowski','Artur Tomaszewski','Krzysztof Laskowska','Kamil Makowski','Dorian Pietrzak','Olaf Ziółkowska','Ariel Sawicki','Jarosław Jankowski','Bolesław Laskowska','Kamil Kubiak','Franciszek Gajewska','Olgierd Kamiński','Adrian Kucharski','Leszek Jakubowski','Mirosław Jaworski','Mateusz Pawlak','Jerzy Kaczmarczyk','Konstanty Kaczmarczyk','Kordian Lis','Cezary Wójcik','Emil Duda','Filip Wojciechowski','Alfred Sokołowski','Ariel Sobczak','Mieszko Sokołowski','Cezary Adamska','Rafał Ziółkowska','Karol Włodarczyk','Milan Górecki']
-
     users_names.extend(users_names2)
 
-    # Admin.objects.using(db_alias).create(
-    #     first_name="Admin", last_name="Admin", email='admin@cs.put.poznan.pl' , password=passwordGenerator.generate_password(), polymorphic_ctype_id=admin_ct.id
-    # )
+    User.objects.create_superuser(first_name='Admin', last_name='Admin', email='admin@cs.put.poznan.pl', password='admin')
 
-    User.objects.create_superuser(email='admin@cs.put.poznan.pl', password='admin')
-
-    # User.objects.create_user('student', 'student@student.put.poznan.pl', 'student')
 
     for i in range(4):
         user = User.objects.create_user(
@@ -136,7 +136,6 @@ def forwards_func(apps, schema_editor):
         user.groups.add(teacher_group)
         user.save()
         
-        # print(f"User: {user} {user.first_name} {user.last_name} {user.email} {user.password} {user.is_teacher}")
         Teacher.objects.using(db_alias).create(user=user)
 
     for i in range(4, len(users_names)):
@@ -234,10 +233,18 @@ def forwards_func(apps, schema_editor):
         # username_template='INF_{NR_INDEKSU}', passwd_template='blank'
     )
 
+    # special edition for oracle
+    EditionServer.objects.using(db_alias).create(
+        additional_info='Additional info about EditionServer',
+        edition_id=editions[0],
+        server_id=servers[1],
+        # username_template='INF_{NR_INDEKSU}', passwd_template='blank'
+    )
+
     teachers = Teacher.objects.all().values_list('id', flat=True)
 
     teacher_edition_edition_id = [editions[i] for i in range(8)]
-    teacher_edition_teacher_id = [teachers[0], teachers[1], teachers[2], teachers[3], teachers[0], teachers[0], teachers[1], teachers[2]]
+    teacher_edition_teacher_id = [teachers[0], teachers[1], teachers[2], teachers[3], teachers[0], teachers[0], teachers[1], teachers[2], teachers[0]]
 
     for i in range(len(teacher_edition_edition_id)):
         TeacherEdition.objects.using(db_alias).create(
@@ -301,6 +308,9 @@ def forwards_func(apps, schema_editor):
                 DBAccount.objects.using(db_alias).create(
                     username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password_generator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[8]
             )
+                DBAccount.objects.using(db_alias).create(
+                    username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password_generator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[9]
+            )
         if 52 <= i <= 75: # GRUPY 7-9
                 DBAccount.objects.using(db_alias).create(
                     username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password_generator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[2]
@@ -350,18 +360,42 @@ def forwards_func(apps, schema_editor):
         view_teacher_permission, _ = AuthPermission.objects.get_or_create(codename='view_teacher', content_type=ContentType.objects.get_for_model(Teacher))
         delete_teacher_permission, _ = AuthPermission.objects.get_or_create(codename='delete_teacher', content_type=ContentType.objects.get_for_model(Teacher))
 
+        add_admin_permission, _ = AuthPermission.objects.get_or_create(codename='add_admin', content_type=ContentType.objects.get_for_model(User))
+        change_admin_permission, _ = AuthPermission.objects.get_or_create(codename='change_admin', content_type=ContentType.objects.get_for_model(User))
+        view_admin_permission, _ = AuthPermission.objects.get_or_create(codename='view_admin', content_type=ContentType.objects.get_for_model(User))
+        delete_admin_permission, _ = AuthPermission.objects.get_or_create(codename='delete_admin', content_type=ContentType.objects.get_for_model(User))
+
         add_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='add_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
         change_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='change_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
         delete_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='delete_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
         view_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='view_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
 
+        view_teacheredition_permission, _ = AuthPermission.objects.get_or_create(codename='view_teacheredition', content_type=ContentType.objects.get_for_model(TeacherEdition))
+
+        view_semester_permission, _ = AuthPermission.objects.get_or_create(codename='view_semester', content_type=ContentType.objects.get_for_model(Semester))
+
         move_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='move_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
 
         load_from_csv_permission, _ = AuthPermission.objects.get_or_create(codename='load_from_csv', content_type=ContentType.objects.get_for_model(Student))
 
-        AuthPermission.objects.get_or_create(codename='change_active_semester', content_type=ContentType.objects.get_for_model(Semester))
-        AuthPermission.objects.get_or_create(codename='add_students_to_group', content_type=ContentType.objects.get_for_model(Group))
-        AuthPermission.objects.get_or_create(codename='remove_student_from_group', content_type=ContentType.objects.get_for_model(Group))
+        change_active_semester_permission, _ = AuthPermission.objects.get_or_create(codename='change_active_semester', content_type=ContentType.objects.get_for_model(Semester))
+        add_students_to_group_permission, _ = AuthPermission.objects.get_or_create(codename='add_students_to_group', content_type=ContentType.objects.get_for_model(Group))
+        remove_student_from_group_permission, _ = AuthPermission.objects.get_or_create(codename='remove_student_from_group', content_type=ContentType.objects.get_for_model(Group))
+
+        reset_own_password_permission, _ = AuthPermission.objects.get_or_create(codename='reset_own_password', content_type=ContentType.objects.get_for_model(User))
+        reset_student_password_permission, _ = AuthPermission.objects.get_or_create(codename='reset_student_password', content_type=ContentType.objects.get_for_model(User))
+        update_password_after_reset_permission, _ = AuthPermission.objects.get_or_create(codename='update_password_after_reset', content_type=ContentType.objects.get_for_model(User))
+
+
+        view_major_permission, _ = AuthPermission.objects.get_or_create(codename='view_major', content_type=ContentType.objects.get_for_model(Major))
+        add_major_permission, _ = AuthPermission.objects.get_or_create(codename='add_major', content_type=ContentType.objects.get_for_model(Major))
+        change_major_permission, _ = AuthPermission.objects.get_or_create(codename='change_major', content_type=ContentType.objects.get_for_model(Major))
+        delete_major_permission, _ = AuthPermission.objects.get_or_create(codename='delete_major', content_type=ContentType.objects.get_for_model(Major))
+
+        view_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='view_dbms', content_type=ContentType.objects.get_for_model(Dbms))
+        add_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='add_dbms', content_type=ContentType.objects.get_for_model(Dbms))
+        change_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='change_dbms', content_type=ContentType.objects.get_for_model(Dbms))
+        delete_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='delete_dbms', content_type=ContentType.objects.get_for_model(Dbms))
 
         teacher_group.permissions.add(view_course_permission.pk)
         teacher_group.permissions.add(view_edition_permission.pk)
@@ -384,6 +418,14 @@ def forwards_func(apps, schema_editor):
         teacher_group.permissions.add(view_dbaccount_permission.pk)
         teacher_group.permissions.add(move_dbaccount_permission.pk)
         teacher_group.permissions.add(load_from_csv_permission.pk)
+        teacher_group.permissions.add(view_teacheredition_permission.pk)
+        teacher_group.permissions.add(add_students_to_group_permission.pk)
+        teacher_group.permissions.add(remove_student_from_group_permission.pk)
+        teacher_group.permissions.add(reset_own_password_permission.pk)
+        teacher_group.permissions.add(reset_student_password_permission.pk)
+        teacher_group.permissions.add(update_password_after_reset_permission.pk)
+        teacher_group.permissions.add(view_major_permission.pk)
+        # teacher_group.permissions.add(view_semester_permission.pk)
 
         student_group.permissions.add(view_course_permission.pk)
         student_group.permissions.add(view_edition_permission.pk)
@@ -392,6 +434,11 @@ def forwards_func(apps, schema_editor):
         student_group.permissions.add(view_teacher_permission.pk)
         student_group.permissions.add(view_user_permission.pk)
         student_group.permissions.add(view_dbaccount_permission.pk)
+        student_group.permissions.add(view_major_permission.pk)
+        student_group.permissions.add(reset_own_password_permission.pk)
+        student_group.permissions.add(update_password_after_reset_permission.pk)
+        # student_group.permissions.add(view_semester_permission.pk)
+        
 
 class Migration(migrations.Migration):
 
@@ -481,22 +528,6 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='Permission',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=30, unique=True)),
-                ('description', models.CharField(blank=True, default='', max_length=255)),
-            ],
-        ),
-        migrations.CreateModel(
-            name='Role',
-            fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=30, unique=True)),
-                ('description', models.CharField(blank=True, default='', max_length=255)),
-            ],
-        ),
-        migrations.CreateModel(
             name='Semester',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
@@ -530,21 +561,30 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
+            name='DBMS',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('name', models.CharField(max_length=255, unique=True)),
+                ('description', models.CharField(blank=True, default='', max_length=255)),
+            ],
+        ),
+        migrations.CreateModel(
             name='Server',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=30)),
-                ('ip', models.CharField(max_length=30)),
-                ('port', models.CharField(max_length=10)),
-                ('provider', models.CharField(max_length=30)),
-                ('user', models.CharField(max_length=30)),
-                ('password', models.CharField(max_length=30)),
-                ('database', models.CharField(max_length=30)),
+                ('name', models.CharField(max_length=255)),
+                ('host', models.CharField(max_length=255)),
+                ('port', models.CharField(max_length=255)),
+                ('dbms', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='database.dbms', related_name='servers')),
+                ('user', models.CharField(max_length=255)),
+                ('password', models.CharField(max_length=255)),
+                ('database', models.CharField(max_length=255)),
                 ('date_created', models.DateField(auto_now_add=True)),
                 ('active', models.BooleanField(default=True)),
                 ('create_user_template', models.CharField(blank=True, default='', max_length=255)),
                 ('modify_user_template', models.CharField(blank=True, default='', max_length=255)),
                 ('delete_user_template', models.CharField(blank=True, default='', max_length=255)),
+                ('custom_command_template', models.CharField(blank=True, default='', max_length=1023)),
                 ('username_template', models.CharField(max_length=255, null=True)),
                 ('editions', models.ManyToManyField(related_name='servers', through='database.EditionServer', to='database.edition')),
             ],
@@ -556,16 +596,6 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name='semester',
             constraint=models.CheckConstraint(check=models.Q(('start_year__gte', 2000), ('start_year__lte', 3000)), name='start_year_between_2020_and_3000'),
-        ),
-        migrations.AddField(
-            model_name='role',
-            name='permissions',
-            field=models.ManyToManyField(blank=True, related_name='roles', to='database.permission'),
-        ),
-        migrations.AddField(
-            model_name='role',
-            name='users',
-            field=models.ManyToManyField(blank=True, related_name='roles', to=settings.AUTH_USER_MODEL),
         ),
         migrations.AddField(
             model_name='group',
@@ -638,6 +668,30 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name='dbaccount',
             constraint=models.UniqueConstraint(fields=('username', 'editionServer'), name='unique_username_editionserver'),
+        ),
+        migrations.AlterField(
+            model_name='course',
+            name='name',
+            field=models.CharField(max_length=50, unique=True),
+        ),
+        migrations.AlterField(
+            model_name='group',
+            name='name',
+            field=models.CharField(max_length=50),
+        ),
+        migrations.AlterField(
+            model_name='major',
+            name='name',
+            field=models.CharField(max_length=50, unique=True),
+        ),
+        migrations.AddConstraint(
+            model_name='group',
+            constraint=models.UniqueConstraint(fields=('teacherEdition', 'name'), name='unique_group'),
+        ),
+        migrations.AlterField(
+            model_name='group',
+            name='teacherEdition',
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='groups', to='database.teacheredition'),
         ),
         migrations.RunPython(forwards_func),
     ]
