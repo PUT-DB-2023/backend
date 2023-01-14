@@ -13,9 +13,10 @@ from django.contrib.auth import get_user_model
 import database.models
 from database.password_generator import PasswordGenerator
 
+import random
+
 
 def forwards_func(apps, schema_editor):
-    # ContentType = apps.get_model('contenttypes', 'ContentType')
 
     User = apps.get_model('database', 'User')
     Student = apps.get_model('database', 'Student')
@@ -31,9 +32,6 @@ def forwards_func(apps, schema_editor):
     Server = apps.get_model('database', 'Server')
     Major = apps.get_model('database', 'Major')
     AuthGroup = apps.get_model('auth.Group')
-    
-    # student_ct = ContentType.objects.get_for_model(Student)
-    # teacher_ct = ContentType.objects.get_for_model(Teacher)
 
     teacher_group, _ = AuthGroup.objects.get_or_create(name='TeacherGroup')
     student_group, _ = AuthGroup.objects.get_or_create(name='StudentGroup')
@@ -124,11 +122,14 @@ def forwards_func(apps, schema_editor):
 
 
     for i in range(4):
+        email = f"{users_names[i].split()[0].lower()}.{users_names[i].split()[1].lower()}@cs.put.poznan.pl"
+        password = User.objects.make_random_password(length=10)
+        print(f"Password for {email} is {password}")
         user = User.objects.create_user(
             first_name=users_names[i].split()[0],
             last_name=users_names[i].split()[1],
-            email=f"{users_names[i].split()[0].lower()}.{users_names[i].split()[1].lower()}@cs.put.poznan.pl",
-            password="teacher_password",
+            email=email,
+            password=password,
             is_teacher=True
         )
         
@@ -139,14 +140,15 @@ def forwards_func(apps, schema_editor):
         Teacher.objects.using(db_alias).create(user=user)
 
     for i in range(4, len(users_names)):
+        email = f"{users_names[i].split()[0].lower()}.{users_names[i].split()[1].lower()}@student.put.poznan.pl"
+        password = User.objects.make_random_password(length=10)
         student = User.objects.create_user(
             first_name=users_names[i].split()[0],
             last_name=users_names[i].split()[1],
-            email=f"{users_names[i].split()[0].lower()}.{users_names[i].split()[1].lower()}@student.put.poznan.pl",
-            password="student_password",
+            email=email,
+            password=password,
             is_student=True
         )
-        # user.save()
 
         student.groups.add(student_group)
         student.save()
@@ -202,14 +204,6 @@ def forwards_func(apps, schema_editor):
 
     edition_server_add_info = ['Additional info about EditionServer'] * 8
 
-    # edition_server_username_templates = [
-    #     "INF_{NR_INDEKSU}", '{IMIE} + {NAZWISKO}', '{NAZWISKO}_{NR_INDEKSU}', 'STUDENT_{NR_INDEKSU}', "INF_{NR_INDEKSU}", '{IMIE} + {NAZWISKO}', '{NAZWISKO}_{NR_INDEKSU}', 'STUDENT_{NR_INDEKSU}'
-    # ]
-
-    # edition_server_passwd_templates = [
-    #     "blank", "default_passwd", "123", "inf{NR_INDEKSU}", "blank", "default_passwd", "123", "inf{NR_INDEKSU}"
-    # ]
-
     editions = Edition.objects.all().values_list('id', flat=True)
     servers = Server.objects.all().values_list('id', flat=True)
 
@@ -221,24 +215,20 @@ def forwards_func(apps, schema_editor):
             additional_info=edition_server_add_info[i],
             edition_id=edition_server_edition_ids[i],
             server_id=edition_server_server_ids[i], 
-            # username_template=edition_server_username_templates[i],
-            # passwd_template=edition_server_passwd_templates[i]
         )
 
     # special edition server so that one edition has two servers
-    EditionServer.objects.using(db_alias).create(
-        additional_info='Additional info about EditionServer',
-        edition_id=editions[0],
-        server_id=servers[0],
-        # username_template='INF_{NR_INDEKSU}', passwd_template='blank'
-    )
+    # EditionServer.objects.using(db_alias).create(
+    #     additional_info='Additional info about EditionServer',
+    #     edition_id=editions[0],
+    #     server_id=servers[0],
+    # )
 
     # special edition for oracle
     EditionServer.objects.using(db_alias).create(
         additional_info='Additional info about EditionServer',
         edition_id=editions[0],
         server_id=servers[1],
-        # username_template='INF_{NR_INDEKSU}', passwd_template='blank'
     )
 
     teachers = Teacher.objects.all().values_list('id', flat=True)
@@ -252,27 +242,25 @@ def forwards_func(apps, schema_editor):
             teacher_id=teacher_edition_teacher_id[i]
         )
 
-    group_names = ['Grupa 1 ZBD', 'Grupa 2 ZBD', 'Grupa 3 ZBD',
-                   'Grupa 4 PBD', 'Grupa 5 PBD', 'Grupa 6 PBD',
-                   'Grupa 7 ZBN', 'Grupa 8 ZBN', 'Grupa 9 ZBN',
-                   'Grupa 10 ProjBD - NA', 'Grupa 11 ProjBD - NA', 'Grupa 12 ProjBD - NA',
-                   'Grupa 13 PBD Past', 'Grupa 14 PBD Past', 'Grupa 15 PBD Past',
-                   'Grupa 16 PBD Future', 'Grupa 17 PBD Future', 'Grupa 18 PBD Future',
-                   'Grupa 19 ZBD Future', 'Grupa 20 ZBD Future', 'Grupa 21 ZBD Future',
-                   'Grupa 22 ZBN Past', 'Grupa 23 ZBN Past', 'Grupa 24 ZBN Past']
-    group_days = [
-        'Poniedziałek', 'Środa', 'Wtorek', 'Poniedziałek', 'Wtorek', 'Piątek', 'Czwartek', 'Poniedziałek',
-        'Środa', 'Piątek', 'Wtorek', 'Środa', 'Poniedziałek', 'Środa', 'Wtorek', 'Poniedziałek', 'Wtorek',
-        'Piątek', 'Czwartek', 'Poniedziałek', 'Środa', 'Piątek', 'Wtorek', 'Środa'
+    group_names = [
+        'Grupa 1 ZBD', 'Grupa 2 ZBD', 'Grupa 3 ZBD',
+        'Grupa 4 PBD', 'Grupa 5 PBD', 'Grupa 6 PBD',
+        'Grupa 7 ZBN', 'Grupa 8 ZBN', 'Grupa 9 ZBN',
+        'Grupa 10 ProjBD - NA', 'Grupa 11 ProjBD - NA', 'Grupa 12 ProjBD - NA',
+        'Grupa 13 PBD Past', 'Grupa 14 PBD Past', 'Grupa 15 PBD Past',
+        'Grupa 16 PBD Future', 'Grupa 17 PBD Future', 'Grupa 18 PBD Future',
+        'Grupa 19 ZBD Future', 'Grupa 20 ZBD Future', 'Grupa 21 ZBD Future',
+        'Grupa 22 ZBN Past', 'Grupa 23 ZBN Past', 'Grupa 24 ZBN Past'
     ]
-    group_hours = [
-        '11:45', '8:00', '8:00', '9:45', '13:30', '16:50', '13:30', '11:45', '15:10', '8:00', '8:00', '9:45',
-        '11:45', '8:00','8:00', '9:45', '13:30', '16:50', '13:30', '11:45', '15:10', '8:00', '8:00', '9:45'
-    ]
-    group_rooms = [
-        '1.6.18', 'CW 8', '2.2.2', 'CW 9', '1.5.5', 'A6', '1.4.4', '2.2.2', '1.2.2', '2.2.2', '1.1.1', '4.4.4',
-        '1.6.18','CW 8', '2.2.2', 'CW 9', '1.5.5', 'A6', '1.4.4', '2.2.2', '1.2.2', '2.2.2', '1.1.1', '4.4.4'
-    ]
+
+    days = ['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek']
+    group_days = random.choices(days, k=24)
+
+    hours = ['8:00', '9:45', '11:45', '13:30', '15:10', '16:50']
+    group_hours = random.choices(hours, k=24)
+
+    rooms = ['1.6.18', 'CW 8', '2.2.2', 'CW 9', '1.5.5', 'A6', '1.4.4','1.2.2', '1.1.1', '4.4.4',]
+    group_rooms = random.choices(rooms, k=24)
 
     teacher_editions = TeacherEdition.objects.all()
     teacher_editions_for_groups = [
@@ -298,62 +286,77 @@ def forwards_func(apps, schema_editor):
 
     for i in range(4, len(users_names)):
         if 4 <= i <= 27: # GRUPY 1-3
-                DBAccount.objects.using(db_alias).create(
-                    username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password_generator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[1]
+            password = User.objects.make_random_password(length=10)
+            DBAccount.objects.using(db_alias).create(
+                username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password, is_moved=False, student=students_all[i-4], editionServer=edition_servers[1]
             )
         if 28 <= i <= 51: # GRUPY 4-6
-                DBAccount.objects.using(db_alias).create(
-                    username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password_generator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[0]
+            password = User.objects.make_random_password(length=10)
+            DBAccount.objects.using(db_alias).create(
+                username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password, is_moved=False, student=students_all[i-4], editionServer=edition_servers[0]
             )
-                DBAccount.objects.using(db_alias).create(
-                    username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password_generator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[8]
+            password = User.objects.make_random_password(length=10)
+            DBAccount.objects.using(db_alias).create(
+                username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password, is_moved=False, student=students_all[i-4], editionServer=edition_servers[8]
             )
-                DBAccount.objects.using(db_alias).create(
-                    username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password_generator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[9]
+            password = User.objects.make_random_password(length=10)
+            DBAccount.objects.using(db_alias).create(
+                username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password, is_moved=False, student=students_all[i-4], editionServer=edition_servers[9]
             )
         if 52 <= i <= 75: # GRUPY 7-9
-                DBAccount.objects.using(db_alias).create(
-                    username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password_generator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[2]
+            password = User.objects.make_random_password(length=10)
+            DBAccount.objects.using(db_alias).create(
+                username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password, is_moved=False, student=students_all[i-4], editionServer=edition_servers[2]
             )
         if 76 <= i <= 99: # GRUPY 10-12
-                DBAccount.objects.using(db_alias).create(
-                    username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password_generator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[3]
-        )
+            password = User.objects.make_random_password(length=10)
+            DBAccount.objects.using(db_alias).create(
+                username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password, is_moved=False, student=students_all[i-4], editionServer=edition_servers[3]
+            )
         if 100 <= i <= 123: # GRUPY 13-15
-                DBAccount.objects.using(db_alias).create(
-                    username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password_generator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[4]
+            password = User.objects.make_random_password(length=10)
+            DBAccount.objects.using(db_alias).create(
+                username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password, is_moved=False, student=students_all[i-4], editionServer=edition_servers[4]
             )
         if 124 <= i <= 147: # GRUPY 16-18
-                DBAccount.objects.using(db_alias).create(
-                    username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password_generator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[5]
+            password = User.objects.make_random_password(length=10)
+            DBAccount.objects.using(db_alias).create(
+                username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password, is_moved=False, student=students_all[i-4], editionServer=edition_servers[5]
             )
         if 148 <= i <= 171: # GRUPY 19-21
-                DBAccount.objects.using(db_alias).create(
-                    username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password_generator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[6]
+            password = User.objects.make_random_password(length=10)
+            DBAccount.objects.using(db_alias).create(
+                username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password, is_moved=False, student=students_all[i-4], editionServer=edition_servers[6]
             )
         if 172 <= i <= 195: # GRUPY 22-24
-                DBAccount.objects.using(db_alias).create(
-                    username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password_generator.generate_password(), is_moved=False, student=students_all[i-4], editionServer=edition_servers[7]
+            password = User.objects.make_random_password(length=10)
+            DBAccount.objects.using(db_alias).create(
+                username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password, is_moved=False, student=students_all[i-4], editionServer=edition_servers[7]
             )
 
+        add_course_permission, _ = AuthPermission.objects.get_or_create(codename='add_course', content_type=ContentType.objects.get_for_model(Course))
+        change_course_permission, _ = AuthPermission.objects.get_or_create(codename='change_course', content_type=ContentType.objects.get_for_model(Course))
         view_course_permission, _ = AuthPermission.objects.get_or_create(codename='view_course', content_type=ContentType.objects.get_for_model(Course))
+        delete_course_permission, _ = AuthPermission.objects.get_or_create(codename='delete_course', content_type=ContentType.objects.get_for_model(Course))
 
+        add_edition_permission, _ = AuthPermission.objects.get_or_create(codename='add_edition', content_type=ContentType.objects.get_for_model(Edition))
+        change_edition_permission, _ = AuthPermission.objects.get_or_create(codename='change_edition', content_type=ContentType.objects.get_for_model(Edition))
         view_edition_permission, _ = AuthPermission.objects.get_or_create(codename='view_edition', content_type=ContentType.objects.get_for_model(Edition))
-
-        add_group_permission, _ = AuthPermission.objects.get_or_create(codename='add_group', content_type=ContentType.objects.get_for_model(Group))
-        change_group_permission, _ = AuthPermission.objects.get_or_create(codename='change_group', content_type=ContentType.objects.get_for_model(Group))
-        view_group_permission, _ = AuthPermission.objects.get_or_create(codename='view_group', content_type=ContentType.objects.get_for_model(Group))
-        delete_group_permission, _ = AuthPermission.objects.get_or_create(codename='delete_group', content_type=ContentType.objects.get_for_model(Group))
+        delete_edition_permission, _ = AuthPermission.objects.get_or_create(codename='delete_edition', content_type=ContentType.objects.get_for_model(Edition))
 
         add_user_permission, _ = AuthPermission.objects.get_or_create(codename='add_user', content_type=ContentType.objects.get_for_model(User))
         change_user_permission, _ = AuthPermission.objects.get_or_create(codename='change_user', content_type=ContentType.objects.get_for_model(User))
         view_user_permission, _ = AuthPermission.objects.get_or_create(codename='view_user', content_type=ContentType.objects.get_for_model(User))
         delete_user_permission, _ = AuthPermission.objects.get_or_create(codename='delete_user', content_type=ContentType.objects.get_for_model(User))
+        reset_own_password_permission, _ = AuthPermission.objects.get_or_create(codename='reset_own_password', content_type=ContentType.objects.get_for_model(User))
+        reset_student_password_permission, _ = AuthPermission.objects.get_or_create(codename='reset_student_password', content_type=ContentType.objects.get_for_model(User))
+        update_password_after_reset_permission, _ = AuthPermission.objects.get_or_create(codename='update_password_after_reset', content_type=ContentType.objects.get_for_model(User))
 
         add_student_permission, _ = AuthPermission.objects.get_or_create(codename='add_student', content_type=ContentType.objects.get_for_model(Student))
         change_student_permission, _ = AuthPermission.objects.get_or_create(codename='change_student', content_type=ContentType.objects.get_for_model(Student))
         view_student_permission, _ = AuthPermission.objects.get_or_create(codename='view_student', content_type=ContentType.objects.get_for_model(Student))
         delete_student_permission, _ = AuthPermission.objects.get_or_create(codename='delete_student', content_type=ContentType.objects.get_for_model(Student))
+        load_from_csv_permission, _ = AuthPermission.objects.get_or_create(codename='load_from_csv', content_type=ContentType.objects.get_for_model(Student))
 
         add_teacher_permission, _ = AuthPermission.objects.get_or_create(codename='add_teacher', content_type=ContentType.objects.get_for_model(Teacher))
         change_teacher_permission, _ = AuthPermission.objects.get_or_create(codename='change_teacher', content_type=ContentType.objects.get_for_model(Teacher))
@@ -367,20 +370,18 @@ def forwards_func(apps, schema_editor):
 
         view_teacheredition_permission, _ = AuthPermission.objects.get_or_create(codename='view_teacheredition', content_type=ContentType.objects.get_for_model(TeacherEdition))
 
+        change_active_semester_permission, _ = AuthPermission.objects.get_or_create(codename='change_active_semester', content_type=ContentType.objects.get_for_model(Semester))
         view_semester_permission, _ = AuthPermission.objects.get_or_create(codename='view_semester', content_type=ContentType.objects.get_for_model(Semester))
 
         move_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='move_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
+        reset_db_password_permission, _ = AuthPermission.objects.get_or_create(codename='reset_db_password', content_type=ContentType.objects.get_for_model(DBAccount))
 
-        load_from_csv_permission, _ = AuthPermission.objects.get_or_create(codename='load_from_csv', content_type=ContentType.objects.get_for_model(Student))
-
-        change_active_semester_permission, _ = AuthPermission.objects.get_or_create(codename='change_active_semester', content_type=ContentType.objects.get_for_model(Semester))
+        add_group_permission, _ = AuthPermission.objects.get_or_create(codename='add_group', content_type=ContentType.objects.get_for_model(Group))
+        change_group_permission, _ = AuthPermission.objects.get_or_create(codename='change_group', content_type=ContentType.objects.get_for_model(Group))
+        view_group_permission, _ = AuthPermission.objects.get_or_create(codename='view_group', content_type=ContentType.objects.get_for_model(Group))
+        delete_group_permission, _ = AuthPermission.objects.get_or_create(codename='delete_group', content_type=ContentType.objects.get_for_model(Group))
         add_students_to_group_permission, _ = AuthPermission.objects.get_or_create(codename='add_students_to_group', content_type=ContentType.objects.get_for_model(Group))
         remove_student_from_group_permission, _ = AuthPermission.objects.get_or_create(codename='remove_student_from_group', content_type=ContentType.objects.get_for_model(Group))
-
-        reset_own_password_permission, _ = AuthPermission.objects.get_or_create(codename='reset_own_password', content_type=ContentType.objects.get_for_model(User))
-        reset_student_password_permission, _ = AuthPermission.objects.get_or_create(codename='reset_student_password', content_type=ContentType.objects.get_for_model(User))
-        update_password_after_reset_permission, _ = AuthPermission.objects.get_or_create(codename='update_password_after_reset', content_type=ContentType.objects.get_for_model(User))
-
 
         view_major_permission, _ = AuthPermission.objects.get_or_create(codename='view_major', content_type=ContentType.objects.get_for_model(Major))
         add_major_permission, _ = AuthPermission.objects.get_or_create(codename='add_major', content_type=ContentType.objects.get_for_model(Major))
@@ -391,10 +392,6 @@ def forwards_func(apps, schema_editor):
         add_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='add_dbms', content_type=ContentType.objects.get_for_model(Dbms))
         change_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='change_dbms', content_type=ContentType.objects.get_for_model(Dbms))
         delete_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='delete_dbms', content_type=ContentType.objects.get_for_model(Dbms))
-
-        delete_edition_permission, _ = AuthPermission.objects.get_or_create(codename='delete_edition', content_type=ContentType.objects.get_for_model(Edition))
-
-        reset_db_password_permission, _ = AuthPermission.objects.get_or_create(codename='reset_db_password', content_type=ContentType.objects.get_for_model(DBAccount))
 
         teacher_group.permissions.add(view_course_permission.pk)
         teacher_group.permissions.add(view_edition_permission.pk)
