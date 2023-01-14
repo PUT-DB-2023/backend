@@ -360,11 +360,6 @@ def forwards_func(apps, schema_editor):
         view_teacher_permission, _ = AuthPermission.objects.get_or_create(codename='view_teacher', content_type=ContentType.objects.get_for_model(Teacher))
         delete_teacher_permission, _ = AuthPermission.objects.get_or_create(codename='delete_teacher', content_type=ContentType.objects.get_for_model(Teacher))
 
-        add_admin_permission, _ = AuthPermission.objects.get_or_create(codename='add_admin', content_type=ContentType.objects.get_for_model(User))
-        change_admin_permission, _ = AuthPermission.objects.get_or_create(codename='change_admin', content_type=ContentType.objects.get_for_model(User))
-        view_admin_permission, _ = AuthPermission.objects.get_or_create(codename='view_admin', content_type=ContentType.objects.get_for_model(User))
-        delete_admin_permission, _ = AuthPermission.objects.get_or_create(codename='delete_admin', content_type=ContentType.objects.get_for_model(User))
-
         add_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='add_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
         change_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='change_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
         delete_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='delete_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
@@ -425,7 +420,6 @@ def forwards_func(apps, schema_editor):
         teacher_group.permissions.add(reset_student_password_permission.pk)
         teacher_group.permissions.add(update_password_after_reset_permission.pk)
         teacher_group.permissions.add(view_major_permission.pk)
-        # teacher_group.permissions.add(view_semester_permission.pk)
 
         student_group.permissions.add(view_course_permission.pk)
         student_group.permissions.add(view_edition_permission.pk)
@@ -437,7 +431,6 @@ def forwards_func(apps, schema_editor):
         student_group.permissions.add(view_major_permission.pk)
         student_group.permissions.add(reset_own_password_permission.pk)
         student_group.permissions.add(update_password_after_reset_permission.pk)
-        # student_group.permissions.add(view_semester_permission.pk)
         
 
 class Migration(migrations.Migration):

@@ -57,8 +57,8 @@ services:
     command: bash -c "python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     # command: bash -c "yes | python manage.py makemigrations --merge && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     volumes:
-      - .:/code
       - ./tmp/mysqld:/run/mysqld
+      - .:/code
     ports:
       - "8000:8000"
     environment:
