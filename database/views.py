@@ -58,13 +58,13 @@ class UserViewSet(ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-
         if not user.has_perm('database.view_user'):
             raise PermissionDenied
 
         if user.is_superuser:
             return User.objects.all()
         return User.objects.filter(id=user.id)
+
 
     def create(self, request, *args, **kwargs):
         print("Creating admin...")
@@ -136,10 +136,8 @@ class TeacherViewSet(ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-
         if not user.has_perm('database.view_teacher'):
             raise PermissionDenied
-
         if user.is_superuser:
             return Teacher.objects.all()
         elif user.is_teacher:
@@ -251,14 +249,13 @@ class StudentViewSet(ModelViewSet):
         user.groups.add(student_group)
 
     def get_queryset(self):
-        user = self.request.user
-        
+        user = self.request.user  
         if not user.has_perm('database.view_student'):
             raise PermissionDenied
-
         if user.is_superuser:
             return Student.objects.all()
         elif user.is_teacher:
+
             teacher = Teacher.objects.get(user=user)
             groups = Group.objects.filter(teacherEdition__teacher=teacher)
             students = Student.objects.filter(groups__teacherEdition__teacher=teacher).prefetch_related(Prefetch('groups', queryset=groups))
@@ -266,6 +263,7 @@ class StudentViewSet(ModelViewSet):
             # student = Student.objects.get(user=user)
             # groups = Group.objects.filter(students=student).prefetch_related(Prefetch('students', queryset=Student.objects.filter(user=user)))
             # return groups.order_by('id').distinct()
+
         elif user.is_student:
             # student = get_object_or_404(Student, user=user)
             return Student.objects.filter(user=user)
@@ -699,14 +697,13 @@ class TeacherEditionViewSet(ModelViewSet):
             student = get_object_or_404(Student, user=self.request.user)
             return TeacherEdition.objects.filter(edition__groups__students=student).order_by('id')
 
-        return super().get_queryset()
+        return TeacherEdition.objects.none()
 
     def create(self, request, *args, **kwargs):
         user = request.user
 
         if not user.has_perm('database.add_teacheredition'):
             raise PermissionDenied
-
         return super().create(request, *args, **kwargs)
 
     def update(self, request, *args, **kwargs):
@@ -714,7 +711,6 @@ class TeacherEditionViewSet(ModelViewSet):
 
         if not user.has_perm('database.change_teacheredition'):
             raise PermissionDenied
-
         return super().update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
@@ -722,9 +718,7 @@ class TeacherEditionViewSet(ModelViewSet):
 
         if not user.has_perm('database.delete_teacheredition'):
             raise PermissionDenied
-
         return super().destroy(request, *args, **kwargs)
-
 
 
 # class SimpleTeacherEditionViewSet(ModelViewSet):
@@ -742,6 +736,7 @@ class TeacherEditionViewSet(ModelViewSet):
 #         'teacher__user__last_name',
 #         'edition',
 #     ]
+
 
 
 class GroupViewSet(ModelViewSet):
