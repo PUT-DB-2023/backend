@@ -1819,3 +1819,30 @@ class ResetDBPassword(ViewSet):
         except Exception as error:
             print(error)
             return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
+
+class DeleteEdition(ViewSet):
+    
+    @action (methods=['post'], detail=False)
+    def delete_edition(self, request, format=None):
+
+        user = request.user
+
+        if not user.has_perm('database.delete_edition'):
+            raise PermissionDenied
+
+        data = request.data
+
+        if 'edition_id' not in data:
+            print('Error: edition_id not found in request data.')
+            return HttpResponseBadRequest(json.dumps({'name': 'Nie podano edycji.'}), headers={'Content-Type': 'application/json'})
+
+        edition_id = data['edition_id']
+
+        try:
+            edition_to_delete = Edition.objects.get(id=edition_id)
+            edition_to_delete.delete()
+            print("Edition deleted: ", edition_to_delete.id)
+            return JsonResponse({'name': "Succesfull edition delete of id: " + str(edition_to_delete.id)}, status=200)
+        except Exception as error:
+            print(error)
+            return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})

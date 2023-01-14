@@ -397,6 +397,10 @@ def forwards_func(apps, schema_editor):
         change_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='change_dbms', content_type=ContentType.objects.get_for_model(Dbms))
         delete_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='delete_dbms', content_type=ContentType.objects.get_for_model(Dbms))
 
+        delete_edition_permission, _ = AuthPermission.objects.get_or_create(codename='delete_edition', content_type=ContentType.objects.get_for_model(Edition))
+
+        reset_db_password_permission, _ = AuthPermission.objects.get_or_create(codename='reset_db_password', content_type=ContentType.objects.get_for_model(DBAccount))
+
         teacher_group.permissions.add(view_course_permission.pk)
         teacher_group.permissions.add(view_edition_permission.pk)
         teacher_group.permissions.add(add_group_permission.pk)
@@ -425,6 +429,7 @@ def forwards_func(apps, schema_editor):
         teacher_group.permissions.add(reset_student_password_permission.pk)
         teacher_group.permissions.add(update_password_after_reset_permission.pk)
         teacher_group.permissions.add(view_major_permission.pk)
+        teacher_group.permissions.add(reset_db_password_permission.pk)
         # teacher_group.permissions.add(view_semester_permission.pk)
 
         student_group.permissions.add(view_course_permission.pk)
@@ -437,6 +442,7 @@ def forwards_func(apps, schema_editor):
         student_group.permissions.add(view_major_permission.pk)
         student_group.permissions.add(reset_own_password_permission.pk)
         student_group.permissions.add(update_password_after_reset_permission.pk)
+        student_group.permissions.add(reset_db_password_permission.pk)
         # student_group.permissions.add(view_semester_permission.pk)
         
 

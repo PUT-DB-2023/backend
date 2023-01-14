@@ -34,4 +34,5 @@ urlpatterns = [
     path('reset_student_password', views.ResetStudentPassword.as_view({'post': 'reset_student_password'})),
     path('update_password_after_reset', views.UpdatePasswordAfterReset.as_view({'post': 'update_password_after_reset'})),
     path('reset_db_password', views.ResetDBPassword.as_view({'post': 'reset_db_password'})),
+    path('delete_edition', views.DeleteEdition.as_view({'post': 'delete_edition'})),
 ]
