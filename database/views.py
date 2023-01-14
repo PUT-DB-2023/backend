@@ -1754,6 +1754,29 @@ class ResetDBPassword(ViewSet):
 
         dbaccount_id = data['dbaccount_id']
 
+        if user.is_student:
+            try:
+                account_to_reset = DBAccount.objects.get(id=dbaccount_id)
+                if account_to_reset.student.user.id != user.id:
+                    print('Error: student tried to reset password for account that is not his own.')
+                    return HttpResponseBadRequest(json.dumps({'name': 'Nie możesz zresetować hasła dla konta, które nie jest Twoje.'}), headers={'Content-Type': 'application/json'})
+            except Exception as error:
+                print(error)
+                return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
+
+        if user.is_teacher:
+            try:
+                account_to_reset = DBAccount.objects.get(id=dbaccount_id)
+                teacher = Teacher.objects.get(user=user)
+                groups = Group.objects.filter(teacherEdition__teacher=teacher)
+                students = Student.objects.filter(groups__teacherEdition__teacher=teacher).prefetch_related(Prefetch('groups', queryset=groups))
+                if account_to_reset.student not in students:
+                    print('Error: teacher tried to reset password for account that is not his student.')
+                    return HttpResponseBadRequest(json.dumps({'name': 'Nie możesz zresetować hasła dla konta, które nie należy do studenta z twojej grupy.'}), headers={'Content-Type': 'application/json'})
+            except Exception as error:
+                print(error)
+                return HttpResponseServerError(json.dumps({'name': str(error)}), headers={'Content-Type': 'application/json'})
+
         try:
             account_to_reset = DBAccount.objects.get(id=dbaccount_id)
             new_password = PasswordGenerator().generate_password()
@@ -1762,31 +1785,33 @@ class ResetDBPassword(ViewSet):
 
             server = Server.objects.get(id=account_to_reset.editionServer.server.id)
 
-            if server.provider == 'MySQL':
-                conn_mysql = mdb.connect(host=server.ip, port=int(server.port), user=server.user, passwd=server.password, db=server.database)
+            db_account_server_provider = server.dbms.name
+
+            if db_account_server_provider == 'MySQL':
+                conn_mysql = mdb.connect(host=server.host, port=int(server.port), user=server.user, passwd=server.password, db=server.database)
                 cursor = conn_mysql.cursor()
                 cursor.execute(server.modify_user_template % (account_to_reset.username, new_password))
                 conn_mysql.commit()
                 conn_mysql.close()
-            elif server.provider == 'Postgres':
-                conn_postgres = psycopg2.connect(host=server.ip, port=server.port, user=server.user, password=server.password, database=server.database)
+            elif db_account_server_provider == 'PostgreSQL':
+                conn_postgres = psycopg2.connect(host=server.host, port=server.port, user=server.user, password=server.password, database=server.database)
                 cursor = conn_postgres.cursor()
                 cursor.execute(server.modify_user_template % (account_to_reset.username, new_password))
                 conn_postgres.commit()
                 conn_postgres.close()
-            elif server.provider == 'Oracle':
+            elif db_account_server_provider == 'Oracle':
                 oracledb.init_oracle_client()
 
                 conn = oracledb.connect(
                     user=server.user,
                     password=server.password,
-                    dsn=f"{server.ip}:{server.port}/{server.database}")
+                    dsn=f"{server.host}:{server.port}/{server.database}")
                 cursor = conn.cursor()
                 cursor.execute(server.modify_user_template % (account_to_reset.username, new_password))
                 conn.commit()
                 conn.close()
-            elif server.provider == 'MongoDB':
-                conn = MongoClient(f'mongodb://{server.user}:{server.password}@{server.ip}:{server.port}/')
+            elif db_account_server_provider == 'MongoDB':
+                conn = MongoClient(f'mongodb://{server.user}:{server.password}@{server.host}:{server.port}/')
                 db = conn[server.database]
                 db.command("updateUser", account_to_reset.username, pwd=new_password)
                 conn.close()
