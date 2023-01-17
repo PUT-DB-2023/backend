@@ -120,6 +120,7 @@ def forwards_func(apps, schema_editor):
 
     User.objects.create_superuser(first_name='Admin', last_name='Admin', email='admin@cs.put.poznan.pl', password='admin')
 
+    print('\nTeachers:')
 
     for i in range(4):
         email = f"{users_names[i].split()[0].lower()}.{users_names[i].split()[1].lower()}@cs.put.poznan.pl"
@@ -139,9 +140,12 @@ def forwards_func(apps, schema_editor):
         
         Teacher.objects.using(db_alias).create(user=user)
 
+    print('Students:')
+    
     for i in range(4, len(users_names)):
         email = f"{users_names[i].split()[0].lower()}.{users_names[i].split()[1].lower()}@student.put.poznan.pl"
         password = User.objects.make_random_password(length=10)
+        print(f"Password for {email} is {password}")
         student = User.objects.create_user(
             first_name=users_names[i].split()[0],
             last_name=users_names[i].split()[1],
@@ -218,11 +222,11 @@ def forwards_func(apps, schema_editor):
         )
 
     # special edition server so that one edition has two servers
-    # EditionServer.objects.using(db_alias).create(
-    #     additional_info='Additional info about EditionServer',
-    #     edition_id=editions[0],
-    #     server_id=servers[0],
-    # )
+    EditionServer.objects.using(db_alias).create(
+        additional_info='Additional info about EditionServer',
+        edition_id=editions[0],
+        server_id=servers[0],
+    )
 
     # special edition for oracle
     EditionServer.objects.using(db_alias).create(
