@@ -1278,6 +1278,11 @@ class RemoveUserFromExternalDB(ViewSet):
             try:
                 conn = MongoClient(f'mongodb://{db_account.editionServer.server.user}:{db_account.editionServer.server.password}@{db_account.editionServer.server.host}:{db_account.editionServer.server.port}/')
                 db = conn[db_account.editionServer.server.database]
+                # check if user exists in mongo
+                user_exists = db.command("usersInfo", db_account.username)
+                if not user_exists['users']:
+                    print(f"User '{db_account.username}' doesn't exist in database.")
+                    return HttpResponseBadRequest(json.dumps({'name': f"User '{db_account.username}' doesn't exist in database."}), headers={'Content-Type': 'application/json'})
                 db.command({
                     "dropUser" : db_account.username
                 })
