@@ -1246,8 +1246,15 @@ class RemoveUserFromExternalDB(ViewSet):
         if db_account_server_provider.lower() == 'mysql':
             try:
                 conn_mysql = mdb.connect(host=db_account.editionServer.server.host, port=int(db_account.editionServer.server.port), user=db_account.editionServer.server.user, passwd=db_account.editionServer.server.password, db=db_account.editionServer.server.database)
-                print('Connected to MySQL server')  
+                print('Connected to MySQL server')
                 cursor = conn_mysql.cursor()
+                # check if user exists
+                cursor.execute("SELECT user FROM mysql.user WHERE user = '%s'" % (db_account.username))
+                user_exists = cursor.fetchone()
+                if not user_exists:
+                    print(f"User '{db_account.username}' doesn't exist in database.")
+                    DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
+                    return HttpResponseBadRequest(json.dumps({'name': f"Użytkownik '{db_account.username}' nie istnieje w bazie danych."}), headers={'Content-Type': 'application/json'})
                 cursor.execute(db_account.editionServer.server.delete_user_template % (db_account.username))
                 conn_mysql.commit()
                 DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
@@ -1264,6 +1271,13 @@ class RemoveUserFromExternalDB(ViewSet):
                 conn_postgres = psycopg2.connect(dbname=db_account.editionServer.server.database, user=db_account.editionServer.server.user, password=db_account.editionServer.server.password, host=db_account.editionServer.server.host, port=db_account.editionServer.server.port)
                 print('Connected to Postgres server')
                 cursor = conn_postgres.cursor()
+                # check if user exists
+                cursor.execute("SELECT usename FROM pg_catalog.pg_user WHERE usename = '%s'" % (db_account.username))
+                user_exists = cursor.fetchone()
+                if not user_exists:
+                    print(f"User '{db_account.username}' doesn't exist in database.")
+                    DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
+                    return HttpResponseBadRequest(json.dumps({'name': f"Użytkownik '{db_account.username}' nie istnieje w bazie danych."}), headers={'Content-Type': 'application/json'})
                 cursor.execute(db_account.editionServer.server.delete_user_template % (db_account.username))
                 conn_postgres.commit()
                 DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
@@ -1282,6 +1296,7 @@ class RemoveUserFromExternalDB(ViewSet):
                 user_exists = db.command("usersInfo", db_account.username)
                 if not user_exists['users']:
                     print(f"User '{db_account.username}' doesn't exist in database.")
+                    DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
                     return HttpResponseBadRequest(json.dumps({'name': f"User '{db_account.username}' doesn't exist in database."}), headers={'Content-Type': 'application/json'})
                 db.command({
                     "dropUser" : db_account.username
