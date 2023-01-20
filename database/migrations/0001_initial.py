@@ -378,7 +378,7 @@ def forwards_func(apps, schema_editor):
         view_semester_permission, _ = AuthPermission.objects.get_or_create(codename='view_semester', content_type=ContentType.objects.get_for_model(Semester))
 
         move_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='move_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
-        remove_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='move_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
+        remove_db_account_ext_permission, _ = AuthPermission.objects.get_or_create(codename='move_dbaccount_ext', content_type=ContentType.objects.get_for_model(DBAccount))
         reset_db_password_permission, _ = AuthPermission.objects.get_or_create(codename='reset_db_password', content_type=ContentType.objects.get_for_model(DBAccount))
 
         add_group_permission, _ = AuthPermission.objects.get_or_create(codename='add_group', content_type=ContentType.objects.get_for_model(Group))
@@ -399,6 +399,7 @@ def forwards_func(apps, schema_editor):
         delete_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='delete_dbms', content_type=ContentType.objects.get_for_model(Dbms))
 
         test_many_commands_permission, _ = AuthPermission.objects.get_or_create(codename='test_many_commands', content_type=ContentType.objects.get_for_model(DBAccount))
+        reset_teacher_password_permission, _ = AuthPermission.objects.get_or_create(codename='reset_teacher_password', content_type=ContentType.objects.get_for_model(Teacher))
 
         teacher_group.permissions.add(view_course_permission.pk)
         teacher_group.permissions.add(view_edition_permission.pk)
@@ -418,7 +419,7 @@ def forwards_func(apps, schema_editor):
         teacher_group.permissions.add(change_dbaccount_permission.pk)
         teacher_group.permissions.add(delete_dbaccount_permission.pk)
         teacher_group.permissions.add(view_dbaccount_permission.pk)
-        teacher_group.permissions.add(remove_dbaccount_permission.pk)
+        teacher_group.permissions.add(remove_db_account_ext_permission.pk)
         teacher_group.permissions.add(load_from_csv_permission.pk)
         teacher_group.permissions.add(view_teacheredition_permission.pk)
         teacher_group.permissions.add(add_students_to_group_permission.pk)
