@@ -105,6 +105,8 @@ REST_FRAMEWORK = {
 
 ROOT_URLCONF = 'backend.urls'
 
+SESSION_COOKIE_AGE = 60 * 60
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
