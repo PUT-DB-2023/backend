@@ -1278,7 +1278,7 @@ class RemoveUserFromExternalDB(ViewSet):
     @action (methods=['post'], detail=False)
     def delete_db_account(self, request, format=None):
         user = request.user
-        if not user.has_perm('database.delete_db_account'):
+        if not user.has_perm('database.remove_db_account'):
             raise PermissionDenied
 
         print('Request log:', request.data)
