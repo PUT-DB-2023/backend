@@ -397,6 +397,8 @@ def forwards_func(apps, schema_editor):
         change_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='change_dbms', content_type=ContentType.objects.get_for_model(Dbms))
         delete_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='delete_dbms', content_type=ContentType.objects.get_for_model(Dbms))
 
+        test_many_commands_permission, _ = AuthPermission.objects.get_or_create(codename='test_many_commands', content_type=ContentType.objects.get_for_model(DBAccount))
+
         teacher_group.permissions.add(view_course_permission.pk)
         teacher_group.permissions.add(view_edition_permission.pk)
         teacher_group.permissions.add(add_group_permission.pk)
@@ -409,7 +411,6 @@ def forwards_func(apps, schema_editor):
         teacher_group.permissions.add(add_student_permission.pk)
         teacher_group.permissions.add(change_student_permission.pk)
         teacher_group.permissions.add(view_student_permission.pk)
-        teacher_group.permissions.add(add_teacher_permission.pk)
         teacher_group.permissions.add(change_teacher_permission.pk)
         teacher_group.permissions.add(view_teacher_permission.pk)
         teacher_group.permissions.add(add_dbaccount_permission.pk)
