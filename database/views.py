@@ -999,7 +999,7 @@ class LoginView(ViewSet):
                     }
                 }, status=200)
         else:
-            return HttpResponseBadRequest(json.dumps({'name': 'Niepoprawne dane logowania.'}), headers={'Content-Type': 'application/json'})
+            return JsonResponse({'name': 'Niepoprawne dane logowania.'}, status=400)
 
 
 class LogoutView(ViewSet):
@@ -1012,7 +1012,7 @@ class LogoutView(ViewSet):
     def logout_user(self, request, format=None):
         print('logout', request)
         logout(request)
-        return Response({'name': 'Nastąpiło poprawne wylogowanie.'}, status=200)
+        return JsonResponse({'name': 'Nastąpiło poprawne wylogowanie.'}, status=200)
 
 
 class AddUserAccountToExternalDB(ViewSet):
@@ -1114,8 +1114,6 @@ class AddUserAccountToExternalDB(ViewSet):
         
     def oracle(self, server, db_accounts):
         moved_accounts = []
-        status_message = ''
-        status_code = 500
         try:
             oracledb.init_oracle_client()
             conn = oracledb.connect(
@@ -1141,14 +1139,10 @@ class AddUserAccountToExternalDB(ViewSet):
                     print(f"Successfully created user '{account.username}' with '{account.password}' password.")
             conn.commit()
             cursor.close()
-            status_message = 'Successfully moved accounts.'
-            status_code = 200
-            return moved_accounts, status_message, status_code
+            return JsonResponse({'moved_accounts': moved_accounts}, status=200)
         except (Exception) as error:
             print(error)
-            status_message = str(error)
-            status_code = 500
-            return moved_accounts, status_message, status_code
+            return JsonResponse({'name': str(error)}, status=500)
 
     @action (methods=['post'], detail=False)
     def add_db_account(self, request, format=None):
@@ -1160,7 +1154,7 @@ class AddUserAccountToExternalDB(ViewSet):
 
         server = Server.objects.get(id=request.data['server_id'])
         if not server.active:
-            return HttpResponseBadRequest(json.dumps({'name': f"Serwer ({server.name}) nie jest aktywny."}), headers={'Content-Type': 'application/json'})
+            return JsonResponse({'name': f"Serwer ({server.name}) nie jest aktywny."}, status=400)
 
         # edition_server = EditionServer.objects.get(edition__id=request.data['edition_id'], server=server)
 
@@ -1180,20 +1174,15 @@ class AddUserAccountToExternalDB(ViewSet):
         print(f"Server: {server}, server user: {server.user}, server password: {server.password}, server ip: {server.host}, server port: {server.port}")
         
         if server.dbms.name.lower() == 'mysql' or server.dbms.name.lower() == 'my sql':  
-            moved_accounts, status_message, status_code = self.mysql(server, db_accounts)
+            return self.mysql(server, db_accounts)
         elif server.dbms.name.lower() == 'postgres' or server.dbms.name.lower() == 'postgresql' or server.dbms.name.lower() == 'postgre sql': 
-            moved_accounts, status_message, status_code = self.postgresql(server, db_accounts)
+            return self.postgresql(server, db_accounts)
         elif server.dbms.name.lower() == 'mongo' or server.dbms.name.lower() == 'mongodb' or server.dbms.name.lower() == 'mongo db':
-            moved_accounts, status_message, status_code = self.mongodb(server, db_accounts)
+            return self.mongodb(server, db_accounts)
         elif server.dbms.name.lower() == 'oracle' or server.dbms.name.lower() == 'oracledb' or server.dbms.name.lower() == 'oracle db':
-            moved_accounts, status_message, status_code = self.oracle(server, db_accounts)
+            return self.oracle(server, db_accounts)
         else:
             return HttpResponseBadRequest(json.dumps({'name': 'Nieznany SZBD.'}), headers={'Content-Type': 'application/json'})
-        
-        return JsonResponse({
-                'moved_accounts': moved_accounts,
-                'name': status_message}, status=status_code
-            )
 
 
 class RemoveUserFromExternalDB(ViewSet):
