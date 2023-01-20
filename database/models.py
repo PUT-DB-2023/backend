@@ -67,7 +67,7 @@ class User(AbstractUser, PermissionsMixin):
     
     def send_email_gmail(self, subject, message, password):
         msg = EmailMessage()
-        msg.set_content(f'{message} {self.email}: {password}')
+        msg.set_content(f'{message}\nEmail: {self.email}\nHasło: {password}')
 
         msg['Subject'] = subject
         msg['From'] = "putdb2023@gmail.com"
@@ -191,14 +191,10 @@ class Edition(models.Model):
         ]
 
     def save(self, *args, **kwargs):
-        print(f"Course: {self.course}, Course active: {self.course.active}, semester active: {self.semester.active}")
+        print(f"Before save:\nCourse: {self.course}, Course active: {self.course.active}, semester active: {self.semester.active}")
         super().save(*args, **kwargs)
         self.course.save()
-
-    # override create method to check if the course is active
-    def create(self, *args, **kwargs):
-        super().create(*args, **kwargs)
-        self.course.save()
+        print(f"After save:\nCourse: {self.course}, Course active: {self.course.active}, semester active: {self.semester.active}")
 
     # override delete method to check if the course is active
     def delete(self, *args, **kwargs):
@@ -288,7 +284,7 @@ class DBAccount(models.Model):
     additional_info = models.CharField(max_length=255, blank=True, default='')
     is_moved = models.BooleanField(default=False)
     student = models.ForeignKey(Student, on_delete=models.CASCADE, null=True, related_name='db_accounts')
-    editionServer = models.ForeignKey(EditionServer, on_delete=models.SET_NULL, null=True)
+    editionServer = models.ForeignKey(EditionServer, on_delete=models.CASCADE, null=True)
 
     class Meta:
         constraints = [

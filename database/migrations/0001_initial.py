@@ -123,7 +123,7 @@ def forwards_func(apps, schema_editor):
     print('\nTeachers:')
 
     for i in range(4):
-        email = f"{users_names[i].split()[0].lower()}.{users_names[i].split()[1].lower()}@cs.put.poznan.pl"
+        email = User.objects.remove_accents_from_email(f"{users_names[i].split()[0].lower()}.{users_names[i].split()[1].lower()}@cs.put.poznan.pl")
         password = User.objects.make_random_password(length=10)
         print(f"Password for {email} is {password}")
         user = User.objects.create_user(
@@ -143,7 +143,7 @@ def forwards_func(apps, schema_editor):
     print('Students:')
     
     for i in range(4, len(users_names)):
-        email = f"{users_names[i].split()[0].lower()}.{users_names[i].split()[1].lower()}@student.put.poznan.pl"
+        email = User.objects.remove_accents_from_email(f"{users_names[i].split()[0].lower()}.{users_names[i].split()[1].lower()}@student.put.poznan.pl")
         password = User.objects.make_random_password(length=10)
         print(f"Password for {email} is {password}")
         student = User.objects.create_user(
