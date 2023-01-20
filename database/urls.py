@@ -22,7 +22,7 @@ router.register('db_accounts', views.DBAccountViewSet, basename='db_accounts')
 
 urlpatterns = [
     path('', include(router.urls)),
-    path('add_db_account', views.AddUserAccountToExternalDB.as_view({'post': 'add_db_account'})),
+    path('move_db_account', views.MoveDbAccount.as_view({'post': 'move_db_account'})),
     path('delete_db_account', views.RemoveUserFromExternalDB.as_view({'post': 'delete_db_account'})),
     path('load_students_csv', views.LoadStudentsFromCSV.as_view({'post': 'load_students_csv'})),
     path('change_active_semester', views.ChangeActiveSemester.as_view({'post': 'change_active_semester'})),

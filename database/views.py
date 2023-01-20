@@ -1015,7 +1015,7 @@ class LogoutView(ViewSet):
         return JsonResponse({'name': 'Nastąpiło poprawne wylogowanie.'}, status=200)
 
 
-class AddUserAccountToExternalDB(ViewSet):
+class MoveDbAccount(ViewSet):
     def mysql(self, server, db_accounts):
         moved_accounts = []
         try:
@@ -1145,9 +1145,9 @@ class AddUserAccountToExternalDB(ViewSet):
             return JsonResponse({'name': str(error)}, status=500)
 
     @action (methods=['post'], detail=False)
-    def add_db_account(self, request, format=None):
+    def move_db_account(self, request, format=None):
         user = request.user
-        if not user.has_perm('database.add_dbaccount'):
+        if not user.has_perm('database.move_dbaccount'):
             raise PermissionDenied
 
         print('Request log:', request.data)
