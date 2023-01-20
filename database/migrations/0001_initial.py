@@ -38,8 +38,6 @@ def forwards_func(apps, schema_editor):
 
     db_alias = schema_editor.connection.alias
 
-    password_generator = PasswordGenerator(10)
-
     server_names = ['MySQL ZBD Server', 'Oracle ZBD Server', 'Postgres PBD Server', 'Mongo ZBDNS Server']
     server_ipss = ['185.180.207.251', '185.180.207.251', '185.180.207.251', 'mongo']
     server_ports = ['3306', '44475', '5432', '27017']
@@ -56,6 +54,12 @@ def forwards_func(apps, schema_editor):
     ]
 
     dbms = []
+
+    Semester.objects.using(db_alias).create(
+        start_year='2022',
+        winter=False,
+        active=True
+    )
 
     for i in range(len(dbms_names)):
         dbms_object = Dbms.objects.using(db_alias).create(
@@ -79,365 +83,108 @@ def forwards_func(apps, schema_editor):
             username_template=server_username_templates[i]
         )
 
-    major_names = ['Informatyka', 'Automatyka i Robotyka']
-    major_description = ['Opis kierunku Informatyka', 'Opis kierunku Automatyka i Robotyka']
-    majors = []
-
-    for i in range(len(major_names)):
-        major = Major.objects.using(db_alias).create(
-            name=major_names[i],
-            description=major_description[i]
-        )
-        majors.append(major)
-
-    course_names = ['Zarządzanie bazami danych', 'Podstawy baz danych', 'Zarządzanie bazami NoSQL', 'Projektowanie baz danych']
-    course_descriptions = ['Opis kursu zarządzania bazami danych', 'Opis kursu podstaw baz danych', 'Opis kursu zarządzania bazami danych noSQL', 'Opis kursu projektowania baz danych']
-    course_active = [True, True, True, False]
-    course_major = [majors[0], majors[0], majors[1], majors[0]]
-
-    for i in range(len(course_names)):
-        Course.objects.using(db_alias).create(
-            name=course_names[i],
-            description=course_descriptions[i],
-            active=course_active[i],
-            major=course_major[i]
-        )
-
-    semester_years = ['2022', '2022', '2023']
-    semester_winters = [False, True, False]
-    semester_actives = [False, True, False]
-
-    for i in range(len(semester_years)):
-        Semester.objects.using(db_alias).create(
-            start_year=semester_years[i],
-            winter=semester_winters[i],
-            active=semester_actives[i]
-    )
-
-    users_names = ["Ferdynand Dulski","Celestyn Tomaszewski","Sylwester Kaczkowski","Juri Rokicki","Pabian Archacki","Leo Zelek","Kwiatosław Greger","Hubert Kiedrowski","Waldemar Piotrowicz","Olaf Gursky","Hilary Franczak","Melchior Perzan","Świętosław Kopa","Marcin Gorniak","Oskar Kobylinski","Tymon Bialek","Gabriel Orlowski","Pankracy Grodzicki","Serwacy Watroba","Zygmunt Bilik","Aleksander Nabozny","Maryn Wyszynski","Remigiusz Ciolek","Cyprian Gracyalny","Dominik Bernacki","Szymon Rogalski","Ignacy Smigel","Ireneusz Dziak","Wisław Gielgud","Korneli Krynicki","Świętosław Lozowski","Bartłomiej Lach","Konstantyn Pitera","Franciszek Sochaczewski","Malachiasz Car","Eugeniusz Jaracz","Zbigniew Kula","Kamil Rajewski","Zenon Kosmalski","Chwalimir Bania","Romuald Mita","Ryszard Nowak","Sławomir Garstka","Tomasz Kocik","Gerwazy Cieply","Gwalbert Grodzicki","Denis Slusarczyk","Edward Przybylowicz","Malachiasz Cesarz","Iwon Capek","Dobrogost Wojtaszek","Świętosław Pawelski","Tobiasz Raczkowski","Gerard Chmiel","Bartosz Burak","Oktawiusz Ignasiak","Arkadiusz Michalak","Zdzisław Luka","Jerzy Kurcz","Julian Karczewski","Herbert Marcinkiewicz","Klemens Krzyzaniak","Metody Mioduszewski","Gościsław Niziolek","Sylwester Kaczkowski","Fryderyk Dusza","Dobrogost Wójcik","Albin Bialy","Jaromir Misiaszek","Tadeusz Galik","Bożidar Jablon","Witold Demby","Chrystian Krolikowski","Kryspyn Piekarz","Nikodem Czepiec","Wojsław Korczak","Hugo Tylka","Lubomił Ciesinski","Wisław Samborski","Bożimir Jagodzinski","Hilary Lesak","Adrian Bartel","Prot Ewy","Ludomił Kaniuk","Dobrogost Syslo","Adrian Dudzinski","Florentyn Rawski","Bożimir Banik","Wandelin Jaroszewski","Herbert Pekala","Gustaw Dobek","Oskar Jusko","Maksymilian Zajac","Bronisław Prus","Marcel Zaczek","Antoni Wiech","Przemysław Woźniak","Jakub Wróbel","Krystian Jakusik","Kamil Ambozy"]
-    users_names2 = ['Eryk Sikorska','Alek Wróblewski','Damian Baran','Emanuel Witkowski','Kamil Borkowski','Anatol Nowak','Gniewomir Makowski','Cyprian Szymański','Joachim Rutkowski','Krystian Kucharski','Ryszard Marciniak','Bruno Szymański','Roman Kołodziej','Leonardo Wojciechowski','Daniel Zieliński','Norbert Jaworski','Kacper Gajewska','Jan Szymański','Ksawery Szymczak','Heronim Wiśniewski','Ludwik Kalinowski','Cezary Szewczyk','Kryspin Zakrzewska','Piotr Głowacka','Jarosław Gajewska','Olgierd Dąbrowski','Joachim Brzeziński','Krzysztof Makowski','Łukasz Malinowski','Eryk Mazur','Gracjan Lewandowski','Alan Zalewski','Korneliusz Marciniak','Igor Sokołowski','Kryspin Wójcik','Rafał Krajewska','Igor Borkowski','Emanuel Piotrowski','Bruno Czerwiński','Roman Maciejewski','Andrzej Walczak','Kacper Sokołowski','Marek Piotrowski','Bartłomiej Krawczyk','Dariusz Wasilewska','Kajetan Marciniak','Ryszard Krajewska','Mateusz Mróz','Arkadiusz Mazur','Bartłomiej Baranowski','Marian Maciejewski','Jędrzej Szymański','Adam Sokołowski','Kryspin Sawicki','Jerzy Krupa','Mikołaj Zawadzki','Kamil Baran','Przemysław Mróz','Gustaw Kaczmarczyk','Lucjan Jankowski','Aleksander Przybylski','Kazimierz Kamiński','Dariusz Szymański','Marek Czerwiński','Gniewomir Adamska','Amadeusz Zalewski','Franciszek Czerwiński','Milan Lis','Ryszard Kalinowski','Łukasz Gajewska','Norbert Woźniak','Ernest Baranowski','Artur Tomaszewski','Krzysztof Laskowska','Kamil Makowski','Dorian Pietrzak','Olaf Ziółkowska','Ariel Sawicki','Jarosław Jankowski','Bolesław Laskowska','Kamil Kubiak','Franciszek Gajewska','Olgierd Kamiński','Adrian Kucharski','Leszek Jakubowski','Mirosław Jaworski','Mateusz Pawlak','Jerzy Kaczmarczyk','Konstanty Kaczmarczyk','Kordian Lis','Cezary Wójcik','Emil Duda','Filip Wojciechowski','Alfred Sokołowski','Ariel Sobczak','Mieszko Sokołowski','Cezary Adamska','Rafał Ziółkowska','Karol Włodarczyk','Milan Górecki']
-    users_names.extend(users_names2)
-
     User.objects.create_superuser(first_name='Admin', last_name='Admin', email='admin@cs.put.poznan.pl', password='admin')
 
-    print('\nTeachers:')
+    add_course_permission, _ = AuthPermission.objects.get_or_create(codename='add_course', content_type=ContentType.objects.get_for_model(Course))
+    change_course_permission, _ = AuthPermission.objects.get_or_create(codename='change_course', content_type=ContentType.objects.get_for_model(Course))
+    view_course_permission, _ = AuthPermission.objects.get_or_create(codename='view_course', content_type=ContentType.objects.get_for_model(Course))
+    delete_course_permission, _ = AuthPermission.objects.get_or_create(codename='delete_course', content_type=ContentType.objects.get_for_model(Course))
 
-    for i in range(4):
-        email = User.objects.remove_accents_from_email(f"{users_names[i].split()[0].lower()}.{users_names[i].split()[1].lower()}@cs.put.poznan.pl")
-        password = User.objects.make_random_password(length=10)
-        print(f"Password for {email} is {password}")
-        user = User.objects.create_user(
-            first_name=users_names[i].split()[0],
-            last_name=users_names[i].split()[1],
-            email=email,
-            password=password,
-            is_teacher=True
-        )
-        
-        teacher_group = AuthGroup.objects.get(name='TeacherGroup')
-        user.groups.add(teacher_group)
-        user.save()
-        
-        Teacher.objects.using(db_alias).create(user=user)
+    add_edition_permission, _ = AuthPermission.objects.get_or_create(codename='add_edition', content_type=ContentType.objects.get_for_model(Edition))
+    change_edition_permission, _ = AuthPermission.objects.get_or_create(codename='change_edition', content_type=ContentType.objects.get_for_model(Edition))
+    view_edition_permission, _ = AuthPermission.objects.get_or_create(codename='view_edition', content_type=ContentType.objects.get_for_model(Edition))
+    delete_edition_permission, _ = AuthPermission.objects.get_or_create(codename='delete_edition', content_type=ContentType.objects.get_for_model(Edition))
 
-    print('Students:')
-    
-    for i in range(4, len(users_names)):
-        email = User.objects.remove_accents_from_email(f"{users_names[i].split()[0].lower()}.{users_names[i].split()[1].lower()}@student.put.poznan.pl")
-        password = User.objects.make_random_password(length=10)
-        print(f"Password for {email} is {password}")
-        student = User.objects.create_user(
-            first_name=users_names[i].split()[0],
-            last_name=users_names[i].split()[1],
-            email=email,
-            password=password,
-            is_student=True
-        )
+    add_user_permission, _ = AuthPermission.objects.get_or_create(codename='add_user', content_type=ContentType.objects.get_for_model(User))
+    change_user_permission, _ = AuthPermission.objects.get_or_create(codename='change_user', content_type=ContentType.objects.get_for_model(User))
+    view_user_permission, _ = AuthPermission.objects.get_or_create(codename='view_user', content_type=ContentType.objects.get_for_model(User))
+    delete_user_permission, _ = AuthPermission.objects.get_or_create(codename='delete_user', content_type=ContentType.objects.get_for_model(User))
+    reset_own_password_permission, _ = AuthPermission.objects.get_or_create(codename='reset_own_password', content_type=ContentType.objects.get_for_model(User))
+    reset_student_password_permission, _ = AuthPermission.objects.get_or_create(codename='reset_student_password', content_type=ContentType.objects.get_for_model(User))
+    update_password_after_reset_permission, _ = AuthPermission.objects.get_or_create(codename='update_password_after_reset', content_type=ContentType.objects.get_for_model(User))
 
-        student.groups.add(student_group)
-        student.save()
+    add_student_permission, _ = AuthPermission.objects.get_or_create(codename='add_student', content_type=ContentType.objects.get_for_model(Student))
+    change_student_permission, _ = AuthPermission.objects.get_or_create(codename='change_student', content_type=ContentType.objects.get_for_model(Student))
+    view_student_permission, _ = AuthPermission.objects.get_or_create(codename='view_student', content_type=ContentType.objects.get_for_model(Student))
+    delete_student_permission, _ = AuthPermission.objects.get_or_create(codename='delete_student', content_type=ContentType.objects.get_for_model(Student))
+    load_from_csv_permission, _ = AuthPermission.objects.get_or_create(codename='load_from_csv', content_type=ContentType.objects.get_for_model(Student))
 
-        Student.objects.using(db_alias).create(
-            user=student,
-            student_id=str(100000+i),
-            major=majors[0]
-        )
+    add_teacher_permission, _ = AuthPermission.objects.get_or_create(codename='add_teacher', content_type=ContentType.objects.get_for_model(Teacher))
+    change_teacher_permission, _ = AuthPermission.objects.get_or_create(codename='change_teacher', content_type=ContentType.objects.get_for_model(Teacher))
+    view_teacher_permission, _ = AuthPermission.objects.get_or_create(codename='view_teacher', content_type=ContentType.objects.get_for_model(Teacher))
+    delete_teacher_permission, _ = AuthPermission.objects.get_or_create(codename='delete_teacher', content_type=ContentType.objects.get_for_model(Teacher))
 
-    edition_descriptions = [
-        'Edycja 2022/2023 kursu Podstawy baz danych',
-        'Edycja 2022/2023 kursu Zarządzanie bazami danych',
-        'Edycja 2022/2023 kursu Zarządzanie bazami danych noSQL',
-        'Edycja 2021/2022 kursu Projektowanie baz danych',
-        'Edycja 2021/2022 kursu Podstawy baz danych',
-        'Edycja 2023/2024 kursu Podstawy baz danych',
-        'Edycja 2023/2024 kursu Zarządzanie bazami danych',
-        'Edycja 2021/2022 kursu Zarządzanie bazami danych noSQL',
-    ]
+    add_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='add_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
+    change_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='change_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
+    delete_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='delete_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
+    view_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='view_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
 
-    dates_opened = ['2019-10-01'] * 8
+    view_teacheredition_permission, _ = AuthPermission.objects.get_or_create(codename='view_teacheredition', content_type=ContentType.objects.get_for_model(TeacherEdition))
 
-    dates_closed = [
-        None,
-        None,
-        None,
-        '2022-06-30',
-        '2022-06-30',
-        None,
-        None,
-        '2022-06-30'
-    ]
+    change_active_semester_permission, _ = AuthPermission.objects.get_or_create(codename='change_active_semester', content_type=ContentType.objects.get_for_model(Semester))
+    view_semester_permission, _ = AuthPermission.objects.get_or_create(codename='view_semester', content_type=ContentType.objects.get_for_model(Semester))
 
-    courses = Course.objects.all().values_list('id', flat=True)
+    remove_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='move_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
+    reset_db_password_permission, _ = AuthPermission.objects.get_or_create(codename='reset_db_password', content_type=ContentType.objects.get_for_model(DBAccount))
 
-    courses_ids = [courses[1], courses[0], courses[2], courses[3], courses[1], courses[1], courses[0], courses[2]]
+    add_group_permission, _ = AuthPermission.objects.get_or_create(codename='add_group', content_type=ContentType.objects.get_for_model(Group))
+    change_group_permission, _ = AuthPermission.objects.get_or_create(codename='change_group', content_type=ContentType.objects.get_for_model(Group))
+    view_group_permission, _ = AuthPermission.objects.get_or_create(codename='view_group', content_type=ContentType.objects.get_for_model(Group))
+    delete_group_permission, _ = AuthPermission.objects.get_or_create(codename='delete_group', content_type=ContentType.objects.get_for_model(Group))
+    add_students_to_group_permission, _ = AuthPermission.objects.get_or_create(codename='add_students_to_group', content_type=ContentType.objects.get_for_model(Group))
+    remove_student_from_group_permission, _ = AuthPermission.objects.get_or_create(codename='remove_student_from_group', content_type=ContentType.objects.get_for_model(Group))
 
-    semesters = Semester.objects.all().values_list('id', flat=True)
+    view_major_permission, _ = AuthPermission.objects.get_or_create(codename='view_major', content_type=ContentType.objects.get_for_model(Major))
+    add_major_permission, _ = AuthPermission.objects.get_or_create(codename='add_major', content_type=ContentType.objects.get_for_model(Major))
+    change_major_permission, _ = AuthPermission.objects.get_or_create(codename='change_major', content_type=ContentType.objects.get_for_model(Major))
+    delete_major_permission, _ = AuthPermission.objects.get_or_create(codename='delete_major', content_type=ContentType.objects.get_for_model(Major))
 
-    semestres_ids = [
-        semesters[1], semesters[1], semesters[1], semesters[0], semesters[0], semesters[2], semesters[2], semesters[0]
-    ]
+    view_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='view_dbms', content_type=ContentType.objects.get_for_model(Dbms))
+    add_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='add_dbms', content_type=ContentType.objects.get_for_model(Dbms))
+    change_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='change_dbms', content_type=ContentType.objects.get_for_model(Dbms))
+    delete_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='delete_dbms', content_type=ContentType.objects.get_for_model(Dbms))
 
-    for i in range(len(edition_descriptions)):
-        Edition.objects.using(db_alias).create(
-            description=edition_descriptions[i],
-            date_opened=dates_opened[i],
-            date_closed=dates_closed[i],
-            course_id=courses_ids[i],
-            semester_id=semestres_ids[i]
-    )
+    teacher_group.permissions.add(view_course_permission.pk)
+    teacher_group.permissions.add(view_edition_permission.pk)
+    teacher_group.permissions.add(add_group_permission.pk)
+    teacher_group.permissions.add(change_group_permission.pk)
+    teacher_group.permissions.add(delete_group_permission.pk)
+    teacher_group.permissions.add(view_group_permission.pk)
+    teacher_group.permissions.add(add_user_permission.pk)
+    teacher_group.permissions.add(change_user_permission.pk)
+    teacher_group.permissions.add(view_user_permission.pk)
+    teacher_group.permissions.add(add_student_permission.pk)
+    teacher_group.permissions.add(change_student_permission.pk)
+    teacher_group.permissions.add(view_student_permission.pk)
+    teacher_group.permissions.add(add_teacher_permission.pk)
+    teacher_group.permissions.add(change_teacher_permission.pk)
+    teacher_group.permissions.add(view_teacher_permission.pk)
+    teacher_group.permissions.add(add_dbaccount_permission.pk)
+    teacher_group.permissions.add(change_dbaccount_permission.pk)
+    teacher_group.permissions.add(delete_dbaccount_permission.pk)
+    teacher_group.permissions.add(view_dbaccount_permission.pk)
+    teacher_group.permissions.add(remove_dbaccount_permission.pk)
+    teacher_group.permissions.add(load_from_csv_permission.pk)
+    teacher_group.permissions.add(view_teacheredition_permission.pk)
+    teacher_group.permissions.add(add_students_to_group_permission.pk)
+    teacher_group.permissions.add(remove_student_from_group_permission.pk)
+    teacher_group.permissions.add(reset_own_password_permission.pk)
+    teacher_group.permissions.add(reset_student_password_permission.pk)
+    teacher_group.permissions.add(update_password_after_reset_permission.pk)
+    teacher_group.permissions.add(view_major_permission.pk)
+    teacher_group.permissions.add(reset_db_password_permission.pk)
 
-    edition_server_add_info = ['Additional info about EditionServer'] * 8
-
-    editions = Edition.objects.all().values_list('id', flat=True)
-    servers = Server.objects.all().values_list('id', flat=True)
-
-    edition_server_edition_ids = [editions[i] for i in range(8)]
-    edition_server_server_ids = [servers[2], servers[0], servers[3], servers[1], servers[2], servers[2], servers[0], servers[3]]
-
-    for i in range(len(edition_server_add_info)):
-        EditionServer.objects.using(db_alias).create(
-            additional_info=edition_server_add_info[i],
-            edition_id=edition_server_edition_ids[i],
-            server_id=edition_server_server_ids[i], 
-        )
-
-    # special edition server so that one edition has two servers
-    EditionServer.objects.using(db_alias).create(
-        additional_info='Additional info about EditionServer',
-        edition_id=editions[0],
-        server_id=servers[0],
-    )
-
-    # special edition for oracle
-    EditionServer.objects.using(db_alias).create(
-        additional_info='Additional info about EditionServer',
-        edition_id=editions[0],
-        server_id=servers[1],
-    )
-
-    teachers = Teacher.objects.all().values_list('id', flat=True)
-
-    teacher_edition_edition_id = [editions[i] for i in range(8)]
-    teacher_edition_teacher_id = [teachers[0], teachers[1], teachers[2], teachers[3], teachers[0], teachers[0], teachers[1], teachers[2], teachers[0]]
-
-    for i in range(len(teacher_edition_edition_id)):
-        TeacherEdition.objects.using(db_alias).create(
-            edition_id=teacher_edition_edition_id[i],
-            teacher_id=teacher_edition_teacher_id[i]
-        )
-
-    group_names = [
-        'Grupa 1 ZBD', 'Grupa 2 ZBD', 'Grupa 3 ZBD',
-        'Grupa 4 PBD', 'Grupa 5 PBD', 'Grupa 6 PBD',
-        'Grupa 7 ZBN', 'Grupa 8 ZBN', 'Grupa 9 ZBN',
-        'Grupa 10 ProjBD - NA', 'Grupa 11 ProjBD - NA', 'Grupa 12 ProjBD - NA',
-        'Grupa 13 PBD Past', 'Grupa 14 PBD Past', 'Grupa 15 PBD Past',
-        'Grupa 16 PBD Future', 'Grupa 17 PBD Future', 'Grupa 18 PBD Future',
-        'Grupa 19 ZBD Future', 'Grupa 20 ZBD Future', 'Grupa 21 ZBD Future',
-        'Grupa 22 ZBN Past', 'Grupa 23 ZBN Past', 'Grupa 24 ZBN Past'
-    ]
-
-    days = ['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek']
-    group_days = random.choices(days, k=24)
-
-    hours = ['8:00', '9:45', '11:45', '13:30', '15:10', '16:50']
-    group_hours = random.choices(hours, k=24)
-
-    rooms = ['1.6.18', 'CW 8', '2.2.2', 'CW 9', '1.5.5', 'A6', '1.4.4','1.2.2', '1.1.1', '4.4.4',]
-    group_rooms = random.choices(rooms, k=24)
-
-    teacher_editions = TeacherEdition.objects.all()
-    teacher_editions_for_groups = [
-        teacher_editions[1], teacher_editions[1], teacher_editions[1], teacher_editions[0], teacher_editions[0], teacher_editions[0],
-        teacher_editions[2], teacher_editions[2], teacher_editions[2], teacher_editions[3], teacher_editions[3], teacher_editions[3],
-        teacher_editions[4], teacher_editions[4], teacher_editions[4], teacher_editions[5], teacher_editions[5], teacher_editions[5],
-        teacher_editions[6], teacher_editions[6], teacher_editions[6], teacher_editions[7], teacher_editions[7], teacher_editions[7]
-    ]
-    
-    students_all = Student.objects.all()
-
-    print("Len teacher_editions: ", len(teacher_editions_for_groups))
-    print("Len group_names: ", len(group_names))
-
-    for i in range(len(group_names)):
-        created_group = Group.objects.using(db_alias).create(
-            name=group_names[i], day=group_days[i], hour=group_hours[i], room=group_rooms[i], teacherEdition=teacher_editions_for_groups[i]
-        )
-        for j in range(i * 8, i * 8 + 8):
-            created_group.students.add(students_all[j])
-
-    edition_servers = EditionServer.objects.all()
-
-    for i in range(4, len(users_names)):
-        if 4 <= i <= 27: # GRUPY 1-3
-            password = User.objects.make_random_password(length=10)
-            DBAccount.objects.using(db_alias).create(
-                username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password, is_moved=False, student=students_all[i-4], editionServer=edition_servers[1]
-            )
-        if 28 <= i <= 51: # GRUPY 4-6
-            password = User.objects.make_random_password(length=10)
-            DBAccount.objects.using(db_alias).create(
-                username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password, is_moved=False, student=students_all[i-4], editionServer=edition_servers[0]
-            )
-            password = User.objects.make_random_password(length=10)
-            DBAccount.objects.using(db_alias).create(
-                username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password, is_moved=False, student=students_all[i-4], editionServer=edition_servers[8]
-            )
-            password = User.objects.make_random_password(length=10)
-            DBAccount.objects.using(db_alias).create(
-                username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password, is_moved=False, student=students_all[i-4], editionServer=edition_servers[9]
-            )
-        if 52 <= i <= 75: # GRUPY 7-9
-            password = User.objects.make_random_password(length=10)
-            DBAccount.objects.using(db_alias).create(
-                username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password, is_moved=False, student=students_all[i-4], editionServer=edition_servers[2]
-            )
-        if 76 <= i <= 99: # GRUPY 10-12
-            password = User.objects.make_random_password(length=10)
-            DBAccount.objects.using(db_alias).create(
-                username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password, is_moved=False, student=students_all[i-4], editionServer=edition_servers[3]
-            )
-        if 100 <= i <= 123: # GRUPY 13-15
-            password = User.objects.make_random_password(length=10)
-            DBAccount.objects.using(db_alias).create(
-                username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password, is_moved=False, student=students_all[i-4], editionServer=edition_servers[4]
-            )
-        if 124 <= i <= 147: # GRUPY 16-18
-            password = User.objects.make_random_password(length=10)
-            DBAccount.objects.using(db_alias).create(
-                username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password, is_moved=False, student=students_all[i-4], editionServer=edition_servers[5]
-            )
-        if 148 <= i <= 171: # GRUPY 19-21
-            password = User.objects.make_random_password(length=10)
-            DBAccount.objects.using(db_alias).create(
-                username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password, is_moved=False, student=students_all[i-4], editionServer=edition_servers[6]
-            )
-        if 172 <= i <= 195: # GRUPY 22-24
-            password = User.objects.make_random_password(length=10)
-            DBAccount.objects.using(db_alias).create(
-                username=f"{students_all[i-4].user.last_name.lower()}_{students_all[i-4].student_id}", password=password, is_moved=False, student=students_all[i-4], editionServer=edition_servers[7]
-            )
-
-        add_course_permission, _ = AuthPermission.objects.get_or_create(codename='add_course', content_type=ContentType.objects.get_for_model(Course))
-        change_course_permission, _ = AuthPermission.objects.get_or_create(codename='change_course', content_type=ContentType.objects.get_for_model(Course))
-        view_course_permission, _ = AuthPermission.objects.get_or_create(codename='view_course', content_type=ContentType.objects.get_for_model(Course))
-        delete_course_permission, _ = AuthPermission.objects.get_or_create(codename='delete_course', content_type=ContentType.objects.get_for_model(Course))
-
-        add_edition_permission, _ = AuthPermission.objects.get_or_create(codename='add_edition', content_type=ContentType.objects.get_for_model(Edition))
-        change_edition_permission, _ = AuthPermission.objects.get_or_create(codename='change_edition', content_type=ContentType.objects.get_for_model(Edition))
-        view_edition_permission, _ = AuthPermission.objects.get_or_create(codename='view_edition', content_type=ContentType.objects.get_for_model(Edition))
-        delete_edition_permission, _ = AuthPermission.objects.get_or_create(codename='delete_edition', content_type=ContentType.objects.get_for_model(Edition))
-
-        add_user_permission, _ = AuthPermission.objects.get_or_create(codename='add_user', content_type=ContentType.objects.get_for_model(User))
-        change_user_permission, _ = AuthPermission.objects.get_or_create(codename='change_user', content_type=ContentType.objects.get_for_model(User))
-        view_user_permission, _ = AuthPermission.objects.get_or_create(codename='view_user', content_type=ContentType.objects.get_for_model(User))
-        delete_user_permission, _ = AuthPermission.objects.get_or_create(codename='delete_user', content_type=ContentType.objects.get_for_model(User))
-        reset_own_password_permission, _ = AuthPermission.objects.get_or_create(codename='reset_own_password', content_type=ContentType.objects.get_for_model(User))
-        reset_student_password_permission, _ = AuthPermission.objects.get_or_create(codename='reset_student_password', content_type=ContentType.objects.get_for_model(User))
-        update_password_after_reset_permission, _ = AuthPermission.objects.get_or_create(codename='update_password_after_reset', content_type=ContentType.objects.get_for_model(User))
-
-        add_student_permission, _ = AuthPermission.objects.get_or_create(codename='add_student', content_type=ContentType.objects.get_for_model(Student))
-        change_student_permission, _ = AuthPermission.objects.get_or_create(codename='change_student', content_type=ContentType.objects.get_for_model(Student))
-        view_student_permission, _ = AuthPermission.objects.get_or_create(codename='view_student', content_type=ContentType.objects.get_for_model(Student))
-        delete_student_permission, _ = AuthPermission.objects.get_or_create(codename='delete_student', content_type=ContentType.objects.get_for_model(Student))
-        load_from_csv_permission, _ = AuthPermission.objects.get_or_create(codename='load_from_csv', content_type=ContentType.objects.get_for_model(Student))
-
-        add_teacher_permission, _ = AuthPermission.objects.get_or_create(codename='add_teacher', content_type=ContentType.objects.get_for_model(Teacher))
-        change_teacher_permission, _ = AuthPermission.objects.get_or_create(codename='change_teacher', content_type=ContentType.objects.get_for_model(Teacher))
-        view_teacher_permission, _ = AuthPermission.objects.get_or_create(codename='view_teacher', content_type=ContentType.objects.get_for_model(Teacher))
-        delete_teacher_permission, _ = AuthPermission.objects.get_or_create(codename='delete_teacher', content_type=ContentType.objects.get_for_model(Teacher))
-
-        add_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='add_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
-        change_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='change_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
-        delete_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='delete_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
-        view_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='view_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
-
-        view_teacheredition_permission, _ = AuthPermission.objects.get_or_create(codename='view_teacheredition', content_type=ContentType.objects.get_for_model(TeacherEdition))
-
-        change_active_semester_permission, _ = AuthPermission.objects.get_or_create(codename='change_active_semester', content_type=ContentType.objects.get_for_model(Semester))
-        view_semester_permission, _ = AuthPermission.objects.get_or_create(codename='view_semester', content_type=ContentType.objects.get_for_model(Semester))
-
-        remove_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='move_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
-        reset_db_password_permission, _ = AuthPermission.objects.get_or_create(codename='reset_db_password', content_type=ContentType.objects.get_for_model(DBAccount))
-
-        add_group_permission, _ = AuthPermission.objects.get_or_create(codename='add_group', content_type=ContentType.objects.get_for_model(Group))
-        change_group_permission, _ = AuthPermission.objects.get_or_create(codename='change_group', content_type=ContentType.objects.get_for_model(Group))
-        view_group_permission, _ = AuthPermission.objects.get_or_create(codename='view_group', content_type=ContentType.objects.get_for_model(Group))
-        delete_group_permission, _ = AuthPermission.objects.get_or_create(codename='delete_group', content_type=ContentType.objects.get_for_model(Group))
-        add_students_to_group_permission, _ = AuthPermission.objects.get_or_create(codename='add_students_to_group', content_type=ContentType.objects.get_for_model(Group))
-        remove_student_from_group_permission, _ = AuthPermission.objects.get_or_create(codename='remove_student_from_group', content_type=ContentType.objects.get_for_model(Group))
-
-        view_major_permission, _ = AuthPermission.objects.get_or_create(codename='view_major', content_type=ContentType.objects.get_for_model(Major))
-        add_major_permission, _ = AuthPermission.objects.get_or_create(codename='add_major', content_type=ContentType.objects.get_for_model(Major))
-        change_major_permission, _ = AuthPermission.objects.get_or_create(codename='change_major', content_type=ContentType.objects.get_for_model(Major))
-        delete_major_permission, _ = AuthPermission.objects.get_or_create(codename='delete_major', content_type=ContentType.objects.get_for_model(Major))
-
-        view_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='view_dbms', content_type=ContentType.objects.get_for_model(Dbms))
-        add_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='add_dbms', content_type=ContentType.objects.get_for_model(Dbms))
-        change_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='change_dbms', content_type=ContentType.objects.get_for_model(Dbms))
-        delete_dbms_permission, _ = AuthPermission.objects.get_or_create(codename='delete_dbms', content_type=ContentType.objects.get_for_model(Dbms))
-
-        teacher_group.permissions.add(view_course_permission.pk)
-        teacher_group.permissions.add(view_edition_permission.pk)
-        teacher_group.permissions.add(add_group_permission.pk)
-        teacher_group.permissions.add(change_group_permission.pk)
-        teacher_group.permissions.add(delete_group_permission.pk)
-        teacher_group.permissions.add(view_group_permission.pk)
-        teacher_group.permissions.add(add_user_permission.pk)
-        teacher_group.permissions.add(change_user_permission.pk)
-        teacher_group.permissions.add(view_user_permission.pk)
-        teacher_group.permissions.add(add_student_permission.pk)
-        teacher_group.permissions.add(change_student_permission.pk)
-        teacher_group.permissions.add(view_student_permission.pk)
-        teacher_group.permissions.add(add_teacher_permission.pk)
-        teacher_group.permissions.add(change_teacher_permission.pk)
-        teacher_group.permissions.add(view_teacher_permission.pk)
-        teacher_group.permissions.add(add_dbaccount_permission.pk)
-        teacher_group.permissions.add(change_dbaccount_permission.pk)
-        teacher_group.permissions.add(delete_dbaccount_permission.pk)
-        teacher_group.permissions.add(view_dbaccount_permission.pk)
-        teacher_group.permissions.add(remove_dbaccount_permission.pk)
-        teacher_group.permissions.add(load_from_csv_permission.pk)
-        teacher_group.permissions.add(view_teacheredition_permission.pk)
-        teacher_group.permissions.add(add_students_to_group_permission.pk)
-        teacher_group.permissions.add(remove_student_from_group_permission.pk)
-        teacher_group.permissions.add(reset_own_password_permission.pk)
-        teacher_group.permissions.add(reset_student_password_permission.pk)
-        teacher_group.permissions.add(update_password_after_reset_permission.pk)
-        teacher_group.permissions.add(view_major_permission.pk)
-        teacher_group.permissions.add(reset_db_password_permission.pk)
-
-        student_group.permissions.add(view_course_permission.pk)
-        student_group.permissions.add(view_edition_permission.pk)
-        student_group.permissions.add(view_group_permission.pk)
-        student_group.permissions.add(view_student_permission.pk)
-        student_group.permissions.add(view_teacher_permission.pk)
-        student_group.permissions.add(view_user_permission.pk)
-        student_group.permissions.add(view_dbaccount_permission.pk)
-        student_group.permissions.add(view_major_permission.pk)
-        student_group.permissions.add(reset_own_password_permission.pk)
-        student_group.permissions.add(update_password_after_reset_permission.pk)
-        student_group.permissions.add(reset_db_password_permission.pk)
+    student_group.permissions.add(view_course_permission.pk)
+    student_group.permissions.add(view_edition_permission.pk)
+    student_group.permissions.add(view_group_permission.pk)
+    student_group.permissions.add(view_student_permission.pk)
+    student_group.permissions.add(view_teacher_permission.pk)
+    student_group.permissions.add(view_user_permission.pk)
+    student_group.permissions.add(view_dbaccount_permission.pk)
+    student_group.permissions.add(view_major_permission.pk)
+    student_group.permissions.add(reset_own_password_permission.pk)
+    student_group.permissions.add(update_password_after_reset_permission.pk)
+    student_group.permissions.add(reset_db_password_permission.pk)
         
 
 class Migration(migrations.Migration):
