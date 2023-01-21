@@ -1657,9 +1657,9 @@ class ResetStudentPassword(ViewSet):
                 print(error)
                 return JsonResponse({'name': str(error)}, status=500)
             
-class ResetStudentPassword(ViewSet):
+class ResetTeacherPassword(ViewSet):
         @action (methods=['post'], detail=False)
-        def reset_student_password(self, request, format=None):
+        def reset_teacher_password(self, request, format=None):
             user = request.user
             if not user.has_perm('database.reset_teacher_password'):
                 raise PermissionDenied
