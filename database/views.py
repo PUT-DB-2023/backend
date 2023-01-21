@@ -1281,13 +1281,13 @@ class RemoveUserFromExternalDB(ViewSet):
         db_account = DBAccount.objects.get(id=request.data['dbaccount_id'])
         db_account_server_provider = db_account.editionServer.server.dbms.name
         
-        if db_account_server_provider.lower() == 'mysql':
+        if db_account_server_provider.lower() == 'mysql' or db_account_server_provider.lower() == 'my sql':
             return self.mysql(db_account)
-        elif db_account_server_provider.lower() == 'postgres' or db_account_server_provider.lower() == 'postgresql':
+        elif db_account_server_provider.lower() == 'postgres' or db_account_server_provider.lower() == 'postgresql' or db_account_server_provider.lower() == 'postgre sql':
             return self.postgresql(db_account)
-        elif db_account_server_provider.lower() == 'mongo' or db_account_server_provider.lower() == 'mongodb':
+        elif db_account_server_provider.lower() == 'mongo' or db_account_server_provider.lower() == 'mongodb' or db_account_server_provider.lower() == 'mongo db':
             return self.mongodb(db_account)
-        elif db_account_server_provider.lower() == 'oracle' or db_account_server_provider.lower() == 'oracledb':
+        elif db_account_server_provider.lower() == 'oracle' or db_account_server_provider.lower() == 'oracledb' or db_account_server_provider.lower() == 'oracle db':
             return self.oracle(db_account)
         else:
             return JsonResponse({'name': 'Nieznany SZBD.'}, status=400)
@@ -1741,21 +1741,21 @@ class ResetDBPassword(ViewSet):
             server = Server.objects.get(id=account_to_reset.editionServer.server.id)
             db_account_server_provider = server.dbms.name
 
-            if db_account_server_provider == 'MySQL':
+            if db_account_server_provider.lower() == 'mysql' or db_account_server_provider.lower() == 'my sql':
                 conn_mysql = mdb.connect(host=server.host, port=int(server.port), user=server.user, passwd=server.password, db=server.database)
                 cursor = conn_mysql.cursor()
                 cursor.execute(server.modify_user_template % (account_to_reset.username, new_password))
                 conn_mysql.commit()
                 conn_mysql.close()
             
-            elif db_account_server_provider == 'PostgreSQL':
+            elif db_account_server_provider.lower() == 'postgresql' or db_account_server_provider.lower() == 'postgres' or db_account_server_provider.lower() == 'postgres db':
                 conn_postgres = psycopg2.connect(host=server.host, port=server.port, user=server.user, password=server.password, database=server.database)
                 cursor = conn_postgres.cursor()
                 cursor.execute(server.modify_user_template % (account_to_reset.username, new_password))
                 conn_postgres.commit()
                 conn_postgres.close()
             
-            elif db_account_server_provider == 'Oracle':
+            elif db_account_server_provider.lower() == 'oracle' or db_account_server_provider.lower() == 'oracledb' or db_account_server_provider.lower() == 'oracle db':
                 oracledb.init_oracle_client()
                 conn = oracledb.connect(
                     user=server.user,
