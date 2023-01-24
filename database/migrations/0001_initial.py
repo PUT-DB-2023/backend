@@ -10,7 +10,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import get_user_model
 
 import database.models
-from database.password_generator import PasswordGenerator
 
 import random
 import csv
@@ -37,8 +36,6 @@ def forwards_func(apps, schema_editor):
     student_group, _ = AuthGroup.objects.get_or_create(name='StudentGroup')
 
     db_alias = schema_editor.connection.alias
-
-    password_generator = PasswordGenerator(10)
 
     server_names = ['MySQL ZBD Server', 'Oracle ZBD Server', 'Postgres PBD Server', 'Mongo ZBDNS Server']
     server_ipss = ['185.180.207.251', '185.180.207.251', '185.180.207.251', 'mongo']

@@ -258,9 +258,9 @@ class Server(models.Model):
     active = models.BooleanField(default=True)
     editions = models.ManyToManyField(Edition, through='EditionServer', related_name='servers')
 
-    create_user_template = models.CharField(max_length=255, blank=True, default='')
-    modify_user_template = models.CharField(max_length=255, blank=True, default='')
-    delete_user_template = models.CharField(max_length=255, blank=True, default='')
+    create_user_template = models.CharField(max_length=1023, blank=True, default='')
+    modify_user_template = models.CharField(max_length=1023, blank=True, default='')
+    delete_user_template = models.CharField(max_length=1023, blank=True, default='')
     custom_command_template = models.CharField(max_length=1023, blank=True, default='')
 
     username_template = models.CharField(max_length=255, null=True)

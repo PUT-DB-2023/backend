@@ -26,7 +26,6 @@ from django.core.exceptions import ValidationError
 # from django.core.validators import validate_email
 import json
 
-from database.password_generator import PasswordGenerator
 from database.sender import EmailSender
 from .serializers import UserSerializer, TeacherSerializer, DetailedTeacherSerializer, StudentSerializer, DetailedStudentSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, BasicEditionSerializer, TeacherEditionSerializer, GroupSerializer, DetailedGroupSerializer, DBMSSerializer, GroupSerializerForStudent, ServerSerializer, EditionServerSerializer, DBAccountSerializer
 # , SimpleTeacherEditionSerializer
