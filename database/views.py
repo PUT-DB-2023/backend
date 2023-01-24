@@ -1655,6 +1655,37 @@ class ResetStudentPassword(ViewSet):
             except Exception as error:
                 print(error)
                 return JsonResponse({'name': str(error)}, status=500)
+            
+class ResetTeacherPassword(ViewSet):
+        @action (methods=['post'], detail=False)
+        def reset_teacher_password(self, request, format=None):
+            user = request.user
+            if not user.has_perm('database.reset_teacher_password'):
+                raise PermissionDenied
+    
+            data = request.data
+            print('Request log:', data)
+    
+            if 'account_id' not in data:
+                print('Error: account_id not found in request data.')
+                return JsonResponse({'name': 'Nie podano konta.'}, status=400)
+    
+            account_id = data['account_id']
+    
+            try:
+                account_to_reset = User.objects.get(id=account_id)
+                if not account_to_reset.is_teacher:
+                    print(f"User {account_to_reset.email} is not a teacher.")
+                    return JsonResponse({'name': 'To konto nie jest kontem dydaktyka.'}, status=400)
+                new_password = User.objects.make_random_password()
+                print(f"New password for {account_to_reset.email} is {new_password}.")
+                account_to_reset.set_password(new_password)
+                account_to_reset.save()
+                user.send_email_gmail(RESET_PASSWORD_SUBJECT, RESET_PASSWORD_MESSAGE, new_password)
+                return JsonResponse({'name': "Pomyślnie zresetowano hasło dla użytkonwika o id: " + str(account_to_reset.id)}, status=200)
+            except Exception as error:
+                print(error)
+                return JsonResponse({'name': str(error)}, status=500)
 
 class UpdatePasswordAfterReset(ViewSet):
 
