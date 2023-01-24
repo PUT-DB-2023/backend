@@ -36,5 +36,6 @@ urlpatterns = [
     path('update_password_after_reset', views.UpdatePasswordAfterReset.as_view({'post': 'update_password_after_reset'})),
     path('reset_db_password', views.ResetDBPassword.as_view({'post': 'reset_db_password'})),
     path('delete_edition', views.DeleteEdition.as_view({'post': 'delete_edition'})),
-    path('delete_students_without_groups', views.DeleteStudentsWithoutGroups.as_view({'post': 'delete_students_without_groups'}))
+    path('delete_students_without_groups', views.DeleteStudentsWithoutGroups.as_view({'post': 'delete_students_without_groups'})),
+    path('execute_custom_command', views.ExecuteCustomCommand.as_view({'post': 'execute_custom_command'})),
 ]

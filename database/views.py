@@ -25,6 +25,7 @@ from django.db import IntegrityError
 from django.core.exceptions import ValidationError
 # from django.core.validators import validate_email
 import json
+import re
 
 from database.sender import EmailSender
 from .serializers import UserSerializer, TeacherSerializer, DetailedTeacherSerializer, StudentSerializer, DetailedStudentSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, BasicEditionSerializer, TeacherEditionSerializer, GroupSerializer, DetailedGroupSerializer, DBMSSerializer, GroupSerializerForStudent, ServerSerializer, EditionServerSerializer, DBAccountSerializer
@@ -43,6 +44,46 @@ NEW_USER_MESSAGE = f'Twoje konto w systemie {SYSTEM_NAME} zostało utworzone. Tw
 RESET_PASSWORD_SUBJECT = f'Reset hasław systemie {SYSTEM_NAME}'
 RESET_PASSWORD_MESSAGE = 'Twoje hasło do konta zostało zresetowane. Nowe dane logowania to:'
 
+def replace_parameters(command, account_to_add):
+
+    command = command.replace('arg_username', account_to_add.username)
+    command = command.replace('arg_password', account_to_add.password)
+    command = command.replace('arg_database', account_to_add.editionServer.server.database)
+    command = command.replace('arg_host', account_to_add.editionServer.server.host)
+    command = command.replace('arg_port', str(account_to_add.editionServer.server.port))
+
+    return command
+
+def prepare_command(command):
+
+    commands_to_execute = []
+
+    if command.find('BEGIN') != -1:
+        command_index = 0
+        while command_index < len(command):
+            if command[command_index] == ';':
+                commands_to_execute.append(command[:command_index].strip())
+                command = command[command_index + 1:]
+                command_index = 0
+            elif command[command_index] == 'B' and command[command_index + 1] == 'E' and command[command_index + 2] == 'G' and command[command_index + 3] == 'I' and command[command_index + 4] == 'N':
+                command_index += 5
+                while command[command_index] != 'E' or command[command_index + 1] != 'N' or command[command_index + 2] != 'D':
+                    command_index += 1
+                command_after_re = re.sub(' {2,}', ' ', command[:command_index + 4].strip())
+                commands_to_execute.append(command_after_re)
+                command = command[command_index + 5:]
+                command_index = 0
+            else:
+                command_index += 1
+    else:
+        commands_to_execute = command.split(';')
+        for i in range(len(commands_to_execute)):
+            commands_to_execute[i] = commands_to_execute[i].strip(' ')
+
+    if commands_to_execute[-1] == '':
+        commands_to_execute.pop()
+
+    return commands_to_execute
 
 class UserViewSet(ModelViewSet):
     """
@@ -1034,6 +1075,7 @@ class MoveDbAccount(ViewSet):
             )
             cursor = conn_mysql.cursor()
             print('Connected to MySQL server')
+            commands_to_execute = prepare_command(server.create_user_template)
             for account in db_accounts:
                 print(server.create_user_template)
                 cursor.execute("SELECT user FROM mysql.user WHERE user = '%s'" % (account.username))
@@ -1043,7 +1085,9 @@ class MoveDbAccount(ViewSet):
                     DBAccount.objects.filter(id=account.id).update(is_moved=True)
                     continue
                 else:
-                    cursor.execute(server.create_user_template % (account.username, account.password))
+                    for command in commands_to_execute:
+                        command = replace_parameters(command, account)
+                        cursor.execute(command)
                     moved_accounts.append(account.username)
                     DBAccount.objects.filter(id=account.id).update(is_moved=True)
                     print(f"Successfully created user '{account.username}' with '{account.password}' password.")
@@ -1069,6 +1113,7 @@ class MoveDbAccount(ViewSet):
             )
             print('Connected to Postgres server')
             cursor = conn_postgres.cursor()
+            commands_to_execute = prepare_command(server.create_user_template)
             for account in db_accounts:
                 print(account.username)
                 cursor.execute('SELECT rolname FROM pg_roles WHERE rolname = %s', (account.username,))
@@ -1078,7 +1123,9 @@ class MoveDbAccount(ViewSet):
                     DBAccount.objects.filter(id=account.id).update(is_moved=True)
                     continue
                 else:
-                    cursor.execute(server.create_user_template % (account.username, account.password))
+                    for command in commands_to_execute:
+                        command = replace_parameters(command, account)
+                        cursor.execute(command)
                     moved_accounts.append(account.username)
                     DBAccount.objects.filter(id=account.id).update(is_moved=True)
                     print(f"Successfully created user '{account.username}' with '{account.password}' password.")
@@ -1129,7 +1176,7 @@ class MoveDbAccount(ViewSet):
             )
             cursor = conn.cursor()
             print("Successfully connected to Oracle server.")
-
+            commands_to_execute = prepare_command(server.create_user_template)
             for account in db_accounts:
                 print(account.username)
                 cursor.execute(f"SELECT * FROM DBA_USERS WHERE username = '{account.username}'")
@@ -1139,7 +1186,9 @@ class MoveDbAccount(ViewSet):
                     DBAccount.objects.filter(id=account.id).update(is_moved=True)
                     continue
                 else:
-                    cursor.execute(server.create_user_template % (account.username, account.password))
+                    for command in commands_to_execute:
+                        command = replace_parameters(command, account)
+                        cursor.execute(command)
                     moved_accounts.append(account.username)
                     DBAccount.objects.filter(id=account.id).update(is_moved=True)
                     print(f"Successfully created user '{account.username}' with '{account.password}' password.")
@@ -1203,7 +1252,12 @@ class RemoveUserFromExternalDB(ViewSet):
             )
             print('Connected to MySQL server')  
             cursor = conn_mysql.cursor()
-            cursor.execute(db_account.editionServer.server.delete_user_template % (db_account.username))
+            command = replace_parameters(db_account.editionServer.server.delete_user_template, db_account)
+            commands_to_execute = prepare_command(command)
+
+            for command in commands_to_execute:
+                cursor.execute(command)
+
             conn_mysql.commit()
             DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
             cursor.close()
@@ -1219,7 +1273,13 @@ class RemoveUserFromExternalDB(ViewSet):
             conn_postgres = psycopg2.connect(dbname=db_account.editionServer.server.database, user=db_account.editionServer.server.user, password=db_account.editionServer.server.password, host=db_account.editionServer.server.host, port=db_account.editionServer.server.port)
             print('Connected to Postgres server')
             cursor = conn_postgres.cursor()
-            cursor.execute(db_account.editionServer.server.delete_user_template % (db_account.username))
+
+            command = replace_parameters(db_account.editionServer.server.delete_user_template, db_account)
+            commands_to_execute = prepare_command(command)
+
+            for command in commands_to_execute:
+                cursor.execute(command)
+
             conn_postgres.commit()
             DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
             cursor.close()
@@ -1259,8 +1319,13 @@ class RemoveUserFromExternalDB(ViewSet):
                 print(f"User '{db_account.username}' does not exist")
                 DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
                 return JsonResponse({'name': 'Użytkownik nie istnieje.'}, status=400)
+            
+            command = replace_parameters(db_account.editionServer.server.delete_user_template, db_account)
+            commands_to_execute = prepare_command(command)
 
-            cursor.execute(db_account.editionServer.server.delete_user_template % (db_account.username))
+            for command in commands_to_execute:
+                cursor.execute(command)
+
             connection.commit()
             DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
             cursor.close()
@@ -1774,14 +1839,24 @@ class ResetDBPassword(ViewSet):
             if db_account_server_provider.lower() == 'mysql' or db_account_server_provider.lower() == 'my sql':
                 conn_mysql = mdb.connect(host=server.host, port=int(server.port), user=server.user, passwd=server.password, db=server.database)
                 cursor = conn_mysql.cursor()
-                cursor.execute(server.modify_user_template % (account_to_reset.username, new_password))
+                command = replace_parameters(account_to_reset.editionServer.server.delete_user_template, account_to_reset)
+                commands_to_execute = prepare_command(command)
+
+                for command in commands_to_execute:
+                    cursor.execute(command)
+                    
                 conn_mysql.commit()
                 conn_mysql.close()
             
             elif db_account_server_provider.lower() == 'postgresql' or db_account_server_provider.lower() == 'postgres' or db_account_server_provider.lower() == 'postgres db':
                 conn_postgres = psycopg2.connect(host=server.host, port=server.port, user=server.user, password=server.password, database=server.database)
                 cursor = conn_postgres.cursor()
-                cursor.execute(server.modify_user_template % (account_to_reset.username, new_password))
+                command = replace_parameters(account_to_reset.editionServer.server.delete_user_template, account_to_reset)
+                commands_to_execute = prepare_command(command)
+
+                for command in commands_to_execute:
+                    cursor.execute(command)
+
                 conn_postgres.commit()
                 conn_postgres.close()
             
@@ -1792,7 +1867,11 @@ class ResetDBPassword(ViewSet):
                     password=server.password,
                     dsn=f"{server.host}:{server.port}/{server.database}")
                 cursor = conn.cursor()
-                cursor.execute(server.modify_user_template % (account_to_reset.username, new_password))
+                command = replace_parameters(account_to_reset.editionServer.server.delete_user_template, account_to_reset)
+                commands_to_execute = prepare_command(command)
+
+                for command in commands_to_execute:
+                    cursor.execute(command)
                 conn.commit()
                 conn.close()
             elif db_account_server_provider == 'MongoDB':
@@ -1860,3 +1939,47 @@ class DeleteStudentsWithoutGroups(ViewSet):
         except Exception as error:
             print(error)
             return JsonResponse({'name': str(error)}, status=500)
+        
+class ExecuteCustomCommand(ViewSet):
+    @action (methods=['post'], detail=False)
+    def execute_custom_command(self, request, format=None):
+
+        data = request.data
+
+        account_to_add = DBAccount.objects.get(id=data['dbaccount_id'])
+        
+        command = data['command']
+
+        commands_to_execute = prepare_command(command, account_to_add)
+
+        for command in commands_to_execute:
+            print(command)
+            print('')
+
+        try:
+            oracledb.init_oracle_client()
+
+            conn = oracledb.connect(
+                user=account_to_add.editionServer.server.user,
+                password=account_to_add.editionServer.server.password,
+                dsn=f"{account_to_add.editionServer.server.host}:{account_to_add.editionServer.server.port}/{account_to_add.editionServer.server.database}"
+            )
+            
+            cursor = conn.cursor()
+
+            for command in commands_to_execute:
+                print('command: ', command)
+                cursor.execute(command)
+
+            conn.commit()
+            conn.close()
+
+        except Exception as error:
+            print(error)
+            return JsonResponse({'name': str(error)}, status=500)
+
+        return JsonResponse({'name': 'test'}, status=200)
+
+
+
+
