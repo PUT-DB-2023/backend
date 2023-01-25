@@ -44,6 +44,32 @@ RESET_PASSWORD_SUBJECT = f'Reset hasław systemie {SYSTEM_NAME}'
 RESET_PASSWORD_MESSAGE = 'Twoje hasło do konta zostało zresetowane. Nowe dane logowania to:'
 
 
+def get_username(added_student, edition_server):
+    return edition_server.server.username_template.lower().replace(
+        r'{imie}', added_student.user.first_name.lower()).replace(
+        r'{imię}', added_student.user.first_name.lower()).replace(
+        r'{nazwisko}', added_student.user.last_name.lower()).replace(
+        r'{nr_indeksu}', added_student.student_id.lower()).replace(
+        r'{numer_indeksu}', added_student.student_id.lower()).replace(
+        r'{nr_ind}', added_student.student_id.lower()).replace(
+        r'{indeks}', added_student.student_id.lower()).replace(
+        r'{email}', added_student.user.email.lower()
+    )
+
+def create_db_account(student, edition_server):
+    username_to_add = get_username(student, edition_server)
+    if DBAccount.objects.filter(username=username_to_add, editionServer=edition_server).exists():
+        # print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server already exists.")
+        created = False
+    else:
+        DBAccount.objects.create(
+            username=username_to_add, password=User.objects.make_random_password(length=10), student=student, editionServer=edition_server
+        )
+        # print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server.")
+        created = True
+    return created
+
+
 class UserViewSet(ModelViewSet):
     """
     A simple ViewSet for listing, retrieving and posting users.
@@ -260,10 +286,11 @@ class StudentViewSet(ModelViewSet):
         if user.is_superuser:
             return Student.objects.all()
         elif user.is_teacher:
-            teacher = Teacher.objects.get(user=user)
-            groups = Group.objects.filter(teacherEdition__teacher=teacher)
-            students = Student.objects.filter(groups__teacherEdition__teacher=teacher).prefetch_related(Prefetch('groups', queryset=groups))
-            return students.distinct()
+            # teacher = Teacher.objects.get(user=user)
+            # groups = Group.objects.filter(teacherEdition__teacher=teacher)
+            # students = Student.objects.filter(groups__teacherEdition__teacher=teacher).prefetch_related(Prefetch('groups', queryset=groups))
+            # return students.distinct()
+            return Student.objects.all()
         elif user.is_student:
             return Student.objects.filter(user=user)
         else:
@@ -1336,31 +1363,6 @@ class LoadStudentsFromCSV(ViewSet):
 
         return students_list, status_message, status_code
 
-    def get_username(self, added_student, edition_server):
-        return edition_server.server.username_template.lower().replace(
-            r'{imie}', added_student.user.first_name.lower()).replace(
-            r'{imię}', added_student.user.first_name.lower()).replace(
-            r'{nazwisko}', added_student.user.last_name.lower()).replace(
-            r'{nr_indeksu}', added_student.student_id.lower()).replace(
-            r'{numer_indeksu}', added_student.student_id.lower()).replace(
-            r'{nr_ind}', added_student.student_id.lower()).replace(
-            r'{indeks}', added_student.student_id.lower()).replace(
-            r'{email}', added_student.user.email.lower()
-        )
-    
-    def create_db_account(self, student, edition_server):
-        username_to_add = self.get_username(student, edition_server)
-        if DBAccount.objects.filter(username=username_to_add, editionServer=edition_server).exists():
-            # print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server already exists.")
-            created = False
-        else:
-            DBAccount.objects.create(
-                username=username_to_add, password=User.objects.make_random_password(length=10), student=student, editionServer=edition_server
-            )
-            # print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server.")
-            created = True
-        return created
-
 
     @action (methods=['post'], detail=False)
     def load_students_csv(self, request, format=None):
@@ -1434,7 +1436,7 @@ class LoadStudentsFromCSV(ViewSet):
                     students_info[student_info_index]['added_to_group'] = True
 
                 for edition_server in available_edition_servers:
-                    created = self.create_db_account(added_student, edition_server)
+                    created = create_db_account(added_student, edition_server)
                     students_info[student_info_index]['account_created'][f"{edition_server.server.name} ({edition_server.server.dbms.name})"] = created            
             
             group_to_add.save()
