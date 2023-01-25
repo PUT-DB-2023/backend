@@ -447,7 +447,17 @@ class CourseViewSet(ModelViewSet):
         user = request.user
         if not user.has_perm('database.add_course'):
             raise PermissionDenied
-        return super().create(request, *args, **kwargs)
+        
+        if 'name' in request.data and 'description' in request.data and 'major' in request.data:
+            try:
+                course = Course.objects.create(name=request.data['name'], description=request.data['description'], major_id=request.data['major'])
+                return Response(CourseSerializer(course).data, status=201)
+            except IntegrityError:
+                return JsonResponse({'name': "Kurs o takiej nazwie już istnieje"}, status=400)
+            except Exception as error:
+                return JsonResponse({'name': str(error)}, status=400)
+        else:
+            return JsonResponse({'name': MISSING_FIELDS}, status=400)
 
     def get_queryset(self):
         user = self.request.user
