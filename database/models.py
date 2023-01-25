@@ -80,6 +80,31 @@ class User(AbstractUser, PermissionsMixin):
         server.send_message(msg)
         server.quit()
 
+    def send_email_zimbra(self, random_password):
+
+        # return that nmethod is not ready to be used
+        raise NotImplementedError
+
+        port = 587  # For starttls
+        smtp_server = "poczta.student.put.poznan.pl"
+        sender_email = "jakub.p.wrobel@student.put.poznan.pl"
+        receiver_email = "jakub.p.wrobel@student.put.poznan.pl"
+        password = ""
+        message = """\
+        Subject: Hi there
+
+        This message is sent from Python."""
+
+        context = ssl.create_default_context()
+        with smtplib.SMTP(smtp_server, port) as server:
+            server.ehlo()  # Can be omitted
+            server.starttls(context=context)
+            server.ehlo()  # Can be omitted
+            server.login(sender_email, password)
+            server.sendmail(sender_email, receiver_email, message)
+
+    
+
 
 class Teacher(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='teacher')
