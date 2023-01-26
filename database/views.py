@@ -1845,6 +1845,11 @@ class ResetDBPassword(ViewSet):
 
         try:
             account_to_reset = DBAccount.objects.get(id=dbaccount_id)
+
+            if not account_to_reset.is_moved:
+                print('Error: account is not moved.')
+                return JsonResponse({'name': 'Konto nie zostało przeniesione.'}, status=400)
+
             new_password = User.objects.make_random_password(length=10)
             account_to_reset.password = new_password
             account_to_reset.save()
