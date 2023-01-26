@@ -1944,12 +1944,12 @@ class DeleteStudentsWithoutGroups(ViewSet):
         user = request.user
         if not user.has_perm('database.delete_student'):
             raise PermissionDenied
-
+        
         try:
             students_to_delete = Student.objects.filter(groups__isnull=True)
-            if students_to_delete.count() == 0:
-                print("No students to delete")
-                return JsonResponse({'name': "Brak studentów do usunięcia"}, status=200)
+        
+            if len(students_to_delete) == 0:
+                return JsonResponse({'name': "Nie znaleziono studentów bez grup."}, status=400)    
 
             for student in students_to_delete:
                 print(student)
