@@ -1230,7 +1230,7 @@ class MoveDbAccount(ViewSet):
             return JsonResponse({'moved_accounts': moved_accounts}, status=200)
         except (Exception) as error:
             print(error)
-            if 'ORA-12514' in str(error):
+            if 'ORA-12514' or 'ORA-12541' in str(error):
                 return JsonResponse({'name': f"Nie udało się połączyć z serwerem baz danych ({server.name} - {server.dbms.name})."}, status=400)
             return JsonResponse({'name': str(error)}, status=500)
 
@@ -1301,6 +1301,8 @@ class RemoveUserFromExternalDB(ViewSet):
             return JsonResponse({'deleted_account': db_account.username}, status=200)
         except (Exception, mdb.DatabaseError) as error:
             print(error)
+            if error.args[0] == 2002:
+                return JsonResponse({'name': 'Nie można połączyć się z serwerem.'}, status=500)
             return JsonResponse({'name': str(error)}, status=500)
     
     def postgresql(self, db_account):
@@ -1322,6 +1324,8 @@ class RemoveUserFromExternalDB(ViewSet):
             return JsonResponse({'deleted_account': db_account.username}, status=200)
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
+            if 'could not connect to server' in str(error):
+                return JsonResponse({'name': f"Nie udało się połączyć z serwerem baz danych ({db_account.editionServer.server.name} - {db_account.editionServer.server.dbms.name})."}, status=400)
             return JsonResponse({'name': str(error)}, status=500)
 
     def mongodb(self, db_account):
@@ -1366,7 +1370,9 @@ class RemoveUserFromExternalDB(ViewSet):
             cursor.close()
             print(f"Successfully deleted user '{db_account.username}'")
             return JsonResponse({'deleted_account': db_account.username}, status=200)
-        except (Exception, mdb.DatabaseError) as error:
+        except (Exception) as error:
+            if 'ORA-12514' or 'ORA-12541' in str(error):
+                return JsonResponse({'name': f"Nie udało się połączyć z serwerem baz danych ({db_account.editionServer.server.name} - {db_account.editionServer.server.dbms.name})."}, status=400)
             print(f"Error: {error}")
             return JsonResponse({'name': str(error)}, status=500)
 
@@ -1896,6 +1902,9 @@ class ResetDBPassword(ViewSet):
             print("Password reseted for account: ", account_to_reset.username)
             return JsonResponse({'name': "Succesfull password reset for account of id: " + str(account_to_reset.id)}, status=200)
         except Exception as error:
+            if 'ORA-12514' or 'ORA-12541' in str(error) or 'could not connect to server' in str(error) or error.args[0] == 2002:
+                return JsonResponse({'name': f"Nie udało się połączyć z serwerem baz danych ({server.name} - {server.dbms.name})."}, status=400)
+            
             print(error)
             return JsonResponse({'name': str(error)}, status=500)
 
