@@ -1230,6 +1230,8 @@ class MoveDbAccount(ViewSet):
             return JsonResponse({'moved_accounts': moved_accounts}, status=200)
         except (Exception) as error:
             print(error)
+            if 'ORA-12514' in str(error):
+                return JsonResponse({'name': f"Nie udało się połączyć z serwerem baz danych ({server.name} - {server.dbms.name})."}, status=400)
             return JsonResponse({'name': str(error)}, status=500)
 
     @action (methods=['post'], detail=False)
