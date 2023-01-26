@@ -37,6 +37,7 @@ SYSTEM_NAME = 'PUT DB 2023'
 
 INVALID_EMAIL = 'Niepoprawny adres email.'
 EMAIL_DUPLICATED = 'Podany adres email jest już zajęty.'
+STUDENT_DUPLICATED = 'Podany adres email lub numer indeksu jest już używany.'
 MISSING_FIELDS = 'Nie podano wszystkich wymaganych pól.'
 
 NEW_USER_SUBJECT = f'Konto w systemie {SYSTEM_NAME}'
@@ -362,7 +363,7 @@ class StudentViewSet(ModelViewSet):
                 user.send_email_gmail(NEW_USER_SUBJECT, NEW_USER_MESSAGE, new_password)
                 return Response(StudentSerializer(student).data, status=201)
             except IntegrityError:
-                return JsonResponse({'name': EMAIL_DUPLICATED}, status=400)
+                return JsonResponse({'name': STUDENT_DUPLICATED}, status=400)
             except ValidationError:
                 return JsonResponse({'name': INVALID_EMAIL}, status=400)
             except Exception as error:
@@ -393,7 +394,7 @@ class StudentViewSet(ModelViewSet):
                 student.save()
                 return Response(StudentSerializer(student).data)
             except IntegrityError:
-                return JsonResponse({'name': EMAIL_DUPLICATED}, status=400)
+                return JsonResponse({'name': STUDENT_DUPLICATED}, status=400)
             except ValidationError:
                 return JsonResponse({'name': INVALID_EMAIL}, status=400)
             except Exception as error:
@@ -962,7 +963,7 @@ class EditionServerViewSet(ModelViewSet):
         'edition__course__name', 
         'server', 
         'server__name', 
-        'server__ip', 
+        'server__host', 
         'server__port', 
         'server__date_created', 
         'server__active',
@@ -1029,9 +1030,9 @@ class DBAccountViewSet(ModelViewSet):
             raise PermissionDenied
         
         if user.is_teacher:
-            return super().get_queryset().filter(editionServer__edition__course__teacher=user.teacher)
+            return DBAccount.objects.all()
         elif user.is_student:
-            return super().get_queryset().filter(student=user.student)
+            return DBAccount.objects.filter(student=user.student)
 
         return super().get_queryset()
 
@@ -1040,11 +1041,6 @@ class DBAccountViewSet(ModelViewSet):
         if not user.has_perm('database.delete_dbaccount'):
             raise PermissionDenied
         
-        if user.is_teacher:
-            account = self.get_object()
-            if account.editionServer.edition.course.teacher != user.teacher:
-                raise PermissionDenied
-
         return super().destroy(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
@@ -1672,10 +1668,10 @@ class RemoveStudentFromGroup(ViewSet):
             if student_to_remove in group_to_remove.students.all():
                 group_to_remove.students.remove(student_to_remove)
                 group_to_remove.save()
-                print(f"Student {student_to_remove.first_name} {student_to_remove.last_name} removed from group {group_to_remove.name}.")
+                print(f"Student {student_to_remove.user.first_name} {student_to_remove.user.last_name} removed from group {group_to_remove.name}.")
                 return JsonResponse({'removed student: ': student_to_remove.student_id}, status=200)
             else:
-                print(f"Student {student_to_remove.first_name} {student_to_remove.last_name} does not exist in group {group_to_remove.name}.")
+                print(f"Student {student_to_remove.user.first_name} {student_to_remove.user.last_name} does not exist in group {group_to_remove.name}.")
                 return JsonResponse({'name': 'Student nie należy do tej grupy.'}, status=400)
         except Exception as error:
             print(error)
