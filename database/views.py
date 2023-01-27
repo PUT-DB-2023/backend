@@ -699,11 +699,11 @@ class EditionViewSet(ModelViewSet):
             raise PermissionDenied
 
         try:
-            teacher_editions = TeacherEdition.objects.filter(edition=self.get_object().id)
-            if teacher_editions.exists():
-                for teacher_edition in teacher_editions:
-                    if Group.objects.filter(teacherEdition=teacher_edition).exists():
-                        return JsonResponse({'name': 'Nie można usunąć edycji, która ma przypisane grupy.'}, status=400)
+            # teacher_editions = TeacherEdition.objects.filter(edition=self.get_object().id)
+            # if teacher_editions.exists():
+            #     for teacher_edition in teacher_editions:
+            #         if Group.objects.filter(teacherEdition=teacher_edition).exists():
+            #             return JsonResponse({'name': 'Nie można usunąć edycji, która ma przypisane grupy.'}, status=400)
             edition = Edition.objects.get(id=self.get_object().id)
             edition.delete()
             return Response(status=204)
