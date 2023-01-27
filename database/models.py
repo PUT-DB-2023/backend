@@ -80,6 +80,31 @@ class User(AbstractUser, PermissionsMixin):
         server.send_message(msg)
         server.quit()
 
+    def send_email_zimbra(self, random_password):
+
+        # return that nmethod is not ready to be used
+        raise NotImplementedError
+
+        port = 587  # For starttls
+        smtp_server = "poczta.student.put.poznan.pl"
+        sender_email = "jakub.p.wrobel@student.put.poznan.pl"
+        receiver_email = "jakub.p.wrobel@student.put.poznan.pl"
+        password = ""
+        message = """\
+        Subject: Hi there
+
+        This message is sent from Python."""
+
+        context = ssl.create_default_context()
+        with smtplib.SMTP(smtp_server, port) as server:
+            server.ehlo()  # Can be omitted
+            server.starttls(context=context)
+            server.ehlo()  # Can be omitted
+            server.login(sender_email, password)
+            server.sendmail(sender_email, receiver_email, message)
+
+    
+
 
 class Teacher(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='teacher')
@@ -258,9 +283,9 @@ class Server(models.Model):
     active = models.BooleanField(default=True)
     editions = models.ManyToManyField(Edition, through='EditionServer', related_name='servers')
 
-    create_user_template = models.CharField(max_length=255, blank=True, default='')
-    modify_user_template = models.CharField(max_length=255, blank=True, default='')
-    delete_user_template = models.CharField(max_length=255, blank=True, default='')
+    create_user_template = models.CharField(max_length=1023, blank=True, default='')
+    modify_user_template = models.CharField(max_length=1023, blank=True, default='')
+    delete_user_template = models.CharField(max_length=1023, blank=True, default='')
     custom_command_template = models.CharField(max_length=1023, blank=True, default='')
 
     username_template = models.CharField(max_length=255, null=True)

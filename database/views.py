@@ -25,8 +25,8 @@ from django.db import IntegrityError
 from django.core.exceptions import ValidationError
 # from django.core.validators import validate_email
 import json
+import re
 
-from database.password_generator import PasswordGenerator
 from database.sender import EmailSender
 from .serializers import UserSerializer, TeacherSerializer, DetailedTeacherSerializer, StudentSerializer, DetailedStudentSerializer, MajorSerializer, CourseSerializer, SemesterSerializer, BasicSemesterSerializer, EditionSerializer, BasicEditionSerializer, TeacherEditionSerializer, GroupSerializer, DetailedGroupSerializer, DBMSSerializer, GroupSerializerForStudent, ServerSerializer, EditionServerSerializer, DBAccountSerializer
 # , SimpleTeacherEditionSerializer
@@ -37,12 +37,79 @@ SYSTEM_NAME = 'PUT DB 2023'
 
 INVALID_EMAIL = 'Niepoprawny adres email.'
 EMAIL_DUPLICATED = 'Podany adres email jest już zajęty.'
+STUDENT_DUPLICATED = 'Podany adres email lub numer indeksu jest już używany.'
 MISSING_FIELDS = 'Nie podano wszystkich wymaganych pól.'
 
 NEW_USER_SUBJECT = f'Konto w systemie {SYSTEM_NAME}'
 NEW_USER_MESSAGE = f'Twoje konto w systemie {SYSTEM_NAME} zostało utworzone. Twoje dane do logowania to:'
 RESET_PASSWORD_SUBJECT = f'Reset hasław systemie {SYSTEM_NAME}'
 RESET_PASSWORD_MESSAGE = 'Twoje hasło do konta zostało zresetowane. Nowe dane logowania to:'
+
+def replace_parameters(command, account_to_add):
+
+    command = command.replace('arg_username', account_to_add.username)
+    command = command.replace('arg_password', account_to_add.password)
+    command = command.replace('arg_database', account_to_add.editionServer.server.database)
+    command = command.replace('arg_host', account_to_add.editionServer.server.host)
+    command = command.replace('arg_port', str(account_to_add.editionServer.server.port))
+
+    return command
+
+def prepare_command(command):
+
+    commands_to_execute = []
+
+    if command.find('BEGIN') != -1:
+        command_index = 0
+        while command_index < len(command):
+            if command[command_index] == ';':
+                commands_to_execute.append(command[:command_index].strip())
+                command = command[command_index + 1:]
+                command_index = 0
+            elif command[command_index] == 'B' and command[command_index + 1] == 'E' and command[command_index + 2] == 'G' and command[command_index + 3] == 'I' and command[command_index + 4] == 'N':
+                command_index += 5
+                while command[command_index] != 'E' or command[command_index + 1] != 'N' or command[command_index + 2] != 'D':
+                    command_index += 1
+                command_after_re = re.sub(' {2,}', ' ', command[:command_index + 4].strip())
+                commands_to_execute.append(command_after_re)
+                command = command[command_index + 5:]
+                command_index = 0
+            else:
+                command_index += 1
+    else:
+        commands_to_execute = command.split(';')
+        for i in range(len(commands_to_execute)):
+            commands_to_execute[i] = commands_to_execute[i].strip(' ')
+
+    if commands_to_execute[-1] == '':
+        commands_to_execute.pop()
+
+    return commands_to_execute
+
+def get_username(added_student, edition_server):
+    return edition_server.server.username_template.lower().replace(
+        r'{imie}', added_student.user.first_name.lower()).replace(
+        r'{imię}', added_student.user.first_name.lower()).replace(
+        r'{nazwisko}', added_student.user.last_name.lower()).replace(
+        r'{nr_indeksu}', added_student.student_id.lower()).replace(
+        r'{numer_indeksu}', added_student.student_id.lower()).replace(
+        r'{nr_ind}', added_student.student_id.lower()).replace(
+        r'{indeks}', added_student.student_id.lower()).replace(
+        r'{email}', added_student.user.email.lower()
+    )
+
+def create_db_account(student, edition_server):
+    username_to_add = get_username(student, edition_server)
+    if DBAccount.objects.filter(username=username_to_add, editionServer=edition_server).exists():
+        # print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server already exists.")
+        created = False
+    else:
+        DBAccount.objects.create(
+            username=username_to_add, password=User.objects.make_random_password(length=10), student=student, editionServer=edition_server
+        )
+        # print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server.")
+        created = True
+    return created
 
 
 class UserViewSet(ModelViewSet):
@@ -261,10 +328,11 @@ class StudentViewSet(ModelViewSet):
         if user.is_superuser:
             return Student.objects.all()
         elif user.is_teacher:
-            teacher = Teacher.objects.get(user=user)
-            groups = Group.objects.filter(teacherEdition__teacher=teacher)
-            students = Student.objects.filter(groups__teacherEdition__teacher=teacher).prefetch_related(Prefetch('groups', queryset=groups))
-            return students.distinct()
+            # teacher = Teacher.objects.get(user=user)
+            # groups = Group.objects.filter(teacherEdition__teacher=teacher)
+            # students = Student.objects.filter(groups__teacherEdition__teacher=teacher).prefetch_related(Prefetch('groups', queryset=groups))
+            # return students.distinct()
+            return Student.objects.all()
         elif user.is_student:
             return Student.objects.filter(user=user)
         else:
@@ -295,7 +363,7 @@ class StudentViewSet(ModelViewSet):
                 user.send_email_gmail(NEW_USER_SUBJECT, NEW_USER_MESSAGE, new_password)
                 return Response(StudentSerializer(student).data, status=201)
             except IntegrityError:
-                return JsonResponse({'name': EMAIL_DUPLICATED}, status=400)
+                return JsonResponse({'name': STUDENT_DUPLICATED}, status=400)
             except ValidationError:
                 return JsonResponse({'name': INVALID_EMAIL}, status=400)
             except Exception as error:
@@ -326,7 +394,7 @@ class StudentViewSet(ModelViewSet):
                 student.save()
                 return Response(StudentSerializer(student).data)
             except IntegrityError:
-                return JsonResponse({'name': EMAIL_DUPLICATED}, status=400)
+                return JsonResponse({'name': STUDENT_DUPLICATED}, status=400)
             except ValidationError:
                 return JsonResponse({'name': INVALID_EMAIL}, status=400)
             except Exception as error:
@@ -407,7 +475,17 @@ class CourseViewSet(ModelViewSet):
         user = request.user
         if not user.has_perm('database.add_course'):
             raise PermissionDenied
-        return super().create(request, *args, **kwargs)
+        
+        if 'name' in request.data and 'description' in request.data and 'major' in request.data:
+            try:
+                course = Course.objects.create(name=request.data['name'], description=request.data['description'], major_id=request.data['major'])
+                return Response(CourseSerializer(course).data, status=201)
+            except IntegrityError:
+                return JsonResponse({'name': "Kurs o takiej nazwie już istnieje"}, status=400)
+            except Exception as error:
+                return JsonResponse({'name': str(error)}, status=400)
+        else:
+            return JsonResponse({'name': MISSING_FIELDS}, status=400)
 
     def get_queryset(self):
         user = self.request.user
@@ -885,7 +963,7 @@ class EditionServerViewSet(ModelViewSet):
         'edition__course__name', 
         'server', 
         'server__name', 
-        'server__ip', 
+        'server__host', 
         'server__port', 
         'server__date_created', 
         'server__active',
@@ -952,9 +1030,9 @@ class DBAccountViewSet(ModelViewSet):
             raise PermissionDenied
         
         if user.is_teacher:
-            return super().get_queryset().filter(editionServer__edition__course__teacher=user.teacher)
+            return DBAccount.objects.all()
         elif user.is_student:
-            return super().get_queryset().filter(student=user.student)
+            return DBAccount.objects.filter(student=user.student)
 
         return super().get_queryset()
 
@@ -963,11 +1041,6 @@ class DBAccountViewSet(ModelViewSet):
         if not user.has_perm('database.delete_dbaccount'):
             raise PermissionDenied
         
-        if user.is_teacher:
-            account = self.get_object()
-            if account.editionServer.edition.course.teacher != user.teacher:
-                raise PermissionDenied
-
         return super().destroy(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
@@ -1035,6 +1108,7 @@ class MoveDbAccount(ViewSet):
             )
             cursor = conn_mysql.cursor()
             print('Connected to MySQL server')
+            commands_to_execute = prepare_command(server.create_user_template)
             for account in db_accounts:
                 print(server.create_user_template)
                 cursor.execute("SELECT user FROM mysql.user WHERE user = '%s'" % (account.username))
@@ -1044,7 +1118,9 @@ class MoveDbAccount(ViewSet):
                     DBAccount.objects.filter(id=account.id).update(is_moved=True)
                     continue
                 else:
-                    cursor.execute(server.create_user_template % (account.username, account.password))
+                    for command in commands_to_execute:
+                        command = replace_parameters(command, account)
+                        cursor.execute(command)
                     moved_accounts.append(account.username)
                     DBAccount.objects.filter(id=account.id).update(is_moved=True)
                     print(f"Successfully created user '{account.username}' with '{account.password}' password.")
@@ -1070,6 +1146,7 @@ class MoveDbAccount(ViewSet):
             )
             print('Connected to Postgres server')
             cursor = conn_postgres.cursor()
+            commands_to_execute = prepare_command(server.create_user_template)
             for account in db_accounts:
                 print(account.username)
                 cursor.execute('SELECT rolname FROM pg_roles WHERE rolname = %s', (account.username,))
@@ -1079,7 +1156,9 @@ class MoveDbAccount(ViewSet):
                     DBAccount.objects.filter(id=account.id).update(is_moved=True)
                     continue
                 else:
-                    cursor.execute(server.create_user_template % (account.username, account.password))
+                    for command in commands_to_execute:
+                        command = replace_parameters(command, account)
+                        cursor.execute(command)
                     moved_accounts.append(account.username)
                     DBAccount.objects.filter(id=account.id).update(is_moved=True)
                     print(f"Successfully created user '{account.username}' with '{account.password}' password.")
@@ -1130,7 +1209,7 @@ class MoveDbAccount(ViewSet):
             )
             cursor = conn.cursor()
             print("Successfully connected to Oracle server.")
-
+            commands_to_execute = prepare_command(server.create_user_template)
             for account in db_accounts:
                 print(account.username)
                 cursor.execute(f"SELECT * FROM DBA_USERS WHERE username = '{account.username}'")
@@ -1140,7 +1219,9 @@ class MoveDbAccount(ViewSet):
                     DBAccount.objects.filter(id=account.id).update(is_moved=True)
                     continue
                 else:
-                    cursor.execute(server.create_user_template % (account.username, account.password))
+                    for command in commands_to_execute:
+                        command = replace_parameters(command, account)
+                        cursor.execute(command)
                     moved_accounts.append(account.username)
                     DBAccount.objects.filter(id=account.id).update(is_moved=True)
                     print(f"Successfully created user '{account.username}' with '{account.password}' password.")
@@ -1149,6 +1230,8 @@ class MoveDbAccount(ViewSet):
             return JsonResponse({'moved_accounts': moved_accounts}, status=200)
         except (Exception) as error:
             print(error)
+            if 'ORA-12514' or 'ORA-12541' in str(error):
+                return JsonResponse({'name': f"Nie udało się połączyć z serwerem baz danych ({server.name} - {server.dbms.name})."}, status=400)
             return JsonResponse({'name': str(error)}, status=500)
 
     @action (methods=['post'], detail=False)
@@ -1204,7 +1287,12 @@ class RemoveUserFromExternalDB(ViewSet):
             )
             print('Connected to MySQL server')  
             cursor = conn_mysql.cursor()
-            cursor.execute(db_account.editionServer.server.delete_user_template % (db_account.username))
+            command = replace_parameters(db_account.editionServer.server.delete_user_template, db_account)
+            commands_to_execute = prepare_command(command)
+
+            for command in commands_to_execute:
+                cursor.execute(command)
+
             conn_mysql.commit()
             DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
             cursor.close()
@@ -1213,6 +1301,8 @@ class RemoveUserFromExternalDB(ViewSet):
             return JsonResponse({'deleted_account': db_account.username}, status=200)
         except (Exception, mdb.DatabaseError) as error:
             print(error)
+            if error.args[0] == 2002:
+                return JsonResponse({'name': 'Nie można połączyć się z serwerem.'}, status=500)
             return JsonResponse({'name': str(error)}, status=500)
     
     def postgresql(self, db_account):
@@ -1220,7 +1310,13 @@ class RemoveUserFromExternalDB(ViewSet):
             conn_postgres = psycopg2.connect(dbname=db_account.editionServer.server.database, user=db_account.editionServer.server.user, password=db_account.editionServer.server.password, host=db_account.editionServer.server.host, port=db_account.editionServer.server.port)
             print('Connected to Postgres server')
             cursor = conn_postgres.cursor()
-            cursor.execute(db_account.editionServer.server.delete_user_template % (db_account.username))
+
+            command = replace_parameters(db_account.editionServer.server.delete_user_template, db_account)
+            commands_to_execute = prepare_command(command)
+
+            for command in commands_to_execute:
+                cursor.execute(command)
+
             conn_postgres.commit()
             DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
             cursor.close()
@@ -1228,6 +1324,8 @@ class RemoveUserFromExternalDB(ViewSet):
             return JsonResponse({'deleted_account': db_account.username}, status=200)
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
+            if 'could not connect to server' in str(error):
+                return JsonResponse({'name': f"Nie udało się połączyć z serwerem baz danych ({db_account.editionServer.server.name} - {db_account.editionServer.server.dbms.name})."}, status=400)
             return JsonResponse({'name': str(error)}, status=500)
 
     def mongodb(self, db_account):
@@ -1260,14 +1358,21 @@ class RemoveUserFromExternalDB(ViewSet):
                 print(f"User '{db_account.username}' does not exist")
                 DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
                 return JsonResponse({'name': 'Użytkownik nie istnieje.'}, status=400)
+            
+            command = replace_parameters(db_account.editionServer.server.delete_user_template, db_account)
+            commands_to_execute = prepare_command(command)
 
-            cursor.execute(db_account.editionServer.server.delete_user_template % (db_account.username))
+            for command in commands_to_execute:
+                cursor.execute(command)
+
             connection.commit()
             DBAccount.objects.filter(id=db_account.id).update(is_moved=False)
             cursor.close()
             print(f"Successfully deleted user '{db_account.username}'")
             return JsonResponse({'deleted_account': db_account.username}, status=200)
-        except (Exception, mdb.DatabaseError) as error:
+        except (Exception) as error:
+            if 'ORA-12514' or 'ORA-12541' in str(error):
+                return JsonResponse({'name': f"Nie udało się połączyć z serwerem baz danych ({db_account.editionServer.server.name} - {db_account.editionServer.server.dbms.name})."}, status=400)
             print(f"Error: {error}")
             return JsonResponse({'name': str(error)}, status=500)
 
@@ -1336,31 +1441,6 @@ class LoadStudentsFromCSV(ViewSet):
                 return students_list, status_message, status_code
 
         return students_list, status_message, status_code
-
-    def get_username(self, added_student, edition_server):
-        return edition_server.server.username_template.lower().replace(
-            r'{imie}', added_student.user.first_name.lower()).replace(
-            r'{imię}', added_student.user.first_name.lower()).replace(
-            r'{nazwisko}', added_student.user.last_name.lower()).replace(
-            r'{nr_indeksu}', added_student.student_id.lower()).replace(
-            r'{numer_indeksu}', added_student.student_id.lower()).replace(
-            r'{nr_ind}', added_student.student_id.lower()).replace(
-            r'{indeks}', added_student.student_id.lower()).replace(
-            r'{email}', added_student.user.email.lower()
-        )
-    
-    def create_db_account(self, student, edition_server):
-        username_to_add = self.get_username(student, edition_server)
-        if DBAccount.objects.filter(username=username_to_add, editionServer=edition_server).exists():
-            # print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server already exists.")
-            created = False
-        else:
-            DBAccount.objects.create(
-                username=username_to_add, password=User.objects.make_random_password(length=10), student=student, editionServer=edition_server
-            )
-            # print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server.")
-            created = True
-        return created
 
 
     @action (methods=['post'], detail=False)
@@ -1435,7 +1515,7 @@ class LoadStudentsFromCSV(ViewSet):
                     students_info[student_info_index]['added_to_group'] = True
 
                 for edition_server in available_edition_servers:
-                    created = self.create_db_account(added_student, edition_server)
+                    created = create_db_account(added_student, edition_server)
                     students_info[student_info_index]['account_created'][f"{edition_server.server.name} ({edition_server.server.dbms.name})"] = created            
             
             group_to_add.save()
@@ -1596,10 +1676,10 @@ class RemoveStudentFromGroup(ViewSet):
             if student_to_remove in group_to_remove.students.all():
                 group_to_remove.students.remove(student_to_remove)
                 group_to_remove.save()
-                print(f"Student {student_to_remove.first_name} {student_to_remove.last_name} removed from group {group_to_remove.name}.")
+                print(f"Student {student_to_remove.user.first_name} {student_to_remove.user.last_name} removed from group {group_to_remove.name}.")
                 return JsonResponse({'removed student: ': student_to_remove.student_id}, status=200)
             else:
-                print(f"Student {student_to_remove.first_name} {student_to_remove.last_name} does not exist in group {group_to_remove.name}.")
+                print(f"Student {student_to_remove.user.first_name} {student_to_remove.user.last_name} does not exist in group {group_to_remove.name}.")
                 return JsonResponse({'name': 'Student nie należy do tej grupy.'}, status=400)
         except Exception as error:
             print(error)
@@ -1765,6 +1845,11 @@ class ResetDBPassword(ViewSet):
 
         try:
             account_to_reset = DBAccount.objects.get(id=dbaccount_id)
+
+            if not account_to_reset.is_moved:
+                print('Error: account is not moved.')
+                return JsonResponse({'name': 'Konto nie zostało przeniesione.'}, status=400)
+
             new_password = User.objects.make_random_password(length=10)
             account_to_reset.password = new_password
             account_to_reset.save()
@@ -1775,14 +1860,24 @@ class ResetDBPassword(ViewSet):
             if db_account_server_provider.lower() == 'mysql' or db_account_server_provider.lower() == 'my sql':
                 conn_mysql = mdb.connect(host=server.host, port=int(server.port), user=server.user, passwd=server.password, db=server.database)
                 cursor = conn_mysql.cursor()
-                cursor.execute(server.modify_user_template % (account_to_reset.username, new_password))
+                command = replace_parameters(account_to_reset.editionServer.server.delete_user_template, account_to_reset)
+                commands_to_execute = prepare_command(command)
+
+                for command in commands_to_execute:
+                    cursor.execute(command)
+                    
                 conn_mysql.commit()
                 conn_mysql.close()
             
             elif db_account_server_provider.lower() == 'postgresql' or db_account_server_provider.lower() == 'postgres' or db_account_server_provider.lower() == 'postgres db':
                 conn_postgres = psycopg2.connect(host=server.host, port=server.port, user=server.user, password=server.password, database=server.database)
                 cursor = conn_postgres.cursor()
-                cursor.execute(server.modify_user_template % (account_to_reset.username, new_password))
+                command = replace_parameters(account_to_reset.editionServer.server.delete_user_template, account_to_reset)
+                commands_to_execute = prepare_command(command)
+
+                for command in commands_to_execute:
+                    cursor.execute(command)
+
                 conn_postgres.commit()
                 conn_postgres.close()
             
@@ -1793,7 +1888,11 @@ class ResetDBPassword(ViewSet):
                     password=server.password,
                     dsn=f"{server.host}:{server.port}/{server.database}")
                 cursor = conn.cursor()
-                cursor.execute(server.modify_user_template % (account_to_reset.username, new_password))
+                command = replace_parameters(account_to_reset.editionServer.server.delete_user_template, account_to_reset)
+                commands_to_execute = prepare_command(command)
+
+                for command in commands_to_execute:
+                    cursor.execute(command)
                 conn.commit()
                 conn.close()
             elif db_account_server_provider == 'MongoDB':
@@ -1808,6 +1907,9 @@ class ResetDBPassword(ViewSet):
             print("Password reseted for account: ", account_to_reset.username)
             return JsonResponse({'name': "Succesfull password reset for account of id: " + str(account_to_reset.id)}, status=200)
         except Exception as error:
+            if 'ORA-12514' or 'ORA-12541' in str(error) or 'could not connect to server' in str(error) or error.args[0] == 2002:
+                return JsonResponse({'name': f"Nie udało się połączyć z serwerem baz danych ({server.name} - {server.dbms.name})."}, status=400)
+            
             print(error)
             return JsonResponse({'name': str(error)}, status=500)
 
@@ -1842,12 +1944,12 @@ class DeleteStudentsWithoutGroups(ViewSet):
         user = request.user
         if not user.has_perm('database.delete_student'):
             raise PermissionDenied
-
+        
         try:
             students_to_delete = Student.objects.filter(groups__isnull=True)
-            if students_to_delete.count() == 0:
-                print("No students to delete")
-                return JsonResponse({'name': "Brak studentów do usunięcia"}, status=200)
+        
+            if len(students_to_delete) == 0:
+                return JsonResponse({'name': "Nie znaleziono studentów bez grup."}, status=400)    
 
             for student in students_to_delete:
                 print(student)
@@ -1861,3 +1963,47 @@ class DeleteStudentsWithoutGroups(ViewSet):
         except Exception as error:
             print(error)
             return JsonResponse({'name': str(error)}, status=500)
+        
+class ExecuteCustomCommand(ViewSet):
+    @action (methods=['post'], detail=False)
+    def execute_custom_command(self, request, format=None):
+
+        data = request.data
+
+        account_to_add = DBAccount.objects.get(id=data['dbaccount_id'])
+        
+        command = data['command']
+
+        commands_to_execute = prepare_command(command, account_to_add)
+
+        for command in commands_to_execute:
+            print(command)
+            print('')
+
+        try:
+            oracledb.init_oracle_client()
+
+            conn = oracledb.connect(
+                user=account_to_add.editionServer.server.user,
+                password=account_to_add.editionServer.server.password,
+                dsn=f"{account_to_add.editionServer.server.host}:{account_to_add.editionServer.server.port}/{account_to_add.editionServer.server.database}"
+            )
+            
+            cursor = conn.cursor()
+
+            for command in commands_to_execute:
+                print('command: ', command)
+                cursor.execute(command)
+
+            conn.commit()
+            conn.close()
+
+        except Exception as error:
+            print(error)
+            return JsonResponse({'name': str(error)}, status=500)
+
+        return JsonResponse({'name': 'test'}, status=200)
+
+
+
+

@@ -10,7 +10,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import get_user_model
 
 import database.models
-from database.password_generator import PasswordGenerator
 
 import random
 import csv
@@ -38,8 +37,6 @@ def forwards_func(apps, schema_editor):
 
     db_alias = schema_editor.connection.alias
 
-    password_generator = PasswordGenerator(10)
-
     server_names = ['MySQL ZBD Server', 'Oracle ZBD Server', 'Postgres PBD Server', 'Mongo ZBDNS Server']
     server_ipss = ['185.180.207.251', '185.180.207.251', '185.180.207.251', 'mongo']
     server_ports = ['3306', '44475', '5432', '27017']
@@ -48,9 +45,9 @@ def forwards_func(apps, schema_editor):
     server_passwords = ['mysql12', 'oracle', 'postgres12', 'mongo12']
     dbms_names = ['MySQL', 'Oracle DB', 'PostgreSQL', 'MongoDB']
     server_users = ['root', 'system', 'postgres', 'root']
-    server_create_user_templates = ["CREATE USER IF NOT EXISTS \"%s\"@'%%' IDENTIFIED BY '%s'", "CREATE USER \"%s\" IDENTIFIED BY \"%s\"", "CREATE USER \"%s\" WITH PASSWORD \'%s\';", 'readWrite']
-    server_modify_user_templates = ["ALTER USER \"%s\" IDENTIFIED BY \'%s\';", "ALTER USER \"%s\" IDENTIFIED BY \"%s\"", "ALTER USER \"%s\" WITH PASSWORD \'%s\';", ""]
-    server_delete_user_templates = ["DROP USER IF EXISTS \"%s\"@'%%';", "DROP USER \"%s\" CASCADE", "DROP USER IF EXISTS \"%s\";", ""]
+    server_create_user_templates = ["CREATE USER IF NOT EXISTS \"arg_username\"@'%%' IDENTIFIED BY 'arg_password'", "CREATE USER \"arg_username\" IDENTIFIED BY \"arg_password\"", "CREATE USER \"arg_username\" WITH PASSWORD \'arg_password\';", 'readWrite']
+    server_modify_user_templates = ["ALTER USER \"arg_username\" IDENTIFIED BY \'arg_password\';", "ALTER USER \"arg_username\" IDENTIFIED BY \"arg_password\"", "ALTER USER \"arg_username\" WITH PASSWORD \'arg_password\';", ""]
+    server_delete_user_templates = ["DROP USER IF EXISTS \"arg_username\"@'%%';", "DROP USER \"arg_username\" CASCADE", "DROP USER IF EXISTS \"arg_username\";", ""]
     server_username_templates = [
         "INF_{NR_INDEKSU}", "{IMIE}_{NAZWISKO}", "{NAZWISKO}_{NR_INDEKSU}", "STUDENT_{NR_INDEKSU}", "INF_{NR_INDEKSU}"
     ]
@@ -128,7 +125,7 @@ def forwards_func(apps, schema_editor):
     view_semester_permission, _ = AuthPermission.objects.get_or_create(codename='view_semester', content_type=ContentType.objects.get_for_model(Semester))
 
     move_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='move_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
-    remove_db_account_ext_permission, _ = AuthPermission.objects.get_or_create(codename='move_dbaccount_ext', content_type=ContentType.objects.get_for_model(DBAccount))
+    remove_db_account_ext_permission, _ = AuthPermission.objects.get_or_create(codename='remove_db_account_ext', content_type=ContentType.objects.get_for_model(DBAccount))
     reset_db_password_permission, _ = AuthPermission.objects.get_or_create(codename='reset_db_password', content_type=ContentType.objects.get_for_model(DBAccount))
 
     add_group_permission, _ = AuthPermission.objects.get_or_create(codename='add_group', content_type=ContentType.objects.get_for_model(Group))
