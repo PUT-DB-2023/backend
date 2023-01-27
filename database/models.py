@@ -65,14 +65,13 @@ class User(AbstractUser, PermissionsMixin):
             return False
         return True
     
-    def send_email_gmail(self, subject, message, password):
+    def send_email_gmail(self, receiver, subject, message):
         msg = EmailMessage()
-        msg.set_content(f'{message}\nEmail: {self.email}\nHasło: {password}')
+        msg.set_content(f'{message}')
 
         msg['Subject'] = subject
         msg['From'] = "putdb2023@gmail.com"
-        # msg['To'] = self.email
-        msg['To'] = "putdb2023@gmail.com"
+        msg['To'] = receiver
 
         # Send the message via our own SMTP server.
         server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
@@ -80,20 +79,14 @@ class User(AbstractUser, PermissionsMixin):
         server.send_message(msg)
         server.quit()
 
-    def send_email_zimbra(self, random_password):
-
-        # return that nmethod is not ready to be used
-        raise NotImplementedError
+    def send_email_zimbra(self, receiver, subject, message):
 
         port = 587  # For starttls
         smtp_server = "poczta.student.put.poznan.pl"
-        sender_email = "jakub.p.wrobel@student.put.poznan.pl"
-        receiver_email = "jakub.p.wrobel@student.put.poznan.pl"
-        password = ""
-        message = """\
-        Subject: Hi there
-
-        This message is sent from Python."""
+        sender_email = "" # FILL WITH EMAIL SENDER
+        receiver_email = receiver
+        password = "" # FILL WITH PASSWORD
+        message = f'Subject: {subject}\n\n{message}'
 
         context = ssl.create_default_context()
         with smtplib.SMTP(smtp_server, port) as server:
@@ -101,7 +94,7 @@ class User(AbstractUser, PermissionsMixin):
             server.starttls(context=context)
             server.ehlo()  # Can be omitted
             server.login(sender_email, password)
-            server.sendmail(sender_email, receiver_email, message)
+            server.sendmail(sender_email, receiver_email, message.encode('utf-8'))
 
     
 

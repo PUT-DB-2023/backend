@@ -104,9 +104,15 @@ def create_db_account(student, edition_server):
         # print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server already exists.")
         created = False
     else:
-        DBAccount.objects.create(
-            username=username_to_add, password=User.objects.make_random_password(length=10), student=student, editionServer=edition_server
+        random_password = User.objects.make_random_password(length=10)
+        added_dbaccount = DBAccount.objects.create(
+            username=username_to_add, password=random_password, student=student, editionServer=edition_server
         )
+        # send email with credentials
+        email_subject = 'Konto w zewnętrznym SZBD'
+        email_content = f'Witaj {student.user.first_name} {student.user.last_name}! Twoje konto w systemie {edition_server.server.name} zostało utworzone. Twoje hasło to: {random_password}.'
+                    
+        student.user.send_email_gmail(student.user.email, email_subject, email_content)
         # print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server.")
         created = True
     return created
@@ -1476,6 +1482,7 @@ class LoadStudentsFromCSV(ViewSet):
         print('Request log:', request.data)
 
         students_list, status_message, status_code = self.read_csv(user, request.data)
+
         if status_message != '' or status_code != 200:
             return JsonResponse({'name': status_message}, status=status_code)
         
@@ -1513,14 +1520,20 @@ class LoadStudentsFromCSV(ViewSet):
                     students_info[student_info_index]['student_created'] = False
                     # print(f"Student {added_student.user.first_name} {added_student.user.last_name} - {added_student.student_id} already exists.")
                 else:
+                    random_password = User.objects.make_random_password(length=10)
                     added_user = User.objects.create_user(
                         first_name=student['first_name'],
                         last_name=student['last_name'],
                         email=student['email'],
-                        password=User.objects.make_random_password(length=10),
+                        password=random_password,
                         is_active=True,
                         is_student=True
                     )
+
+                    email_subject = 'Konto w systemie'
+                    email_content = f'Witaj {added_user.first_name} {added_user.last_name}! Twoje konto w systemie zostało utworzone. Twoje hasło to: {random_password}.'
+                    
+                    added_user.send_email_gmail(added_user.email, email_subject, email_content)
 
                     added_student = Student.objects.create(
                         user=added_user,
@@ -1540,6 +1553,7 @@ class LoadStudentsFromCSV(ViewSet):
 
                 for edition_server in available_edition_servers:
                     created = create_db_account(added_student, edition_server)
+
                     students_info[student_info_index]['account_created'][f"{edition_server.server.name} ({edition_server.server.dbms.name})"] = created            
             
             group_to_add.save()
