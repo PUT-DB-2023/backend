@@ -387,7 +387,7 @@ def forwards_func(apps, schema_editor):
     view_semester_permission, _ = AuthPermission.objects.get_or_create(codename='view_semester', content_type=ContentType.objects.get_for_model(Semester))
 
     move_dbaccount_permission, _ = AuthPermission.objects.get_or_create(codename='move_dbaccount', content_type=ContentType.objects.get_for_model(DBAccount))
-    remove_db_account_ext_permission, _ = AuthPermission.objects.get_or_create(codename='move_dbaccount_ext', content_type=ContentType.objects.get_for_model(DBAccount))
+    remove_db_account_ext_permission, _ = AuthPermission.objects.get_or_create(codename='remove_db_account_ext', content_type=ContentType.objects.get_for_model(DBAccount))
     reset_db_password_permission, _ = AuthPermission.objects.get_or_create(codename='reset_db_password', content_type=ContentType.objects.get_for_model(DBAccount))
 
     add_group_permission, _ = AuthPermission.objects.get_or_create(codename='add_group', content_type=ContentType.objects.get_for_model(Group))
