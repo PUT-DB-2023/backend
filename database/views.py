@@ -661,8 +661,26 @@ class EditionViewSet(ModelViewSet):
                     print(f"Teacher edition: {teacher_edition}")
                     if Group.objects.filter(teacherEdition=teacher_edition).exists():
                         return JsonResponse({'name': 'Nie można usunąć prowadzącego, który ma przypisane grupy.'}, status=400)
+            
+            # check if there are new teachers and create teacher_editions for them
+            for teacher in teachers:
+                if not TeacherEdition.objects.filter(teacher=teacher, edition=edition).exists():
+                    TeacherEdition.objects.create(teacher=Teacher.objects.get(id=teacher), edition=edition)
+                    print(f"Teacher edition added: {teacher}")
 
             edition.teachers.set(teachers)
+
+            # check if there are new servers and create dbaccounts for students in this edition
+            for server in servers:
+                if not EditionServer.objects.filter(server=server, edition=edition).exists():
+                    edition_server = EditionServer.objects.create(server=Server.objects.get(id=server), edition=edition)
+                    print(f"Creating dbaccounts for server {server}")
+                    # find all students in this edition and create dbaccounts for them
+                    students = Student.objects.filter(group__teacherEdition__edition=edition)
+                    for student in students:
+                        print(f"Creating dbaccount for student {student}")
+                        create_db_account(student, edition_server)
+
             edition.servers.set(servers)
 
             edition.save()
@@ -1242,18 +1260,25 @@ class MoveDbAccount(ViewSet):
 
         print('Request log:', request.data)
 
+        if 'edition_id' not in request.data:
+            return JsonResponse({'name': 'Nie podano edycji.'}, status=400)
+        if 'group_id' not in request.data:
+            return JsonResponse({'name': 'Nie podano grupy.'}, status=400)
+        if 'server_id' not in request.data:
+            return JsonResponse({'name': 'Nie podano serwera.'}, status=400)
+
         server = Server.objects.get(id=request.data['server_id'])
         if not server.active:
             return JsonResponse({'name': f"Serwer ({server.name}) nie jest aktywny."}, status=400)
 
-        # edition_server = EditionServer.objects.get(edition__id=request.data['edition_id'], server=server)
+        edition_server = EditionServer.objects.get(edition__id=request.data['edition_id'], server=server)
 
-        # # check if all students in this group have db accounts on this server
-        # students = Student.objects.filter(groups__id=request.data['group_id'])
-        # for student in students:
-        #     db_accounts = DBAccount.objects.filter(student=student, editionServer=edition_server)
-        #     if not db_accounts:
-        #         LoadStudentsFromCSV.create_db_account(student, edition_server)
+        # check if all students in this group have db accounts on this server
+        students = Student.objects.filter(groups__id=request.data['group_id'])
+        for student in students:
+            db_accounts = DBAccount.objects.filter(student=student, editionServer=edition_server)
+            if not db_accounts:
+                create_db_account(student, edition_server)
         
         db_accounts = DBAccount.objects.filter(is_moved=False, editionServer__server__active=True, editionServer__server__id=request.data['server_id'], student__groups__id=request.data['group_id'])
         if not db_accounts:

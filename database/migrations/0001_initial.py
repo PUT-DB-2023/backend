@@ -48,9 +48,7 @@ def forwards_func(apps, schema_editor):
     server_create_user_templates = ["CREATE USER IF NOT EXISTS \"arg_username\"@'%%' IDENTIFIED BY 'arg_password'", "CREATE USER \"arg_username\" IDENTIFIED BY \"arg_password\"", "CREATE USER \"arg_username\" WITH PASSWORD \'arg_password\';", 'readWrite']
     server_modify_user_templates = ["ALTER USER \"arg_username\" IDENTIFIED BY \'arg_password\';", "ALTER USER \"arg_username\" IDENTIFIED BY \"arg_password\"", "ALTER USER \"arg_username\" WITH PASSWORD \'arg_password\';", ""]
     server_delete_user_templates = ["DROP USER IF EXISTS \"arg_username\"@'%%';", "DROP USER \"arg_username\" CASCADE", "DROP USER IF EXISTS \"arg_username\";", ""]
-    server_username_templates = [
-        "INF_{NR_INDEKSU}", "{IMIE}_{NAZWISKO}", "{NAZWISKO}_{NR_INDEKSU}", "STUDENT_{NR_INDEKSU}", "INF_{NR_INDEKSU}"
-    ]
+    server_username_templates = ["INF_{NR_INDEKSU}", "{IMIE}_{NAZWISKO}", "{NAZWISKO}_{NR_INDEKSU}", "STUDENT_{NR_INDEKSU}", "INF_{NR_INDEKSU}"]
 
     dbms = []
 
