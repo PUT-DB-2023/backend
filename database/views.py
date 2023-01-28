@@ -668,19 +668,18 @@ class EditionViewSet(ModelViewSet):
                     TeacherEdition.objects.create(teacher=Teacher.objects.get(id=teacher), edition=edition)
                     print(f"Teacher edition added: {teacher}")
 
-            edition.teachers.set(teachers)
-
             # check if there are new servers and create dbaccounts for students in this edition
             for server in servers:
                 if not EditionServer.objects.filter(server=server, edition=edition).exists():
                     edition_server = EditionServer.objects.create(server=Server.objects.get(id=server), edition=edition)
                     print(f"Creating dbaccounts for server {server}")
                     # find all students in this edition and create dbaccounts for them
-                    students = Student.objects.filter(group__teacherEdition__edition=edition)
+                    students = Student.objects.filter(groups__teacherEdition__edition=edition)
                     for student in students:
                         print(f"Creating dbaccount for student {student}")
                         create_db_account(student, edition_server)
-
+            
+            edition.teachers.set(teachers)
             edition.servers.set(servers)
 
             edition.save()
