@@ -37,19 +37,7 @@ def forwards_func(apps, schema_editor):
 
     db_alias = schema_editor.connection.alias
 
-    server_names = ['MySQL ZBD Server', 'Oracle ZBD Server', 'Postgres PBD Server', 'Mongo ZBDNS Server']
-    server_ipss = ['185.180.207.251', '185.180.207.251', '185.180.207.251', 'mongo']
-    server_ports = ['3306', '44475', '5432', '27017']
-    server_date_createds = '2021-12-31'
-    server_databases = ['mysql', 'xe', 'postgres', 'database']
-    server_passwords = ['mysql12', 'oracle', 'postgres12', 'mongo12']
     dbms_names = ['MySQL', 'Oracle DB', 'PostgreSQL', 'MongoDB']
-    server_users = ['root', 'system', 'postgres', 'root']
-    server_create_user_templates = ["CREATE USER IF NOT EXISTS \"arg_username\"@'%%' IDENTIFIED BY 'arg_password'", "CREATE USER \"arg_username\" IDENTIFIED BY \"arg_password\"", "CREATE USER \"arg_username\" WITH PASSWORD \'arg_password\';", 'readWrite']
-    server_modify_user_templates = ["ALTER USER \"arg_username\" IDENTIFIED BY \'arg_password\';", "ALTER USER \"arg_username\" IDENTIFIED BY \"arg_password\"", "ALTER USER \"arg_username\" WITH PASSWORD \'arg_password\';", ""]
-    server_delete_user_templates = ["DROP USER IF EXISTS \"arg_username\"@'%%';", "DROP USER \"arg_username\" CASCADE", "DROP USER IF EXISTS \"arg_username\";", ""]
-    server_username_templates = ["INF_{NR_INDEKSU}", "{IMIE}_{NAZWISKO}", "{NAZWISKO}_{NR_INDEKSU}", "STUDENT_{NR_INDEKSU}", "INF_{NR_INDEKSU}"]
-
     dbms = []
 
     for i in range(len(dbms_names)):
@@ -58,22 +46,6 @@ def forwards_func(apps, schema_editor):
         )
         dbms.append(dbms_object)
 
-    for i in range(len(server_names)):
-        Server.objects.using(db_alias).create(
-            name=server_names[i],
-            host=server_ipss[i],
-            port=server_ports[i],
-            date_created=server_date_createds,
-            database=server_databases[i],
-            password=server_passwords[i],
-            dbms=dbms[i],
-            user=server_users[i],
-            create_user_template=server_create_user_templates[i],
-            modify_user_template=server_modify_user_templates[i],
-            delete_user_template=server_delete_user_templates[i],
-            username_template=server_username_templates[i]
-        )
-
     Semester.objects.using(db_alias).create(
         start_year='2023',
         winter=False,
@@ -81,7 +53,6 @@ def forwards_func(apps, schema_editor):
     )
 
     User.objects.create_superuser(first_name='Admin', last_name='Admin', email='admin@cs.put.poznan.pl', password='admin')
-
 
     add_course_permission, _ = AuthPermission.objects.get_or_create(codename='add_course', content_type=ContentType.objects.get_for_model(Course))
     change_course_permission, _ = AuthPermission.objects.get_or_create(codename='change_course', content_type=ContentType.objects.get_for_model(Course))
