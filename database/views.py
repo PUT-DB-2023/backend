@@ -1279,7 +1279,7 @@ class MoveDbAccount(ViewSet):
             if not db_accounts:
                 create_db_account(student, edition_server)
         
-        db_accounts = DBAccount.objects.filter(is_moved=False, editionServer__server__active=True, editionServer__server__id=request.data['server_id'], student__groups__id=request.data['group_id'])
+        db_accounts = DBAccount.objects.filter(is_moved=False, editionServer__server__active=True, editionServer=edition_server, student__groups__id=request.data['group_id'])
         if not db_accounts:
             print('No accounts to move')
             server = Server.objects.get(id=request.data['server_id'])
@@ -1640,22 +1640,18 @@ class AddStudentsToGroup(ViewSet):
                         r'{email}', student_to_add.user.email.lower()
                     )
 
-                    if DBAccount.objects.filter(student=student_to_add, editionServer__server=edition_server.server).exists():
-                        added_account = DBAccount.objects.get(student=student_to_add, editionServer__server=edition_server.server)
-                        print(added_account)
+                    if DBAccount.objects.filter(student=student_to_add, editionServer=edition_server).exists():
+                        added_account = DBAccount.objects.get(student=student_to_add, editionServer=edition_server)
+                        # print(added_account)
                         print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server already exists.")
-                        print("After if, before else")
                     else:
-                        print("After else, before create")
                         if not DBAccount.objects.filter(username=username_to_add, editionServer=edition_server).exists():
                             added_account = DBAccount.objects.create(
                                 username=username_to_add, password=User.objects.make_random_password(), student=student_to_add, editionServer=edition_server, is_moved=False
                             )
-                            print("After create")
                             added_accounts.append(added_account.username)
                             print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server.")                
             
-            print("before save")
             group_to_add.save()
             print('Added students: ', added_students)
             print('Added accounts: ', added_accounts)
