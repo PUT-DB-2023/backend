@@ -302,8 +302,8 @@ class EditionServer(models.Model):
 
 
 class DBAccount(models.Model):
-    username = models.CharField(max_length=30)
-    password = models.CharField(max_length=30)
+    username = models.CharField(max_length=50)
+    password = models.CharField(max_length=50)
     additional_info = models.CharField(max_length=255, blank=True, default='')
     is_moved = models.BooleanField(default=False)
     student = models.ForeignKey(Student, on_delete=models.CASCADE, null=True, related_name='db_accounts')
