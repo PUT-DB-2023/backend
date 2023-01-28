@@ -104,9 +104,15 @@ def create_db_account(student, edition_server):
         # print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server already exists.")
         created = False
     else:
-        DBAccount.objects.create(
-            username=username_to_add, password=User.objects.make_random_password(length=10), student=student, editionServer=edition_server
+        random_password = User.objects.make_random_password(length=10)
+        added_dbaccount = DBAccount.objects.create(
+            username=username_to_add, password=random_password, student=student, editionServer=edition_server
         )
+        # send email with credentials
+        email_subject = 'Konto w zewnętrznym SZBD'
+        email_content = f'Witaj {student.user.first_name} {student.user.last_name}! Twoje konto w systemie {edition_server.server.name} zostało utworzone. Twoje hasło to: {random_password}.'
+                    
+        student.user.send_email_gmail(student.user.email, email_subject, email_content)
         # print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server.")
         created = True
     return created
@@ -661,7 +667,24 @@ class EditionViewSet(ModelViewSet):
                     print(f"Teacher edition: {teacher_edition}")
                     if Group.objects.filter(teacherEdition=teacher_edition).exists():
                         return JsonResponse({'name': 'Nie można usunąć prowadzącego, który ma przypisane grupy.'}, status=400)
+            
+            # check if there are new teachers and create teacher_editions for them
+            for teacher in teachers:
+                if not TeacherEdition.objects.filter(teacher=teacher, edition=edition).exists():
+                    TeacherEdition.objects.create(teacher=Teacher.objects.get(id=teacher), edition=edition)
+                    print(f"Teacher edition added: {teacher}")
 
+            # check if there are new servers and create dbaccounts for students in this edition
+            for server in servers:
+                if not EditionServer.objects.filter(server=server, edition=edition).exists():
+                    edition_server = EditionServer.objects.create(server=Server.objects.get(id=server), edition=edition)
+                    print(f"Creating dbaccounts for server {server}")
+                    # find all students in this edition and create dbaccounts for them
+                    students = Student.objects.filter(groups__teacherEdition__edition=edition)
+                    for student in students:
+                        print(f"Creating dbaccount for student {student}")
+                        create_db_account(student, edition_server)
+            
             edition.teachers.set(teachers)
             edition.servers.set(servers)
 
@@ -681,11 +704,11 @@ class EditionViewSet(ModelViewSet):
             raise PermissionDenied
 
         try:
-            teacher_editions = TeacherEdition.objects.filter(edition=self.get_object().id)
-            if teacher_editions.exists():
-                for teacher_edition in teacher_editions:
-                    if Group.objects.filter(teacherEdition=teacher_edition).exists():
-                        return JsonResponse({'name': 'Nie można usunąć edycji, która ma przypisane grupy.'}, status=400)
+            # teacher_editions = TeacherEdition.objects.filter(edition=self.get_object().id)
+            # if teacher_editions.exists():
+            #     for teacher_edition in teacher_editions:
+            #         if Group.objects.filter(teacherEdition=teacher_edition).exists():
+            #             return JsonResponse({'name': 'Nie można usunąć edycji, która ma przypisane grupy.'}, status=400)
             edition = Edition.objects.get(id=self.get_object().id)
             edition.delete()
             return Response(status=204)
@@ -1242,20 +1265,27 @@ class MoveDbAccount(ViewSet):
 
         print('Request log:', request.data)
 
+        if 'edition_id' not in request.data:
+            return JsonResponse({'name': 'Nie podano edycji.'}, status=400)
+        if 'group_id' not in request.data:
+            return JsonResponse({'name': 'Nie podano grupy.'}, status=400)
+        if 'server_id' not in request.data:
+            return JsonResponse({'name': 'Nie podano serwera.'}, status=400)
+
         server = Server.objects.get(id=request.data['server_id'])
         if not server.active:
             return JsonResponse({'name': f"Serwer ({server.name}) nie jest aktywny."}, status=400)
 
-        # edition_server = EditionServer.objects.get(edition__id=request.data['edition_id'], server=server)
+        edition_server = EditionServer.objects.get(edition__id=request.data['edition_id'], server=server)
 
-        # # check if all students in this group have db accounts on this server
-        # students = Student.objects.filter(groups__id=request.data['group_id'])
-        # for student in students:
-        #     db_accounts = DBAccount.objects.filter(student=student, editionServer=edition_server)
-        #     if not db_accounts:
-        #         LoadStudentsFromCSV.create_db_account(student, edition_server)
+        # check if all students in this group have db accounts on this server
+        students = Student.objects.filter(groups__id=request.data['group_id'])
+        for student in students:
+            db_accounts = DBAccount.objects.filter(student=student, editionServer=edition_server)
+            if not db_accounts:
+                create_db_account(student, edition_server)
         
-        db_accounts = DBAccount.objects.filter(is_moved=False, editionServer__server__active=True, editionServer__server__id=request.data['server_id'], student__groups__id=request.data['group_id'])
+        db_accounts = DBAccount.objects.filter(is_moved=False, editionServer__server__active=True, editionServer=edition_server, student__groups__id=request.data['group_id'])
         if not db_accounts:
             print('No accounts to move')
             server = Server.objects.get(id=request.data['server_id'])
@@ -1452,6 +1482,7 @@ class LoadStudentsFromCSV(ViewSet):
         print('Request log:', request.data)
 
         students_list, status_message, status_code = self.read_csv(user, request.data)
+
         if status_message != '' or status_code != 200:
             return JsonResponse({'name': status_message}, status=status_code)
         
@@ -1489,14 +1520,20 @@ class LoadStudentsFromCSV(ViewSet):
                     students_info[student_info_index]['student_created'] = False
                     # print(f"Student {added_student.user.first_name} {added_student.user.last_name} - {added_student.student_id} already exists.")
                 else:
+                    random_password = User.objects.make_random_password(length=10)
                     added_user = User.objects.create_user(
                         first_name=student['first_name'],
                         last_name=student['last_name'],
                         email=student['email'],
-                        password=User.objects.make_random_password(length=10),
+                        password=random_password,
                         is_active=True,
                         is_student=True
                     )
+
+                    email_subject = 'Konto w systemie'
+                    email_content = f'Witaj {added_user.first_name} {added_user.last_name}! Twoje konto w systemie zostało utworzone. Twoje hasło to: {random_password}.'
+                    
+                    added_user.send_email_gmail(added_user.email, email_subject, email_content)
 
                     added_student = Student.objects.create(
                         user=added_user,
@@ -1516,6 +1553,7 @@ class LoadStudentsFromCSV(ViewSet):
 
                 for edition_server in available_edition_servers:
                     created = create_db_account(added_student, edition_server)
+
                     students_info[student_info_index]['account_created'][f"{edition_server.server.name} ({edition_server.server.dbms.name})"] = created            
             
             group_to_add.save()
@@ -1616,22 +1654,18 @@ class AddStudentsToGroup(ViewSet):
                         r'{email}', student_to_add.user.email.lower()
                     )
 
-                    if DBAccount.objects.filter(student=student_to_add, editionServer__server=edition_server.server).exists():
-                        added_account = DBAccount.objects.get(student=student_to_add, editionServer__server=edition_server.server)
-                        print(added_account)
+                    if DBAccount.objects.filter(student=student_to_add, editionServer=edition_server).exists():
+                        added_account = DBAccount.objects.get(student=student_to_add, editionServer=edition_server)
+                        # print(added_account)
                         print(f"Account {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server already exists.")
-                        print("After if, before else")
                     else:
-                        print("After else, before create")
                         if not DBAccount.objects.filter(username=username_to_add, editionServer=edition_server).exists():
                             added_account = DBAccount.objects.create(
                                 username=username_to_add, password=User.objects.make_random_password(), student=student_to_add, editionServer=edition_server, is_moved=False
                             )
-                            print("After create")
                             added_accounts.append(added_account.username)
                             print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server.")                
             
-            print("before save")
             group_to_add.save()
             print('Added students: ', added_students)
             print('Added accounts: ', added_accounts)
