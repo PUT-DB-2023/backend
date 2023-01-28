@@ -109,10 +109,10 @@ def create_db_account(student, edition_server):
             username=username_to_add, password=random_password, student=student, editionServer=edition_server
         )
         # send email with credentials
-        email_subject = 'Konto w zewnętrznym SZBD'
-        email_content = f'Witaj {student.user.first_name} {student.user.last_name}! Twoje konto w systemie {edition_server.server.name} zostało utworzone. Twoje hasło to: {random_password}.'
+        # email_subject = 'Konto w zewnętrznym SZBD'
+        # email_content = f'Witaj {student.user.first_name} {student.user.last_name}! Twoje konto w systemie {edition_server.server.name} zostało utworzone. Twoje hasło to: {random_password}.'
                     
-        student.user.send_email_gmail(student.user.email, email_subject, email_content)
+        # student.user.send_email_gmail(student.user.email, email_subject, email_content)
         # print(f"Added {added_account.username} on {added_account.editionServer.server.name} ({added_account.editionServer.server.dbms.name}) server.")
         created = True
     return created

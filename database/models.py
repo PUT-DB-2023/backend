@@ -27,6 +27,10 @@ class CustomUserManager(UserManager):
         user = self.model(email=self.normalize_email(email), **extra_fields)
         user.password = make_password(password)
         user.save(using=self._db)
+        # email_subject = 'Konto w systemie'
+        # email_content = f'Witaj {user.first_name} {user.last_name}! Twoje konto w systemie zostało utworzone. Twoje hasło to: {password}.'
+        # user.send_email_gmail(user.email, email_subject, email_content)
+
         return user
 
     def create_superuser(self, email, password, **extra_fields):
@@ -70,12 +74,13 @@ class User(AbstractUser, PermissionsMixin):
         msg.set_content(f'{message}')
 
         msg['Subject'] = subject
-        msg['From'] = "putdb2023@gmail.com"
+        msg['From'] = "" "FILL WITH SENDER EMAIL"
+        sender_password = "" # FILL WITH SENDER PASSWORD
         msg['To'] = receiver
 
         # Send the message via our own SMTP server.
         server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-        server.login("putdb2023@gmail.com", "zutwbrlimiopqovl")
+        server.login(msg['From'], sender_password)
         server.send_message(msg)
         server.quit()
 
