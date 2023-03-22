@@ -243,7 +243,7 @@ class TeacherViewSet(ModelViewSet):
                 )
                 TeacherViewSet.grant_teacher_permissions(self, user)
                 teacher = Teacher.objects.create(user=user)
-                user.send_email_gmail(NEW_USER_SUBJECT, NEW_USER_MESSAGE, new_password)
+                # user.send_email_gmail(NEW_USER_SUBJECT, NEW_USER_MESSAGE, new_password)
                 return Response(TeacherSerializer(teacher).data, status=201)
             except IntegrityError:
                 return JsonResponse({'name': EMAIL_DUPLICATED}, status=400)
@@ -366,7 +366,7 @@ class StudentViewSet(ModelViewSet):
                 self.grant_student_permissions(user)
                 major = Major.objects.get(id=request.data['major'])
                 student = Student.objects.create(user=user, student_id=request.data['student_id'], major=major)
-                user.send_email_gmail(NEW_USER_SUBJECT, NEW_USER_MESSAGE, new_password)
+                # user.send_email_gmail(NEW_USER_SUBJECT, NEW_USER_MESSAGE, new_password)
                 return Response(StudentSerializer(student).data, status=201)
             except IntegrityError:
                 return JsonResponse({'name': STUDENT_DUPLICATED}, status=400)
@@ -1530,10 +1530,10 @@ class LoadStudentsFromCSV(ViewSet):
                         is_student=True
                     )
 
-                    email_subject = 'Konto w systemie'
-                    email_content = f'Witaj {added_user.first_name} {added_user.last_name}! Twoje konto w systemie zostało utworzone. Twoje hasło to: {random_password}.'
+                    # email_subject = 'Konto w systemie'
+                    # email_content = f'Witaj {added_user.first_name} {added_user.last_name}! Twoje konto w systemie zostało utworzone. Twoje hasło to: {random_password}.'
                     
-                    added_user.send_email_gmail(added_user.email, email_subject, email_content)
+                    # added_user.send_email_gmail(added_user.email, email_subject, email_content)
 
                     added_student = Student.objects.create(
                         user=added_user,
@@ -1732,7 +1732,7 @@ class ResetOwnPassword(ViewSet):
             print(f"New password for {account_to_reset.email} is {new_password}.")
             account_to_reset.set_password(new_password)
             account_to_reset.save()
-            user.send_email_gmail(RESET_PASSWORD_SUBJECT, RESET_PASSWORD_MESSAGE, new_password)
+            # user.send_email_gmail(RESET_PASSWORD_SUBJECT, RESET_PASSWORD_MESSAGE, new_password)
             logout(request)
             return JsonResponse({'name': "Pomyślny reset hasła dla " + str(account_to_reset.email)}, status=200)
         except Exception as error:
@@ -1765,7 +1765,7 @@ class ResetStudentPassword(ViewSet):
                 print(f"New password for {account_to_reset.email} is {new_password}.")
                 account_to_reset.set_password(new_password)
                 account_to_reset.save()
-                user.send_email_gmail(RESET_PASSWORD_SUBJECT, RESET_PASSWORD_MESSAGE, new_password)
+                # user.send_email_gmail(RESET_PASSWORD_SUBJECT, RESET_PASSWORD_MESSAGE, new_password)
                 return JsonResponse({'name': "Pomyślny reset hasła dla " + str(account_to_reset.email)}, status=200)
             except Exception as error:
                 print(error)
@@ -1796,7 +1796,7 @@ class ResetTeacherPassword(ViewSet):
                 print(f"New password for {account_to_reset.email} is {new_password}.")
                 account_to_reset.set_password(new_password)
                 account_to_reset.save()
-                user.send_email_gmail(RESET_PASSWORD_SUBJECT, RESET_PASSWORD_MESSAGE, new_password)
+                # user.send_email_gmail(RESET_PASSWORD_SUBJECT, RESET_PASSWORD_MESSAGE, new_password)
                 return JsonResponse({'name': "Pomyślnie zresetowano hasło dla użytkonwika o id: " + str(account_to_reset.id)}, status=200)
             except Exception as error:
                 print(error)

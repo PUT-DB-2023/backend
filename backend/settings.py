@@ -29,32 +29,38 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-]
+# ------UNCOMMENT BELOW FOR DEVELOPMENT BUILD-------
 
-CSRF_TRUSTED_ORIGINS = ['http://localhost:3000']
+# DEBUG = True
 
-CORS_ALLOW_METHODS = [
-    "DELETE",
-    "GET",
-    "OPTIONS",
-    "PATCH",
-    "POST",
-    "PUT",
-]
+# CORS_ALLOWED_ORIGINS = [
+#     'http://localhost:3000',
+#     'http://127.0.0.1:3000',
+# ]
+
+# CSRF_TRUSTED_ORIGINS = ['http://localhost:3000']
+
+# CSRF_COOKIE_SAMESITE = 'Lax'
+# SESSION_COOKIE_SAMESITE = 'Lax'
+# CSRF_COOKIE_HTTPONLY = False
+# SESSION_COOKIE_HTTPONLY = False
+
+# CORS_ALLOW_METHODS = [
+#     "DELETE",
+#     "GET",
+#     "OPTIONS",
+#     "PATCH",
+#     "POST",
+#     "PUT",
+# ]
+
+# CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
+# CORS_ALLOW_CREDENTIALS = True
 
 CSRF_COOKIE_NAME = "XSRF-TOKEN"
-CSRF_COOKIE_SAMESITE = 'Lax'
-SESSION_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_HTTPONLY = False
-SESSION_COOKIE_HTTPONLY = False
+ALLOWED_HOSTS = ["0.0.0.0"]
 
-CORS_EXPOSE_HEADERS = ['Content-Type', 'X-CSRFToken']
-CORS_ALLOW_CREDENTIALS = True
 
 # Application definition
 
@@ -104,8 +110,6 @@ REST_FRAMEWORK = {
 
 
 ROOT_URLCONF = 'backend.urls'
-
-SESSION_COOKIE_AGE = 60 * 60
 
 TEMPLATES = [
     {

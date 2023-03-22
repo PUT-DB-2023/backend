@@ -1,7 +1,7 @@
 FROM python:3.11
+
 ENV LD_LIBRARY_PATH=/opt/oracle/instantclient_21_4
-WORKDIR /code
-COPY requirements.txt /code/
+
 RUN apt-get update && \
     apt-get install -y libpq-dev zlib1g-dev build-essential shared-mime-info libaio1 libaio-dev unzip wget --no-install-recommends && \
     wget https://download.oracle.com/otn_software/linux/instantclient/214000/instantclient-sdk-linux.x64-21.4.0.0.0dbru.zip && \
@@ -18,5 +18,8 @@ RUN apt-get update && \
     apt -y remove wget unzip && \
     apt -y autoremove && \
     rm -rf /var/cache/apt
+
+WORKDIR /backend
+COPY requirements.txt /backend/
 RUN pip install -r requirements.txt
-# COPY . /code/
+COPY . /backend/
