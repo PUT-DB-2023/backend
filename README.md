@@ -3,7 +3,6 @@ Backend prototypowego systemu wspomagającego zarządzanie infrastrukturą bazod
 
 ## Uruchamianie
 Aby uruchomić projekt należy wykonać następujące kroki:
-1. Zainstalować [Docker](https://docs.docker.com/get-docker/)
-2. Zainstalować [Docker Compose](https://docs.docker.com/compose/install/)
-3. Uruchomić polecenie `docker-compose up --build` w głównym katalogu projektu
-4. Kolejne uruchomienia można wykonać poleceniem `docker-compose up`
+1. Zainstalować [Docker Desktop](https://www.docker.com/products/docker-desktop/) (polecane) lub [Docker Engine](https://docs.docker.com/get-docker/) (wymaga osobnej instalacji [Docker Compose](https://docs.docker.com/compose/install/)).
+2. Uruchomić polecenie `docker-compose up` w głównym katalogu projektu.
+3. W celu dostępu do API należy otworzyć http://localhost:8000/api/ w przeglądarce. Dostęp do API wymaga zalogowania przez [frontend](https://github.com/PUT-DB-2023/frontend) aplikacji lub poprzez wykonanie zapytania POST pod adres http://localhost:8000/api/login/ z danymi logowania (np. z użyciem Postmana).
