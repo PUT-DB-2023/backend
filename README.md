@@ -1,5 +1,5 @@
 # Praca inżynierska PUT-DB-2023 - Backend
-Backend prototypowego systemu wspomagającego zarządzanie infrastrukturą bazodanową do prowadzenia zajęć laboratoryjnych.
+Backend prototypowego systemu wspomagającego zarządzanie infrastrukturą bazodanową do prowadzenia zajęć laboratoryjnych. W repozytorium [deployment](https://github.com/PUT-DB-2023/deployment) znajduje się konfiguracja pozwalająca uruchomić wersję produkcyjną systemu automatycznie uruchamiającą backend oraz frontend.
 
 ## Uruchamianie
 Aby uruchomić projekt należy wykonać następujące kroki:
