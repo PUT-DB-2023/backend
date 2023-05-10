@@ -1,19 +1,6 @@
 version: "3.9"
 
 services:
-  # postgres-external:
-  #   image: postgres:14.5
-  #   volumes:
-  #     - ./data/postgres-external:/var/lib/postgresql/data
-  #   environment:
-  #     - POSTGRES_DB=postgres
-  #     - POSTGRES_USER=postgres
-  #     - POSTGRES_PASSWORD=postgres
-  #   expose:
-  #     - 5433
-  #   ports:
-  #     - "5433:5433"
-  #   command: -p 5433
   postgres:
     image: postgres:14.5
     volumes:
@@ -29,28 +16,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 50
-  mongo:
-      image: mongo
-      ports:
-          - '27017:27017'
-      environment:
-          - MONGO_INITDB_ROOT_USERNAME=root
-          - MONGO_INITDB_ROOT_PASSWORD=mongo12
-          - MONGO_INITDB_DATABASE=database
-      volumes:
-          - ./data/mongo:/data/db
-  # mysql:
-  #   image: mysql:8.0
-  #   environment:
-  #     - MYSQL_ROOT_PASSWORD=root
-  #     - MYSQL_DATABASE=mysql
-  #     - MYSQL_USER=mysql
-  #     - MYSQL_PASSWORD=mysql
-  #   volumes:
-  #     - ./data/mysql:/var/lib/mysql
-  #     - ./tmp/mysqld:/var/run/mysqld
-  #   ports:
-  #    - "3306:3306"
   web:
     restart: on-failure:5
     build: .
@@ -66,11 +31,5 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     depends_on:
-      # mysql:
-      #   condition: service_started
-      # postgres-external:
-      #   condition: service_started
       postgres:
         condition: service_healthy
-      mongo:
-        condition: service_started

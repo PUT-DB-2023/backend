@@ -1608,6 +1608,7 @@ class AddStudentsToGroup(ViewSet):
         except Exception as error:
             print(error)
             return JsonResponse({'name': 'Nie znaleziono grupy.'}, status=400)
+        
         try:
             available_edition_servers = EditionServer.objects.filter(edition__teacheredition__groups=group_to_add.id)
             print(available_edition_servers)
@@ -1618,6 +1619,7 @@ class AddStudentsToGroup(ViewSet):
         if len(available_edition_servers) == 0:
             print("No available edition servers.")
             return JsonResponse({'name': 'Brak dostępnych serwerów w edycji.'}, status=400)
+        
         try:
             for student_id in students:
                 student_to_add = Student.objects.get(id=student_id)
